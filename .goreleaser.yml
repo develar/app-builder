@@ -1,0 +1,10 @@
+builds:
+  - goos:
+      - windows
+      - darwin
+      - linux
+archive:
+  format: binary
+
+snapshot:
+  name_template: SNAPSHOT
