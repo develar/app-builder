@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  branch = "master"
+  name = "github.com/aclements/go-rabin"
+  packages = ["rabin"]
+  revision = "d0b643ea1a4c56db14f9cab09038c41e76767e58"
+
+[[projects]]
   name = "github.com/alecthomas/kingpin"
   packages = ["."]
   revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
@@ -26,16 +32,40 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/disintegration/imaging"
   packages = ["."]
   revision = "1884593a19ddc6f2ea050403430d02c1d0fc1283"
   version = "v1.3.0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/minio/blake2b-simd"
+  packages = ["."]
+  revision = "3f5f724cb5b182a5c278d6d3d55b40e7f8c2efb4"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/pmezard/go-difflib"
+  packages = ["difflib"]
+  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
+  version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/stretchr/testify"
+  packages = ["assert"]
+  revision = "b91bfb9ebec76498946beb6af7c0230c7cc7ba6c"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -46,6 +76,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "fe3e65c5d7e604a3deefaead6d4155629201f79be7f60ae3672679bdffc964a0"
+  inputs-digest = "34bd42cae25fe28d340008f47a4310d317d8047c9efe4d24058c4cfb554066ba"
   solver-name = "gps-cdcl"
   solver-version = 1
