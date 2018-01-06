@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-goreleaser --rm-dist "$@"
+goreleaser --rm-dist --snapshot --skip-validate

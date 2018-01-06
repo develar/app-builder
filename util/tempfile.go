@@ -35,6 +35,37 @@ func nextPrefix() string {
 	return strconv.Itoa(int(1e9 + r%1e9))[1:]
 }
 
+// TempFile creates a new temporary file in the directory dir
+// with a name beginning with prefix, opens the file for reading
+// and writing, and returns the resulting *os.File.
+// If dir is the empty string, TempFile uses the default directory
+// for temporary files (see os.TempDir).
+// Multiple programs calling TempFile simultaneously
+// will not choose the same file. The caller can use f.Name()
+// to find the pathname of the file. It is the caller's responsibility
+// to remove the file when no longer needed.
+func TempFile(dir, suffix string) (f *os.File, err error) {
+	if dir == "" {
+		dir = os.TempDir()
+	}
+
+	nConflict := 0
+	for i := 0; i < 10000; i++ {
+		name := filepath.Join(dir, nextPrefix()+suffix)
+		f, err = os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
+		if os.IsExist(err) {
+			if nConflict++; nConflict > 10 {
+				randmu.Lock()
+				rand = reseed()
+				randmu.Unlock()
+			}
+			continue
+		}
+		break
+	}
+	return
+}
+
 // TempDir creates a new temporary directory in the directory dir
 // with a name beginning with prefix and returns the path of the
 // new directory. If dir is the empty string, TempDir uses the
@@ -49,7 +80,7 @@ func TempDir(dir, suffix string) (name string, err error) {
 
 	nConflict := 0
 	for i := 0; i < 10000; i++ {
-		try := filepath.Join(dir, nextPrefix() + suffix)
+		try := filepath.Join(dir, nextPrefix()+suffix)
 		err = os.Mkdir(try, 0700)
 		if os.IsExist(err) {
 			if nConflict++; nConflict > 10 {
