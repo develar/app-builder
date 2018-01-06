@@ -7,6 +7,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
+	logCli "github.com/apex/log/handlers/cli"
 	"github.com/develar/app-builder/blockmap"
 	"github.com/develar/app-builder/icons"
 )
@@ -31,6 +32,8 @@ var (
 )
 
 func main() {
+	log.SetHandler(logCli.Default)
+
 	debugEnv, isDebugDefined := os.LookupEnv("DEBUG")
 	if isDebugDefined && debugEnv != "false" {
 		log.SetLevel(log.DebugLevel)

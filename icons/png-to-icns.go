@@ -37,24 +37,32 @@ var (
 
 // returns file if exists, null if file not exists, or error if unknown error
 func resolveSourceFileOrNull(sourceFile string, roots []string) (string, os.FileInfo, error) {
-	fileInfo, err := os.Stat(sourceFile)
+	absolutePath, err := filepath.Abs(sourceFile)
 	if err == nil {
-		return sourceFile, fileInfo, nil
+		fileInfo, err := os.Stat(absolutePath)
+		if err == nil {
+			return absolutePath, fileInfo, nil
+		}
+
+		log.WithFields(log.Fields{
+			"path":  absolutePath,
+			"error": err,
+		}).Debug("tried specified path, but got error")
+
+		if !os.IsNotExist(err) {
+			return "", nil, errors.WithStack(err)
+		}
 	}
 
 	log.WithFields(log.Fields{
 		"path":  sourceFile,
 		"error": err,
-	}).Debug("tried specified path, but got error")
-
-	if !os.IsNotExist(err) {
-		return "", nil, errors.WithStack(err)
-	}
+	}).Debug("tried to convert path to absolute, but got error")
 
 	if !filepath.IsAbs(sourceFile) {
 		for _, root := range roots {
 			resolvedPath := filepath.Join(root, sourceFile)
-			fileInfo, err = os.Stat(resolvedPath)
+			fileInfo, err := os.Stat(resolvedPath)
 			if err == nil {
 				return resolvedPath, fileInfo, nil
 			} else {
