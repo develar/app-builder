@@ -8,6 +8,7 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	logCli "github.com/apex/log/handlers/cli"
+	"github.com/develar/app-builder/asar"
 	"github.com/develar/app-builder/blockmap"
 	"github.com/develar/app-builder/icons"
 	"github.com/pkg/errors"
@@ -31,6 +32,9 @@ var (
 	buildBlockmapInFile      = buildBlockmap.Flag("input", "input file").Short('i').Required().String()
 	buildBlockmapOutFile     = buildBlockmap.Flag("output", "output file").Short('o').String()
 	buildBlockmapCompression = buildBlockmap.Flag("compression", "compression, one of: gzip, deflate").Short('c').Default("gzip").Enum("gzip", "deflate")
+
+	buildAsar        = app.Command("asar", "")
+	buildAsarOutFile = buildAsar.Flag("output", "").Required().String()
 )
 
 func main() {
@@ -63,22 +67,10 @@ func main() {
 		}
 
 	case convertIcon.FullCommand():
-		resultFile, err := icons.ConvertIcon(*convertIconInFile, *convertIconRoots, *convertIconOutFormat)
-		if err != nil {
-			switch t := errors.Cause(err).(type) {
-			default:
-				log.Fatalf("%+v\n", err)
+		doConvertIcon()
 
-			case *icons.ImageSizeError:
-				_, err = fmt.Printf("{\"error\":\"%s\", \"errorCode\": \"%s\"}", t, t.ErrorCode)
-				if err != nil {
-					log.Fatalf("%+v\n", err)
-				}
-				return
-			}
-		}
-
-		_, err = fmt.Printf("{\"file\":\"%s\"}", resultFile)
+	case buildAsar.FullCommand():
+		err := asar.BuildAsar(*buildAsarOutFile)
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
@@ -88,6 +80,37 @@ func main() {
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
+	}
+}
+
+func doConvertIcon() {
+	resultFile, err := icons.ConvertIcon(*convertIconInFile, *convertIconRoots, *convertIconOutFormat)
+	if err != nil {
+		switch t := errors.Cause(err).(type) {
+		default:
+			log.Fatalf("%+v\n", err)
+			return
+
+		case *icons.ImageSizeError:
+			printAppError(t)
+			return
+
+		case *icons.ImageFormatError:
+			printAppError(t)
+			return
+		}
+	}
+
+	_, err = fmt.Printf("{\"file\":\"%s\"}", resultFile)
+	if err != nil {
+		log.Fatalf("%+v\n", err)
+	}
+}
+
+func printAppError(error icons.ImageError) {
+	_, err := fmt.Printf("{\"error\":\"%s\", \"errorCode\": \"%s\"}", error, error.ErrorCode())
+	if err != nil {
+		log.Fatalf("%+v\n", err)
 	}
 }
 

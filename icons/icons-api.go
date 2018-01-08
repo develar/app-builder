@@ -2,7 +2,6 @@ package icons
 
 import (
 	"bufio"
-	"fmt"
 	"image"
 	"image/png"
 	"os"
@@ -25,20 +24,6 @@ type IconListResult struct {
 	MaxIconPath string     `json:"maxIconPath"`
 	MaxIconSize int        `json:"maxIconSize"`
 	Icons       []IconInfo `json:"icons"`
-}
-
-type ImageSizeError struct {
-	File            string
-	RequiredMinSize int
-	ErrorCode       string
-}
-
-func (e *ImageSizeError) Error() string {
-	return fmt.Sprintf("image %s must be at least %dx%d", e.File, e.RequiredMinSize, e.RequiredMinSize)
-}
-
-func NewImageSizeError(file string, requiredMinSize int) *ImageSizeError {
-	return &ImageSizeError{file, requiredMinSize, "ERR_TOO_SMALL_ICON"}
 }
 
 func LoadImage(file string) (image.Image, error) {
@@ -70,6 +55,10 @@ func DecodeImageConfig(file string) (*image.Config, error) {
 	result, _, err := image.DecodeConfig(reader)
 	if err != nil {
 		reader.Close()
+
+		if err == image.ErrFormat {
+			err = &ImageFormatError{file, "ERR_ICON_UNKNOWN_FORMAT"}
+		}
 		return nil, errors.WithStack(err)
 	}
 
