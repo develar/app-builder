@@ -1,10 +1,8 @@
 package icons
 
 import (
-	"bufio"
 	"fmt"
 	"image"
-	"image/png"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -143,29 +141,5 @@ func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInf
 func resizeImage(originalImage image.Image, w int, h int, outFileName string, waitGroup *sync.WaitGroup) error {
 	defer waitGroup.Done()
 	newImage := imaging.Resize(originalImage, w, h, imaging.Lanczos)
-	return saveImage(newImage, outFileName)
-}
-
-func saveImage(image *image.NRGBA, outFileName string) error {
-	outFile, err := os.Create(outFileName)
-	if err != nil {
-		return err
-	}
-
-	writer := bufio.NewWriter(outFile)
-	err = png.Encode(writer, image)
-	if err != nil {
-		return err
-	}
-
-	flushError := writer.Flush()
-	closeError := outFile.Close()
-	if flushError != nil {
-		return flushError
-	}
-	if closeError != nil {
-		return closeError
-	}
-
-	return nil
+	return SaveImage(newImage, outFileName)
 }

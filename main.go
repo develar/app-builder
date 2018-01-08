@@ -10,17 +10,19 @@ import (
 	logCli "github.com/apex/log/handlers/cli"
 	"github.com/develar/app-builder/blockmap"
 	"github.com/develar/app-builder/icons"
+	"github.com/pkg/errors"
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("0.2.0")
+	app = kingpin.New("app-builder", "app-builder").Version("0.3.0")
 
 	icnsToPng       = app.Command("icns-to-png", "convert ICNS to PNG")
 	icnsToPngInFile = icnsToPng.Flag("input", "input ICNS file").Short('i').Required().String()
 
-	pngToIcns       = app.Command("png-to-icns", "create ICNS from PNG files")
-	pngToIcnsInFile = pngToIcns.Flag("input", "input directory or file").Short('i').Required().String()
-	pngToIcnsRoots  = pngToIcns.Flag("root", "base directory to resolve relative path").Short('r').Required().Strings()
+	convertIcon          = app.Command("icon", "create ICNS or ICO from PNG files")
+	convertIconInFile    = convertIcon.Flag("input", "input directory or file").Short('i').Required().String()
+	convertIconOutFormat = convertIcon.Flag("format", "output format").Short('f').Required().Enum("icns", "ico")
+	convertIconRoots     = convertIcon.Flag("root", "base directory to resolve relative path").Short('r').Required().Strings()
 
 	collectIcons          = app.Command("collect-icons", "collect icons in a dir")
 	collectIconsSourceDir = collectIcons.Flag("source", "source directory").Short('s').Required().String()
@@ -60,10 +62,20 @@ func main() {
 			log.Fatalf("%+v\n", err)
 		}
 
-	case pngToIcns.FullCommand():
-		resultFile, err := icons.ConvertPngToIcns(*pngToIcnsInFile, *pngToIcnsRoots)
+	case convertIcon.FullCommand():
+		resultFile, err := icons.ConvertIcon(*convertIconInFile, *convertIconRoots, *convertIconOutFormat)
 		if err != nil {
-			log.Fatalf("%+v\n", err)
+			switch t := errors.Cause(err).(type) {
+			default:
+				log.Fatalf("%+v\n", err)
+
+			case *icons.ImageSizeError:
+				_, err = fmt.Printf("{\"error\":\"%s\", \"errorCode\": \"%s\"}", t, t.ErrorCode)
+				if err != nil {
+					log.Fatalf("%+v\n", err)
+				}
+				return
+			}
 		}
 
 		_, err = fmt.Printf("{\"file\":\"%s\"}", resultFile)
