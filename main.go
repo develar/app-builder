@@ -23,7 +23,7 @@ var (
 	convertIcon          = app.Command("icon", "create ICNS or ICO from PNG files")
 	convertIconInFile    = convertIcon.Flag("input", "input directory or file").Short('i').Required().String()
 	convertIconOutFormat = convertIcon.Flag("format", "output format").Short('f').Required().Enum("icns", "ico")
-	convertIconRoots     = convertIcon.Flag("root", "base directory to resolve relative path").Short('r').Required().Strings()
+	convertIconRoots     = convertIcon.Flag("root", "base directory to resolve relative path").Short('r').Strings()
 
 	collectIcons          = app.Command("collect-icons", "collect icons in a dir")
 	collectIconsSourceDir = collectIcons.Flag("source", "source directory").Short('s').Required().String()
