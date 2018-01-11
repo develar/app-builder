@@ -3,6 +3,7 @@ package icons
 import "fmt"
 
 type ImageError interface {
+	Error() string
 	ErrorCode() string
 }
 

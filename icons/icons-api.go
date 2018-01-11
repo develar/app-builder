@@ -26,6 +26,15 @@ type IconListResult struct {
 	Icons       []IconInfo `json:"icons"`
 }
 
+type IconConvertResult struct {
+	File string `json:"file"`
+}
+
+type MisConfigurationError struct {
+	Message string `json:"error"`
+	Code string `json:"errorCode"`
+}
+
 func LoadImage(file string) (image.Image, error) {
 	reader, err := os.Open(file)
 	if err != nil {

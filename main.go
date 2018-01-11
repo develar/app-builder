@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("0.3.0")
+	app = kingpin.New("app-builder", "app-builder").Version("0.3.1")
 
 	icnsToPng       = app.Command("icns-to-png", "convert ICNS to PNG")
 	icnsToPngInFile = icnsToPng.Flag("input", "input ICNS file").Short('i').Required().String()
@@ -51,7 +51,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
-		err = writeIconListResult(result)
+		err = writeJsonToStdOut(result)
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
@@ -61,7 +61,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
-		err = writeIconListResult(result)
+		err = writeJsonToStdOut(result)
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
@@ -101,14 +101,14 @@ func doConvertIcon() {
 		}
 	}
 
-	_, err = fmt.Printf("{\"file\":\"%s\"}", resultFile)
+	err = writeJsonToStdOut(icons.IconConvertResult{File: resultFile})
 	if err != nil {
 		log.Fatalf("%+v\n", err)
 	}
 }
 
 func printAppError(error icons.ImageError) {
-	_, err := fmt.Printf("{\"error\":\"%s\", \"errorCode\": \"%s\"}", error, error.ErrorCode())
+	err := writeJsonToStdOut(icons.MisConfigurationError{Message: error.Error(), Code: error.ErrorCode()})
 	if err != nil {
 		log.Fatalf("%+v\n", err)
 	}
@@ -130,7 +130,11 @@ func doBuildBlockMap() error {
 		return err
 	}
 
-	serializedInputInfo, err := json.Marshal(inputInfo)
+	return writeJsonToStdOut(inputInfo)
+}
+
+func writeJsonToStdOut(v interface{}) error {
+	serializedInputInfo, err := json.Marshal(v)
 	if err != nil {
 		return err
 	}
@@ -140,14 +144,4 @@ func doBuildBlockMap() error {
 	}
 
 	return nil
-}
-
-func writeIconListResult(result *icons.IconListResult) error {
-	serializedResult, err := json.Marshal(result)
-	if err != nil {
-		return err
-	}
-
-	_, err = os.Stdout.Write(serializedResult)
-	return err
 }
