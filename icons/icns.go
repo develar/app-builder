@@ -1,6 +1,7 @@
 package icons
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/binary"
 	"image/png"
@@ -10,6 +11,15 @@ import (
 	"github.com/develar/app-builder/util"
 	"github.com/disintegration/imaging"
 	"github.com/pkg/errors"
+)
+
+//noinspection GoSnakeCaseUsage
+const (
+	ICNS_256        = "ic08"
+	ICNS_256_RETINA = "ic13"
+	ICNS_512        = "ic09"
+	ICNS_512_RETINA = "ic14"
+	ICNS_1024 = "ic10"
 )
 
 var (
@@ -23,9 +33,9 @@ var (
 		32:   {"icp5", "ic11"},
 		64:   {"icp6", "ic12"},
 		128:  {"ic07"},
-		256:  {"ic08", "ic13"},
-		512:  {"ic09", "ic14"},
-		1024: {"ic10"},
+		256:  {ICNS_256, ICNS_256_RETINA},
+		512:  {ICNS_512, ICNS_512_RETINA},
+		1024: {ICNS_1024},
 	}
 )
 
@@ -102,4 +112,58 @@ func ConvertToIcns(inputInfo InputFileInfo) (string, error) {
 	io.Copy(outFile, icns)
 
 	return outFile.Name(), nil
+}
+
+func isIcns(reader *bufio.Reader) (bool, error) {
+	data, err := reader.Peek(4)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+	return data[0] == 0x69 && data[1] == 0x63 && data[2] == 0x6e && data[3] == 0x73, nil
+}
+
+type SubImage struct {
+	Offset int
+	Length int
+}
+
+func ReadIcns(reader *bufio.Reader) (map[string]SubImage, error) {
+	type IcnsIconEntry struct {
+		Type   [4]byte
+		Length uint32
+	}
+
+	_, err := reader.Discard(8)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	icons := make(map[string]SubImage)
+	offset := 8
+	for {
+		icon := IcnsIconEntry{}
+		err = binary.Read(reader, binary.BigEndian, &icon)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		offset += 8
+		imageDataLength := int(icon.Length) - 8
+
+		icons[string(icon.Type[:])] = SubImage{
+			Offset: offset,
+			Length: imageDataLength,
+		}
+
+		offset += imageDataLength
+
+		_, err = reader.Discard(imageDataLength)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+
+	return icons, nil
 }

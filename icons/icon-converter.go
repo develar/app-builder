@@ -85,16 +85,29 @@ type InputFileInfo struct {
 }
 
 func validateImageSize(file string, recommendedMinSize int) error {
-	config, err := DecodeImageConfig(file)
+	firstFileBytes, err := util.ReadFile(file, 512)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	if config.Width < recommendedMinSize || config.Height < recommendedMinSize {
-		return NewImageSizeError(file, recommendedMinSize)
+	if IsIco(firstFileBytes) {
+		for _, size := range GetIcoSizes(firstFileBytes) {
+			if size.Width >= recommendedMinSize && size.Height >= recommendedMinSize {
+				return nil
+			}
+		}
+	} else {
+		config, err := DecodeImageConfig(file)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if config.Width >= recommendedMinSize && config.Height >= recommendedMinSize {
+			return nil
+		}
 	}
 
-	return nil
+	return NewImageSizeError(file, recommendedMinSize)
 }
 
 func ConvertIcon(sourceFile string, roots []string, outputFormat string) (string, error) {

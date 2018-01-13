@@ -2,16 +2,21 @@ package icons
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
 
 func CollectIcons(sourceDir string) (*IconListResult, error) {
-	files, err := ioutil.ReadDir(sourceDir)
+	dir, err := os.Open(sourceDir)
+	if err != nil {
+		return nil, err
+	}
+
+	files, err := dir.Readdirnames(0)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("icon directory %s doesn't exist", sourceDir)
@@ -28,7 +33,7 @@ func CollectIcons(sourceDir string) (*IconListResult, error) {
 	maxSize := 0
 	maxIconPath := ""
 	for _, file := range files {
-		name := file.Name()
+		name := file
 		if !(strings.HasSuffix(name, ".png") || strings.HasSuffix(name, ".PNG")) {
 			continue
 		}
@@ -57,6 +62,8 @@ func CollectIcons(sourceDir string) (*IconListResult, error) {
 	if len(result) == 0 {
 		return nil, fmt.Errorf("icon directory %s doesn't contain icons", sourceDir)
 	}
+
+	sort.Slice(result, func(i, j int) bool { return result[i].Size < result[j].Size })
 
 	return &IconListResult{
 		MaxIconPath: maxIconPath,
