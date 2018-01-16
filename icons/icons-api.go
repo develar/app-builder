@@ -64,6 +64,7 @@ func LoadImage(file string) (image.Image, error) {
 			if ok {
 				reader.Seek(int64(subImage.Offset), 0)
 				bufferedReader.Reset(reader)
+				// golang doesn't support JPEG2000
 				return DecodeImageAndClose(bufferedReader, reader)
 			}
 		}

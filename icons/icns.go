@@ -19,7 +19,7 @@ const (
 	ICNS_256_RETINA = "ic13"
 	ICNS_512        = "ic09"
 	ICNS_512_RETINA = "ic14"
-	ICNS_1024 = "ic10"
+	ICNS_1024       = "ic10"
 )
 
 var (
@@ -58,15 +58,13 @@ func ConvertToIcns(inputInfo InputFileInfo) (string, error) {
 				return "", errors.WithStack(err)
 			}
 		} else {
-			if inputInfo.MaxImage == nil {
-				inputInfo.MaxImage, err = LoadImage(inputInfo.MaxIconPath)
-				if err != nil {
-					return "", errors.WithStack(err)
-				}
+			maxImage, err := inputInfo.GetMaxImage()
+			if err != nil {
+				return "", errors.WithStack(err)
 			}
 
 			imageBuffer := new(bytes.Buffer)
-			err := png.Encode(imageBuffer, imaging.Resize(inputInfo.MaxImage, size, size, imaging.Lanczos))
+			err = png.Encode(imageBuffer, imaging.Resize(maxImage, size, size, imaging.Lanczos))
 			if err != nil {
 				return "", errors.WithStack(err)
 			}
@@ -167,3 +165,4 @@ func ReadIcns(reader *bufio.Reader) (map[string]SubImage, error) {
 
 	return icons, nil
 }
+

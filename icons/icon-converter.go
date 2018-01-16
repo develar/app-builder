@@ -9,6 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/develar/app-builder/util"
+	"github.com/disintegration/imaging"
 	"github.com/pkg/errors"
 )
 
@@ -81,7 +82,20 @@ type InputFileInfo struct {
 	MaxIconPath string
 	SizeToPath  map[int]string
 
-	MaxImage image.Image
+	maxImage image.Image
+
+	recommendedMinSize int
+}
+
+func (t InputFileInfo) GetMaxImage() (image.Image, error) {
+	if t.maxImage == nil {
+		var err error
+		t.maxImage, err = loadImage(t.MaxIconPath, t.recommendedMinSize)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+	return t.maxImage, nil
 }
 
 func validateImageSize(file string, recommendedMinSize int) error {
@@ -120,16 +134,19 @@ func ConvertIcon(sourceFile string, roots []string, outputFormat string) (string
 
 	sourceFile = resolvedPath
 
-	var recommendedMinSize int
-	if outputFormat == "ico" {
-		recommendedMinSize = 256
+	var inputInfo InputFileInfo
+	inputInfo.SizeToPath = make(map[int]string)
+
+	isOutputFormatIco := outputFormat == "ico"
+	if isOutputFormatIco {
+		inputInfo.recommendedMinSize = 256
 	} else {
-		recommendedMinSize = 512
+		inputInfo.recommendedMinSize = 512
 	}
 
 	if strings.HasSuffix(resolvedPath, outExt) {
-		if outputFormat == "ico" {
-			err = validateImageSize(resolvedPath, recommendedMinSize)
+		if isOutputFormatIco {
+			err = validateImageSize(resolvedPath, inputInfo.recommendedMinSize)
 			if err != nil {
 				return "", errors.WithStack(err)
 			}
@@ -137,9 +154,6 @@ func ConvertIcon(sourceFile string, roots []string, outputFormat string) (string
 
 		return resolvedPath, nil
 	}
-
-	var inputInfo InputFileInfo
-	inputInfo.SizeToPath = make(map[int]string)
 
 	if fileInfo.IsDir() {
 		icons, err := CollectIcons(sourceFile)
@@ -154,15 +168,19 @@ func ConvertIcon(sourceFile string, roots []string, outputFormat string) (string
 		inputInfo.MaxIconPath = icons.MaxIconPath
 		inputInfo.MaxIconSize = icons.MaxIconSize
 	} else {
-		inputInfo.SizeToPath[0] = sourceFile
-
-		maxImage, err := loadImage(sourceFile, recommendedMinSize)
+		maxImage, err := loadImage(sourceFile, inputInfo.recommendedMinSize)
 		if err != nil {
 			return "", errors.WithStack(err)
 		}
 
+		if isOutputFormatIco && maxImage.Bounds().Max.X > 256 {
+			image256 := imaging.Resize(maxImage, 256, 256, imaging.Lanczos)
+			maxImage = image256
+		}
+
 		inputInfo.MaxIconSize = maxImage.Bounds().Max.X
-		inputInfo.MaxIconPath = sourceFile
+		inputInfo.maxImage = maxImage
+		inputInfo.SizeToPath[inputInfo.MaxIconSize] = sourceFile
 	}
 
 	switch outputFormat {
@@ -170,11 +188,9 @@ func ConvertIcon(sourceFile string, roots []string, outputFormat string) (string
 		return ConvertToIcns(inputInfo)
 
 	case "ico":
-		if inputInfo.MaxImage == nil {
-			inputInfo.MaxImage, err = loadImage(inputInfo.MaxIconPath, recommendedMinSize)
-			if err != nil {
-				return "", errors.WithStack(err)
-			}
+		maxImage, err := inputInfo.GetMaxImage()
+		if err != nil {
+			return "", errors.WithStack(err)
 		}
 
 		outFile, err := util.TempFile("", outExt)
@@ -182,7 +198,7 @@ func ConvertIcon(sourceFile string, roots []string, outputFormat string) (string
 			return "", errors.WithStack(err)
 		}
 
-		err = SaveImage2(inputInfo.MaxImage, outFile, ICO)
+		err = SaveImage2(maxImage, outFile, ICO)
 		return outFile.Name(), err
 
 	default:

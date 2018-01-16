@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("0.4.0")
+	app = kingpin.New("app-builder", "app-builder").Version("0.5.0")
 
 	icnsToPng       = app.Command("icns-to-png", "convert ICNS to PNG")
 	icnsToPngInFile = icnsToPng.Flag("input", "input ICNS file").Short('i').Required().String()
