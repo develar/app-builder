@@ -15,18 +15,12 @@ import (
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("0.5.0")
+	app = kingpin.New("app-builder", "app-builder").Version("0.6.0")
 
-	icnsToPng       = app.Command("icns-to-png", "convert ICNS to PNG")
-	icnsToPngInFile = icnsToPng.Flag("input", "input ICNS file").Short('i').Required().String()
-
-	convertIcon          = app.Command("icon", "create ICNS or ICO from PNG files")
-	convertIconInFile    = convertIcon.Flag("input", "input directory or file").Short('i').Required().String()
-	convertIconOutFormat = convertIcon.Flag("format", "output format").Short('f').Required().Enum("icns", "ico")
+	convertIcon          = app.Command("icon", "create ICNS or ICO or icon set from PNG files")
+	convertIconSources   = convertIcon.Flag("input", "input directory or file").Short('i').Required().Strings()
+	convertIconOutFormat = convertIcon.Flag("format", "output format").Short('f').Required().Enum("icns", "ico", "set")
 	convertIconRoots     = convertIcon.Flag("root", "base directory to resolve relative path").Short('r').Strings()
-
-	collectIcons          = app.Command("collect-icons", "collect icons in a dir")
-	collectIconsSourceDir = collectIcons.Flag("source", "source directory").Short('s').Required().String()
 
 	buildBlockmap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
 	buildBlockmapInFile      = buildBlockmap.Flag("input", "input file").Short('i').Required().String()
@@ -46,26 +40,6 @@ func main() {
 	}
 
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
-	case icnsToPng.FullCommand():
-		result, err := icons.ConvertIcnsToPng(*icnsToPngInFile)
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
-		err = writeJsonToStdOut(result)
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
-
-	case collectIcons.FullCommand():
-		result, err := icons.CollectIcons(*collectIconsSourceDir)
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
-		err = writeJsonToStdOut(result)
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
-
 	case convertIcon.FullCommand():
 		doConvertIcon()
 
@@ -84,8 +58,10 @@ func main() {
 }
 
 func doConvertIcon() {
-	resultFile, err := icons.ConvertIcon(*convertIconInFile, *convertIconRoots, *convertIconOutFormat)
+	resultFile, err := icons.ConvertIcon(*convertIconSources, *convertIconRoots, *convertIconOutFormat)
 	if err != nil {
+		log.Debugf("%+v\n", err)
+
 		switch t := errors.Cause(err).(type) {
 		default:
 			log.Fatalf("%+v\n", err)
@@ -101,7 +77,7 @@ func doConvertIcon() {
 		}
 	}
 
-	err = writeJsonToStdOut(icons.IconConvertResult{File: resultFile})
+	err = writeJsonToStdOut(icons.IconConvertResult{Icons: resultFile})
 	if err != nil {
 		log.Fatalf("%+v\n", err)
 	}

@@ -11,14 +11,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func getTestDataPath(t *testing.T) string {
+	testDataPath, err := filepath.Abs(filepath.Join("..", "testData"))
+	assert.NoError(t, err)
+	return testDataPath
+}
+
 func TestCheckIcoImageSize(t *testing.T) {
-	_, err := ConvertIcon(filepath.Join("..", "testData", "icon.ico"), nil, "ico")
+	_, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "icon.ico")}, nil, "ico")
 	assert.NoError(t, err)
 }
 
 func TestIcnsToIco(t *testing.T) {
-	file, err := ConvertIcon(filepath.Join("..", "testData", "icon.icns"), nil, "ico")
+	files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "icon.icns")}, nil, "ico")
 	assert.NoError(t, err)
+	assert.Equal(t, 1, len(files))
+	file := files[0].File
+
 	assert.True(t, strings.HasSuffix(file, ".ico"))
 
 	data, err := ioutil.ReadFile(file)
@@ -30,8 +39,11 @@ func TestIcnsToIco(t *testing.T) {
 }
 
 func TestLargePngTo256Ico(t *testing.T) {
-	file, err := ConvertIcon(filepath.Join("..", "testData", "512x512.png"), nil, "ico")
+	files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "512x512.png")}, nil, "ico")
 	assert.NoError(t, err)
+	assert.Equal(t, 1, len(files))
+	file := files[0].File
+
 	assert.True(t, strings.HasSuffix(file, ".ico"))
 
 	reader, err := os.Open(file)

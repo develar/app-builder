@@ -9,7 +9,7 @@ if [ -z "$GITHUB_TOKEN" ] ; then
 fi
 
 NAME=app-builder
-VERSION=0.5.0
+VERSION=0.6.0
 
 OUT_DIR="$BASEDIR/dist/out"
 rm -rf "$OUT_DIR"
@@ -33,5 +33,6 @@ publish "windows386" win-ia32
 publish "windowsamd64" win-x64
 
 publish "linuxarm7" linux-armv7
+publish "linuxarm64" linux-armv8
 
 tool-releaser develar/app-builder "v$VERSION" master "" "$OUT_DIR/*.7z"

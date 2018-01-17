@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-func CollectIcons(sourceDir string) (*IconListResult, error) {
+func CollectIcons(sourceDir string) ([]IconInfo, error) {
 	dir, err := os.Open(sourceDir)
 	if err != nil {
 		return nil, err
@@ -30,15 +30,13 @@ func CollectIcons(sourceDir string) (*IconListResult, error) {
 	}
 
 	var result []IconInfo
-	maxSize := 0
-	maxIconPath := ""
+	re := regexp.MustCompile("[0-9]+")
 	for _, file := range files {
 		name := file
 		if !(strings.HasSuffix(name, ".png") || strings.HasSuffix(name, ".PNG")) {
 			continue
 		}
 
-		re := regexp.MustCompile("[0-9]+")
 		sizeString := re.FindString(name)
 		if sizeString == "" {
 			continue
@@ -52,11 +50,6 @@ func CollectIcons(sourceDir string) (*IconListResult, error) {
 
 		iconPath := filepath.Join(sourceDir, name)
 		result = append(result, IconInfo{iconPath, size})
-
-		if size > maxSize {
-			maxSize = size
-			maxIconPath = iconPath
-		}
 	}
 
 	if len(result) == 0 {
@@ -65,9 +58,5 @@ func CollectIcons(sourceDir string) (*IconListResult, error) {
 
 	sort.Slice(result, func(i, j int) bool { return result[i].Size < result[j].Size })
 
-	return &IconListResult{
-		MaxIconPath: maxIconPath,
-		MaxIconSize: maxSize,
-		Icons:       result,
-	}, nil
+	return result, nil
 }

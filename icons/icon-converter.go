@@ -15,66 +15,60 @@ import (
 
 // returns file if exists, null if file not exists, or error if unknown error
 func resolveSourceFileOrNull(sourceFile string, roots []string) (string, os.FileInfo, error) {
-	absolutePath, err := filepath.Abs(sourceFile)
-	if err == nil {
-		fileInfo, err := os.Stat(absolutePath)
+	if filepath.IsAbs(sourceFile) {
+		cleanPath := filepath.Clean(sourceFile)
+		fileInfo, err := os.Stat(cleanPath)
 		if err == nil {
-			return absolutePath, fileInfo, nil
+			return cleanPath, fileInfo, nil
 		}
-
-		log.WithFields(log.Fields{
-			"path":  absolutePath,
-			"error": err,
-		}).Debug("tried specified path, but got error")
-
-		if !os.IsNotExist(err) {
-			return "", nil, errors.WithStack(err)
-		}
+		return "", nil, errors.WithStack(err)
 	}
 
-	log.WithFields(log.Fields{
-		"path":  sourceFile,
-		"error": err,
-	}).Debug("tried to convert path to absolute, but got error")
-
-	if !filepath.IsAbs(sourceFile) {
-		for _, root := range roots {
-			resolvedPath := filepath.Join(root, sourceFile)
-			fileInfo, err := os.Stat(resolvedPath)
-			if err == nil {
-				return resolvedPath, fileInfo, nil
-			} else {
-				log.WithFields(log.Fields{
-					"path":  resolvedPath,
-					"error": err,
-				}).Debug("tried resolved path, but got error")
-			}
+	for _, root := range roots {
+		resolvedPath := filepath.Join(root, sourceFile)
+		fileInfo, err := os.Stat(resolvedPath)
+		if err == nil {
+			return resolvedPath, fileInfo, nil
+		} else {
+			log.WithFields(log.Fields{
+				"path":  resolvedPath,
+				"error": err,
+			}).Debug("tried resolved path, but got error")
 		}
 	}
 
 	return "", nil, nil
 }
 
-func resolveSourceFile(sourceFile string, roots []string, extraExtension string) (string, os.FileInfo, error) {
-	resolvedPath, fileInfo, err := resolveSourceFileOrNull(sourceFile, roots)
-	if err != nil {
-		return "", nil, errors.WithStack(err)
-	}
-	if fileInfo != nil {
-		return resolvedPath, fileInfo, nil
-	}
-
-	if extraExtension != "" {
-		resolvedPath, fileInfo, err = resolveSourceFileOrNull(sourceFile+extraExtension, roots)
+func resolveSourceFile(sourceFiles []string, roots []string, extraExtension string) (string, os.FileInfo, error) {
+	for _, sourceFile := range sourceFiles {
+		resolvedPath, fileInfo, err := resolveSourceFileOrNull(sourceFile, roots)
 		if err != nil {
 			return "", nil, errors.WithStack(err)
 		}
 		if fileInfo != nil {
 			return resolvedPath, fileInfo, nil
 		}
+
+		if extraExtension != "" {
+			var candidate string
+			if extraExtension == ".png" && sourceFile == "icons" {
+				candidate = "icon.png"
+			} else {
+				candidate = sourceFile + extraExtension
+			}
+
+			resolvedPath, fileInfo, err = resolveSourceFileOrNull(candidate, roots)
+			if err != nil {
+				return "", nil, errors.WithStack(err)
+			}
+			if fileInfo != nil {
+				return resolvedPath, fileInfo, nil
+			}
+		}
 	}
 
-	return "", nil, fmt.Errorf("icon source %s not found", sourceFile)
+	return "", nil, errors.Errorf("icon source \"%s\" not found", strings.Join(sourceFiles, ", "))
 }
 
 type InputFileInfo struct {
@@ -124,53 +118,72 @@ func validateImageSize(file string, recommendedMinSize int) error {
 	return NewImageSizeError(file, recommendedMinSize)
 }
 
-func ConvertIcon(sourceFile string, roots []string, outputFormat string) (string, error) {
-	// allowed to specify path to icns without extension, so, if file not resolved, try to add ".icns" extension
-	outExt := "." + outputFormat
-	resolvedPath, fileInfo, err := resolveSourceFile(sourceFile, roots, outExt)
-	if err != nil {
-		return "", errors.WithStack(err)
+func outputFormatToSingleFileExtension(outputFormat string) string {
+	if outputFormat == "set" {
+		return ".png"
 	}
+	return "." + outputFormat
+}
 
-	sourceFile = resolvedPath
+func ConvertIcon(sourceFiles []string, roots []string, outputFormat string) ([]IconInfo, error) {
+	// allowed to specify path to icns without extension, so, if file not resolved, try to add ".icns" extension
+	outExt := outputFormatToSingleFileExtension(outputFormat)
+	resolvedPath, fileInfo, err := resolveSourceFile(sourceFiles, roots, outExt)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 
 	var inputInfo InputFileInfo
 	inputInfo.SizeToPath = make(map[int]string)
 
-	isOutputFormatIco := outputFormat == "ico"
-	if isOutputFormatIco {
-		inputInfo.recommendedMinSize = 256
-	} else {
+	if outputFormat == "icns" {
 		inputInfo.recommendedMinSize = 512
+	} else {
+		inputInfo.recommendedMinSize = 256
 	}
 
+	isOutputFormatIco := outputFormat == "ico"
 	if strings.HasSuffix(resolvedPath, outExt) {
-		if isOutputFormatIco {
+		if outputFormat != "icns" {
 			err = validateImageSize(resolvedPath, inputInfo.recommendedMinSize)
 			if err != nil {
-				return "", errors.WithStack(err)
+				return nil, errors.WithStack(err)
 			}
 		}
 
-		return resolvedPath, nil
+		// size not required in this case
+		return []IconInfo{{File: resolvedPath}}, nil
 	}
 
 	if fileInfo.IsDir() {
-		icons, err := CollectIcons(sourceFile)
+		icons, err := CollectIcons(resolvedPath)
 		if err != nil {
-			return "", errors.WithStack(err)
+			return nil, errors.WithStack(err)
 		}
 
-		for _, file := range icons.Icons {
+		if outputFormat == "set" {
+			return icons, nil
+		}
+
+		for _, file := range icons {
 			inputInfo.SizeToPath[file.Size] = file.File
 		}
 
-		inputInfo.MaxIconPath = icons.MaxIconPath
-		inputInfo.MaxIconSize = icons.MaxIconSize
+		maxIcon := icons[len(icons)-1]
+		inputInfo.MaxIconPath = maxIcon.File
+		inputInfo.MaxIconSize = maxIcon.Size
 	} else {
-		maxImage, err := loadImage(sourceFile, inputInfo.recommendedMinSize)
+		if outputFormat == "set" && strings.HasSuffix(resolvedPath, ".icns") {
+			result, err := ConvertIcnsToPng(resolvedPath)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+			return result, nil
+		}
+
+		maxImage, err := loadImage(resolvedPath, inputInfo.recommendedMinSize)
 		if err != nil {
-			return "", errors.WithStack(err)
+			return nil, errors.WithStack(err)
 		}
 
 		if isOutputFormatIco && maxImage.Bounds().Max.X > 256 {
@@ -180,29 +193,36 @@ func ConvertIcon(sourceFile string, roots []string, outputFormat string) (string
 
 		inputInfo.MaxIconSize = maxImage.Bounds().Max.X
 		inputInfo.maxImage = maxImage
-		inputInfo.SizeToPath[inputInfo.MaxIconSize] = sourceFile
+		inputInfo.SizeToPath[inputInfo.MaxIconSize] = resolvedPath
 	}
 
 	switch outputFormat {
 	case "icns":
-		return ConvertToIcns(inputInfo)
+		file, err := ConvertToIcns(inputInfo)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		return []IconInfo{{File: file}}, err
 
 	case "ico":
 		maxImage, err := inputInfo.GetMaxImage()
 		if err != nil {
-			return "", errors.WithStack(err)
+			return nil, errors.WithStack(err)
 		}
 
 		outFile, err := util.TempFile("", outExt)
 		if err != nil {
-			return "", errors.WithStack(err)
+			return nil, errors.WithStack(err)
 		}
 
 		err = SaveImage2(maxImage, outFile, ICO)
-		return outFile.Name(), err
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+		return []IconInfo{{File: outFile.Name()}}, nil
 
 	default:
-		return "", fmt.Errorf("unknown output format %s", sourceFile)
+		return nil, fmt.Errorf("unknown output format %s", resolvedPath)
 	}
 }
 
@@ -213,7 +233,7 @@ func loadImage(sourceFile string, recommendedMinSize int) (image.Image, error) {
 	}
 
 	if result.Bounds().Max.X < recommendedMinSize || result.Bounds().Max.Y < recommendedMinSize {
-		return nil, NewImageSizeError(sourceFile, recommendedMinSize)
+		return nil, errors.WithStack(NewImageSizeError(sourceFile, recommendedMinSize))
 	}
 
 	return result, nil

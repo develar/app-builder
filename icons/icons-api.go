@@ -20,14 +20,8 @@ type IconInfo struct {
 	Size int    `json:"size"`
 }
 
-type IconListResult struct {
-	MaxIconPath string     `json:"maxIconPath"`
-	MaxIconSize int        `json:"maxIconSize"`
-	Icons       []IconInfo `json:"icons"`
-}
-
 type IconConvertResult struct {
-	File string `json:"file"`
+	Icons []IconInfo `json:"icons"`
 }
 
 type MisConfigurationError struct {
