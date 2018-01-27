@@ -8,15 +8,12 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/develar/app-builder/util"
 )
 
 func CollectIcons(sourceDir string) ([]IconInfo, error) {
-	dir, err := os.Open(sourceDir)
-	if err != nil {
-		return nil, err
-	}
-
-	files, err := dir.Readdirnames(0)
+	files, err := util.ReadDirContent(sourceDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, fmt.Errorf("icon directory %s doesn't exist", sourceDir)

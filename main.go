@@ -11,11 +11,12 @@ import (
 	"github.com/develar/app-builder/asar"
 	"github.com/develar/app-builder/blockmap"
 	"github.com/develar/app-builder/icons"
+	"github.com/develar/app-builder/util"
 	"github.com/pkg/errors"
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("0.6.0")
+	app = kingpin.New("app-builder", "app-builder").Version("0.6.1")
 
 	convertIcon          = app.Command("icon", "create ICNS or ICO or icon set from PNG files")
 	convertIconSources   = convertIcon.Flag("input", "input directory or file").Short('i').Required().Strings()
@@ -29,6 +30,10 @@ var (
 
 	buildAsar        = app.Command("asar", "")
 	buildAsarOutFile = buildAsar.Flag("output", "").Required().String()
+
+	copyDirCommand     = app.Command("copy", "")
+	copyDirSource      = copyDirCommand.Flag("from", "").Required().Short('f').String()
+	copyDirDestination = copyDirCommand.Flag("to", "").Required().Short('t').String()
 )
 
 func main() {
@@ -51,6 +56,12 @@ func main() {
 
 	case buildBlockmap.FullCommand():
 		err := doBuildBlockMap()
+		if err != nil {
+			log.Fatalf("%+v\n", err)
+		}
+
+	case copyDirCommand.FullCommand():
+		err := util.CopyDirOrFile(*copyDirSource, *copyDirDestination)
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
