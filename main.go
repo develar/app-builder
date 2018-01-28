@@ -1,9 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"os/exec"
+	"sync"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
@@ -44,6 +48,14 @@ func main() {
 		log.SetLevel(log.DebugLevel)
 	}
 
+	if os.Getenv("SZA_PATH") != "" {
+		err := compress()
+		if err != nil {
+			log.Fatalf("%+v\n", err)
+		}
+		return
+	}
+
 	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
 	case convertIcon.FullCommand():
 		doConvertIcon()
@@ -66,6 +78,72 @@ func main() {
 			log.Fatalf("%+v\n", err)
 		}
 	}
+}
+
+func getEnvOrDefault(envName string, defaultValue string) string {
+	result := os.Getenv(envName)
+	if result == "" {
+		return defaultValue
+	} else {
+		return result
+	}
+}
+
+func compress() error {
+	args := []string{"a", "-si", "-so", "-t" + getEnvOrDefault("SZA_ARCHIVE_TYPE", "xz"), "-mx" + getEnvOrDefault("SZA_COMPRESSION_LEVEL", "9"), "dummy"}
+	args = append(args, os.Args[1:]...)
+
+
+	//err := syscall.Exec(getEnvOrDefault("SZA_PATH", "7za"), args, os.Environ())
+	//	if err != nil {
+	//		return errors.WithStack(err)
+	//	}
+
+	command := exec.Command(getEnvOrDefault("SZA_PATH", "7za"), args...)
+	command.Stderr = os.Stderr
+
+	stdin, err := command.StdinPipe()
+	if nil != err {
+		return errors.WithStack(err)
+	}
+
+	stdout, err := command.StdoutPipe()
+	if nil != err {
+		return errors.WithStack(err)
+	}
+
+	err = command.Start()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(2)
+	go func() {
+		defer waitGroup.Done()
+		defer stdin.Close()
+		io.Copy(stdin, os.Stdin)
+	}()
+
+	go func() {
+		defer waitGroup.Done()
+		io.Copy(os.Stdout, stdout)
+	}()
+
+	waitGroup.Wait()
+	err = command.Wait()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+func populateStdin(str string) func(io.WriteCloser) {
+    return func(stdin io.WriteCloser) {
+        defer stdin.Close()
+        io.Copy(stdin, bytes.NewBufferString(str))
+    }
 }
 
 func doConvertIcon() {
