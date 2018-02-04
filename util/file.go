@@ -2,8 +2,11 @@ package util
 
 import (
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
+	"syscall"
 
 	"github.com/pkg/errors"
 )
@@ -37,6 +40,40 @@ func closeAndCheckError(err error, closable io.Closer) error {
 	if closeErr != nil {
 		return errors.WithStack(closeErr)
 	}
+	return nil
+}
+
+func RemoveByGlob(fileGlob string) error {
+	if !strings.HasSuffix(fileGlob, "*") {
+		return errors.WithStack(os.RemoveAll(fileGlob))
+	}
+
+	dir := filepath.Dir(fileGlob)
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	for _, file := range files {
+		matched, err := filepath.Match(fileGlob, file.Name())
+		if err != nil {
+			return err
+		}
+		if !matched {
+			continue
+		}
+
+		absoluteChildFile := filepath.Join(dir, file.Name())
+		if file.IsDir() {
+			err = os.RemoveAll(absoluteChildFile)
+		} else {
+			err = syscall.Unlink(absoluteChildFile)
+		}
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

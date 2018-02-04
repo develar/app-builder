@@ -1,12 +1,12 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"sync"
 
 	"github.com/alecthomas/kingpin"
@@ -27,10 +27,10 @@ var (
 	convertIconOutFormat = convertIcon.Flag("format", "output format").Short('f').Required().Enum("icns", "ico", "set")
 	convertIconRoots     = convertIcon.Flag("root", "base directory to resolve relative path").Short('r').Strings()
 
-	buildBlockmap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
-	buildBlockmapInFile      = buildBlockmap.Flag("input", "input file").Short('i').Required().String()
-	buildBlockmapOutFile     = buildBlockmap.Flag("output", "output file").Short('o').String()
-	buildBlockmapCompression = buildBlockmap.Flag("compression", "compression, one of: gzip, deflate").Short('c').Default("gzip").Enum("gzip", "deflate")
+	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
+	buildBlockMapInFile      = buildBlockMap.Flag("input", "input file").Short('i').Required().String()
+	buildBlockMapOutFile     = buildBlockMap.Flag("output", "output file").Short('o').String()
+	buildBlockMapCompression = buildBlockMap.Flag("compression", "compression, one of: gzip, deflate").Short('c').Default("gzip").Enum("gzip", "deflate")
 
 	buildAsar        = app.Command("asar", "")
 	buildAsarOutFile = buildAsar.Flag("output", "").Required().String()
@@ -38,6 +38,9 @@ var (
 	copyDirCommand     = app.Command("copy", "")
 	copyDirSource      = copyDirCommand.Flag("from", "").Required().Short('f').String()
 	copyDirDestination = copyDirCommand.Flag("to", "").Required().Short('t').String()
+
+	cleanupSnapCommand = app.Command("clean-snap", "")
+	cleanupSnapCommandDir = cleanupSnapCommand.Flag("dir", "").Required().String()
 )
 
 func main() {
@@ -66,8 +69,14 @@ func main() {
 			log.Fatalf("%+v\n", err)
 		}
 
-	case buildBlockmap.FullCommand():
+	case buildBlockMap.FullCommand():
 		err := doBuildBlockMap()
+		if err != nil {
+			log.Fatalf("%+v\n", err)
+		}
+
+	case cleanupSnapCommand.FullCommand():
+		err := cleanUpSnap(*cleanupSnapCommandDir)
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
@@ -78,6 +87,40 @@ func main() {
 			log.Fatalf("%+v\n", err)
 		}
 	}
+}
+
+func cleanUpSnap(dir string) (error) {
+	unnecessaryFiles := []string{
+		"usr/share/doc",
+		"usr/share/man",
+		"usr/share/icons",
+		"usr/share/bash-completion",
+		"usr/share/lintian",
+		"usr/share/dh-python",
+		"usr/share/python3",
+
+		"usr/lib/python*",
+		"usr/bin/python*",
+	}
+
+	sem := make(chan bool, 4)
+	for _, file := range unnecessaryFiles {
+		sem <- true
+		go func() {
+			defer func() { <-sem }()
+			err := util.RemoveByGlob(filepath.Join(dir, file))
+			log.Fatalf("%+v\n", errors.WithStack(err))
+			if err != nil {
+				log.Fatalf("%+v\n", errors.WithStack(err))
+			}
+		}()
+	}
+
+	for i := 0; i < cap(sem); i++ {
+		sem <- true
+	}
+
+	return nil
 }
 
 func getEnvOrDefault(envName string, defaultValue string) string {
@@ -139,13 +182,6 @@ func compress() error {
 	return nil
 }
 
-func populateStdin(str string) func(io.WriteCloser) {
-    return func(stdin io.WriteCloser) {
-        defer stdin.Close()
-        io.Copy(stdin, bytes.NewBufferString(str))
-    }
-}
-
 func doConvertIcon() {
 	resultFile, err := icons.ConvertIcon(*convertIconSources, *convertIconRoots, *convertIconOutFormat)
 	if err != nil {
@@ -181,16 +217,16 @@ func printAppError(error icons.ImageError) {
 
 func doBuildBlockMap() error {
 	var compressionFormat blockmap.CompressionFormat
-	switch *buildBlockmapCompression {
+	switch *buildBlockMapCompression {
 	case "gzip":
 		compressionFormat = blockmap.GZIP
 	case "deflate":
 		compressionFormat = blockmap.DEFLATE
 	default:
-		return fmt.Errorf("unknown compression format %s", *buildBlockmapCompression)
+		return fmt.Errorf("unknown compression format %s", *buildBlockMapCompression)
 	}
 
-	inputInfo, err := blockmap.BuildBlockMap(*buildBlockmapInFile, blockmap.DefaultChunkerConfiguration, compressionFormat, *buildBlockmapOutFile)
+	inputInfo, err := blockmap.BuildBlockMap(*buildBlockMapInFile, blockmap.DefaultChunkerConfiguration, compressionFormat, *buildBlockMapOutFile)
 	if err != nil {
 		return err
 	}
