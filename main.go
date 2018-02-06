@@ -14,13 +14,14 @@ import (
 	logCli "github.com/apex/log/handlers/cli"
 	"github.com/develar/app-builder/asar"
 	"github.com/develar/app-builder/blockmap"
+	"github.com/develar/app-builder/download"
 	"github.com/develar/app-builder/icons"
 	"github.com/develar/app-builder/util"
 	"github.com/pkg/errors"
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("0.6.1")
+	app = kingpin.New("app-builder", "app-builder").Version("1.0.4")
 
 	convertIcon          = app.Command("icon", "create ICNS or ICO or icon set from PNG files")
 	convertIconSources   = convertIcon.Flag("input", "input directory or file").Short('i').Required().Strings()
@@ -39,8 +40,13 @@ var (
 	copyDirSource      = copyDirCommand.Flag("from", "").Required().Short('f').String()
 	copyDirDestination = copyDirCommand.Flag("to", "").Required().Short('t').String()
 
-	cleanupSnapCommand = app.Command("clean-snap", "")
-	cleanupSnapCommandDir = cleanupSnapCommand.Flag("dir", "").Required().String()
+	//cleanupSnapCommand = app.Command("clean-snap", "")
+	//cleanupSnapCommandDir = cleanupSnapCommand.Flag("dir", "").Required().String()
+
+	downloadCommand = app.Command("download", "")
+	downloadCommandUrl = downloadCommand.Flag("url", "The URL").Short('u').Required().String()
+	downloadCommandOutput = downloadCommand.Flag("output", "The output file").Short('o').Required().String()
+	downloadCommandChecksum = downloadCommand.Flag("sha512", "The expected sha512 of file").String()
 )
 
 func main() {
@@ -75,8 +81,14 @@ func main() {
 			log.Fatalf("%+v\n", err)
 		}
 
-	case cleanupSnapCommand.FullCommand():
-		err := cleanUpSnap(*cleanupSnapCommandDir)
+	case buildBlockMap.FullCommand():
+		err := doBuildBlockMap()
+		if err != nil {
+			log.Fatalf("%+v\n", err)
+		}
+
+	case downloadCommand.FullCommand():
+		err := download.Download(*downloadCommandUrl, *downloadCommandOutput, *downloadCommandChecksum)
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}

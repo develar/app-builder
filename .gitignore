@@ -2,3 +2,6 @@
 .idea/workspace.xml
 dist/
 vendor/
+
+app-builder-bin/**/app-builder
+app-builder-bin/win/**/app-builder.exe

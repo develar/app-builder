@@ -200,8 +200,7 @@ func computeBlocks(inFile string, configuration ChunkerConfiguration) (*[]string
 			return nil, nil, nil, err
 		}
 
-		rr := io.TeeReader(io.LimitReader(copyBuffer, int64(copyLength)), inputHash)
-		_, err = io.Copy(chunkHash, rr)
+		_, err = io.Copy(chunkHash, io.TeeReader(io.LimitReader(copyBuffer, int64(copyLength)), inputHash))
 		if err != nil {
 			return nil, nil, nil, errors.New("error writing hash")
 		}

@@ -18,7 +18,7 @@ func ReadDirContent(dirPath string) ([]string, error) {
 	}
 
 	files, err := dir.Readdirnames(0)
-	return files, closeAndCheckError(err, dir)
+	return files, CloseAndCheckError(err, dir)
 }
 
 func ReadFile(file string, size int) ([]byte, error) {
@@ -29,10 +29,10 @@ func ReadFile(file string, size int) ([]byte, error) {
 
 	result := make([]byte, size)
 	_, err = reader.Read(result)
-	return result, closeAndCheckError(err, reader)
+	return result, CloseAndCheckError(err, reader)
 }
 
-func closeAndCheckError(err error, closable io.Closer) error {
+func CloseAndCheckError(err error, closable io.Closer) error {
 	closeErr := closable.Close()
 	if err != nil {
 		return errors.WithStack(err)
