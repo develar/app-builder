@@ -1,7 +1,7 @@
 {
   "name": "app-builder-bin",
   "description": "app-builder precompiled binaries",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "files": [
     "*.js",
     "index.d.ts"
@@ -9,9 +9,9 @@
   "license": "MIT",
   "repository": "develar/app-builder",
   "optionalDependencies": {
-    "app-builder-bin-mac": "1.0.4",
-    "app-builder-bin-win": "1.0.4",
-    "app-builder-bin-linux": "1.0.4"
+    "app-builder-bin-mac": "1.1.0",
+    "app-builder-bin-win": "1.1.0",
+    "app-builder-bin-linux": "1.1.0"
   },
   "keywords": [
     "7zip",

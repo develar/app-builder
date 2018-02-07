@@ -11,17 +11,18 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	logCli "github.com/apex/log/handlers/cli"
 	"github.com/develar/app-builder/asar"
 	"github.com/develar/app-builder/blockmap"
 	"github.com/develar/app-builder/download"
 	"github.com/develar/app-builder/icons"
+	"github.com/develar/app-builder/log-cli"
 	"github.com/develar/app-builder/util"
 	"github.com/pkg/errors"
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("1.0.4")
+	appVersion = "1.1.0"
+	app        = kingpin.New("app-builder", "app-builder").Version(appVersion)
 
 	convertIcon          = app.Command("icon", "create ICNS or ICO or icon set from PNG files")
 	convertIconSources   = convertIcon.Flag("input", "input directory or file").Short('i').Required().Strings()
@@ -43,21 +44,30 @@ var (
 	//cleanupSnapCommand = app.Command("clean-snap", "")
 	//cleanupSnapCommandDir = cleanupSnapCommand.Flag("dir", "").Required().String()
 
-	downloadCommand = app.Command("download", "")
-	downloadCommandUrl = downloadCommand.Flag("url", "The URL").Short('u').Required().String()
-	downloadCommandOutput = downloadCommand.Flag("output", "The output file").Short('o').Required().String()
+	downloadCommand         = app.Command("download", "")
+	downloadCommandUrl      = downloadCommand.Flag("url", "The URL").Short('u').Required().String()
+	downloadCommandOutput   = downloadCommand.Flag("output", "The output file").Short('o').Required().String()
 	downloadCommandChecksum = downloadCommand.Flag("sha512", "The expected sha512 of file").String()
+
+	downloadArtifactCommand         = app.Command("download-artifact", "Download, unpack and cache artifact from GitHub.")
+	downloadArtifactCommandName     = downloadArtifactCommand.Flag("name", "The artifact name.").Short('n').Required().String()
+	downloadArtifactCommandUrl      = downloadArtifactCommand.Flag("url", "The artifact URL.").Short('u').Required().String()
+	downloadArtifactCommandChecksum = downloadArtifactCommand.Flag("sha512", "The expected sha512 of file.").String()
 )
 
 func main() {
-	log.SetHandler(logCli.Default)
+	// otherwise error: duplicate long flag --version, try --help
+	// kingpin cannot correctly process it
+	app.VersionFlag = nil
+
+	log.SetHandler(log_cli.Default)
 
 	debugEnv, isDebugDefined := os.LookupEnv("DEBUG")
 	if isDebugDefined && debugEnv != "false" {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	if os.Getenv("SZA_PATH") != "" {
+	if os.Getenv("SZA_ARCHIVE_TYPE") != "" {
 		err := compress()
 		if err != nil {
 			log.Fatalf("%+v\n", err)
@@ -89,6 +99,16 @@ func main() {
 
 	case downloadCommand.FullCommand():
 		err := download.Download(*downloadCommandUrl, *downloadCommandOutput, *downloadCommandChecksum)
+		if err != nil {
+			log.Fatalf("%+v\n", err)
+		}
+
+	case downloadArtifactCommand.FullCommand():
+		dirPath, err := download.DownloadArtifact(*downloadArtifactCommandName, *downloadArtifactCommandUrl, *downloadArtifactCommandChecksum)
+		if err != nil {
+			log.Fatalf("%+v\n", err)
+		}
+		_, err = os.Stdout.Write([]byte(dirPath))
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
@@ -135,26 +155,11 @@ func cleanUpSnap(dir string) (error) {
 	return nil
 }
 
-func getEnvOrDefault(envName string, defaultValue string) string {
-	result := os.Getenv(envName)
-	if result == "" {
-		return defaultValue
-	} else {
-		return result
-	}
-}
-
 func compress() error {
-	args := []string{"a", "-si", "-so", "-t" + getEnvOrDefault("SZA_ARCHIVE_TYPE", "xz"), "-mx" + getEnvOrDefault("SZA_COMPRESSION_LEVEL", "9"), "dummy"}
+	args := []string{"a", "-si", "-so", "-t" + util.GetEnvOrDefault("SZA_ARCHIVE_TYPE", "xz"), "-mx" + util.GetEnvOrDefault("SZA_COMPRESSION_LEVEL", "9"), "dummy"}
 	args = append(args, os.Args[1:]...)
 
-
-	//err := syscall.Exec(getEnvOrDefault("SZA_PATH", "7za"), args, os.Environ())
-	//	if err != nil {
-	//		return errors.WithStack(err)
-	//	}
-
-	command := exec.Command(getEnvOrDefault("SZA_PATH", "7za"), args...)
+	command := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), args...)
 	command.Stderr = os.Stderr
 
 	stdin, err := command.StdinPipe()
