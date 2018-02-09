@@ -11,6 +11,7 @@ import (
 	"sync"
 	"syscall"
 
+	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/mitchellh/go-homedir"
 	"github.com/pkg/errors"
@@ -21,13 +22,24 @@ import (
 const (
 	maxRedirects = 10
 	minPartSize  = 5 * 1024 * 1024
-	maxPartCount  = 8
+	maxPartCount = 8
 	userAgent    = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/604.5.6 (KHTML, like Gecko) Version/11.0.3 Safari/604.5.6"
 )
 
+func ConfigureCommand(app *kingpin.Application) {
+	command := app.Command("download", "Download file.")
+	fileUrl := command.Flag("url", "The URL.").Short('u').Required().String()
+	output := command.Flag("output", "The output file.").Short('o').Required().String()
+	sha512 := command.Flag("sha512", "The expected sha512 of file.").String()
+
+	command.Action(func(context *kingpin.ParseContext) error {
+		return errors.WithStack(Download(*fileUrl, *output, *sha512))
+	})
+}
+
 func Download(url string, output string, sha512 string) error {
 	dir := filepath.Dir(output)
-	err := os.MkdirAll(dir, 0700)
+	err := os.MkdirAll(dir, 0755)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -102,7 +114,7 @@ func follow(initialUrl, userAgent, outFileName string, transport *http.Transport
 		log.WithFields(log.Fields{
 			"initialUrl": initialUrl,
 			"currentUrl": currentUrl,
-		}).Debug("Computing effective URL")
+		}).Debug("computing effective URL")
 		req, err := http.NewRequest(http.MethodGet, currentUrl, nil)
 		if err != nil {
 			return nil, errors.WithStack(err)

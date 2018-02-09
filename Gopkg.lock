@@ -30,10 +30,7 @@
 
 [[projects]]
   name = "github.com/apex/log"
-  packages = [
-    ".",
-    "handlers/cli"
-  ]
+  packages = ["."]
   revision = "0296d6eb16bb28f8a0c55668affcf4876dc269be"
   version = "v1.0.0"
 
@@ -60,6 +57,12 @@
   name = "github.com/jsummers/gobmp"
   packages = ["."]
   revision = "e2ba15ffa76e4db3c90ae9e7c4b1c32a411207a4"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/mcuadros/go-version"
+  packages = ["."]
+  revision = "88e56e02bea1c203c99222c365fa52a69996ccac"
 
 [[projects]]
   branch = "master"
@@ -110,6 +113,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "955d437d6b16944ee7ccb7b645760616eef8f7f464f3bc82706ec80e06a5e056"
+  inputs-digest = "c488ee6fdab4d75184d2478839a8bd7891f0359e6d9731bab5bc7751f0080e1a"
   solver-name = "gps-cdcl"
   solver-version = 1

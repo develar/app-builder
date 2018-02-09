@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"sync"
 
 	"github.com/alecthomas/kingpin"
@@ -14,14 +13,16 @@ import (
 	"github.com/develar/app-builder/asar"
 	"github.com/develar/app-builder/blockmap"
 	"github.com/develar/app-builder/download"
+	"github.com/develar/app-builder/errors"
+	"github.com/develar/app-builder/fs"
 	"github.com/develar/app-builder/icons"
 	"github.com/develar/app-builder/log-cli"
+	"github.com/develar/app-builder/snap"
 	"github.com/develar/app-builder/util"
-	"github.com/pkg/errors"
 )
 
 var (
-	appVersion = "1.1.0"
+	appVersion = "1.2.1"
 	app        = kingpin.New("app-builder", "app-builder").Version(appVersion)
 
 	convertIcon          = app.Command("icon", "create ICNS or ICO or icon set from PNG files")
@@ -36,29 +37,13 @@ var (
 
 	buildAsar        = app.Command("asar", "")
 	buildAsarOutFile = buildAsar.Flag("output", "").Required().String()
-
-	copyDirCommand     = app.Command("copy", "")
-	copyDirSource      = copyDirCommand.Flag("from", "").Required().Short('f').String()
-	copyDirDestination = copyDirCommand.Flag("to", "").Required().Short('t').String()
-
-	//cleanupSnapCommand = app.Command("clean-snap", "")
-	//cleanupSnapCommandDir = cleanupSnapCommand.Flag("dir", "").Required().String()
-
-	downloadCommand         = app.Command("download", "")
-	downloadCommandUrl      = downloadCommand.Flag("url", "The URL").Short('u').Required().String()
-	downloadCommandOutput   = downloadCommand.Flag("output", "The output file").Short('o').Required().String()
-	downloadCommandChecksum = downloadCommand.Flag("sha512", "The expected sha512 of file").String()
-
-	downloadArtifactCommand         = app.Command("download-artifact", "Download, unpack and cache artifact from GitHub.")
-	downloadArtifactCommandName     = downloadArtifactCommand.Flag("name", "The artifact name.").Short('n').Required().String()
-	downloadArtifactCommandUrl      = downloadArtifactCommand.Flag("url", "The artifact URL.").Short('u').Required().String()
-	downloadArtifactCommandChecksum = downloadArtifactCommand.Flag("sha512", "The expected sha512 of file.").String()
 )
 
 func main() {
-	// otherwise error: duplicate long flag --version, try --help
-	// kingpin cannot correctly process it
-	app.VersionFlag = nil
+	download.ConfigureCommand(app)
+	download.ConfigureArtifactCommand(app)
+	ConfigureCopyCommand(app)
+	snap.ConfigureCommand(app)
 
 	log.SetHandler(log_cli.Default)
 
@@ -70,12 +55,17 @@ func main() {
 	if os.Getenv("SZA_ARCHIVE_TYPE") != "" {
 		err := compress()
 		if err != nil {
-			log.Fatalf("%+v\n", err)
+			errors.LogErrorAndExit(err)
 		}
 		return
 	}
 
-	switch kingpin.MustParse(app.Parse(os.Args[1:])) {
+	command, err := app.Parse(os.Args[1:])
+	if err != nil {
+		errors.LogErrorAndExit(err)
+	}
+
+	switch command {
 	case convertIcon.FullCommand():
 		doConvertIcon()
 
@@ -96,63 +86,20 @@ func main() {
 		if err != nil {
 			log.Fatalf("%+v\n", err)
 		}
-
-	case downloadCommand.FullCommand():
-		err := download.Download(*downloadCommandUrl, *downloadCommandOutput, *downloadCommandChecksum)
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
-
-	case downloadArtifactCommand.FullCommand():
-		dirPath, err := download.DownloadArtifact(*downloadArtifactCommandName, *downloadArtifactCommandUrl, *downloadArtifactCommandChecksum)
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
-		_, err = os.Stdout.Write([]byte(dirPath))
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
-
-	case copyDirCommand.FullCommand():
-		err := util.CopyDirOrFile(*copyDirSource, *copyDirDestination)
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
 	}
 }
 
-func cleanUpSnap(dir string) (error) {
-	unnecessaryFiles := []string{
-		"usr/share/doc",
-		"usr/share/man",
-		"usr/share/icons",
-		"usr/share/bash-completion",
-		"usr/share/lintian",
-		"usr/share/dh-python",
-		"usr/share/python3",
+func ConfigureCopyCommand(app *kingpin.Application) {
+	command := app.Command("copy", "Copy file or dir.")
+	from := command.Flag("from", "").Required().Short('f').String()
+	to := command.Flag("to", "").Required().Short('t').String()
+	isUseHardLinks := command.Flag("hard-link", "Whether to use hard-links if possible").Bool()
 
-		"usr/lib/python*",
-		"usr/bin/python*",
-	}
-
-	sem := make(chan bool, 4)
-	for _, file := range unnecessaryFiles {
-		sem <- true
-		go func() {
-			defer func() { <-sem }()
-			err := util.RemoveByGlob(filepath.Join(dir, file))
-			log.Fatalf("%+v\n", errors.WithStack(err))
-			if err != nil {
-				log.Fatalf("%+v\n", errors.WithStack(err))
-			}
-		}()
-	}
-
-	for i := 0; i < cap(sem); i++ {
-		sem <- true
-	}
-
-	return nil
+	command.Action(func(context *kingpin.ParseContext) error {
+		var fileCopier fs.FileCopier
+		fileCopier.IsUseHardLinks = *isUseHardLinks
+		return errors.WithStack(fileCopier.CopyDirOrFile(*to, *from))
+	})
 }
 
 func compress() error {

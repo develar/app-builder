@@ -1,7 +1,7 @@
 {
   "name": "app-builder-bin-linux",
   "description": "app-builder Linux binary",
-  "version": "1.1.0",
+  "version": "1.2.1",
   "license": "MIT",
   "repository": "develar/app-builder-bin",
   "files": [

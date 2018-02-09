@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/apex/log"
+	"github.com/develar/app-builder/fs"
 	"github.com/develar/app-builder/util"
 	"github.com/disintegration/imaging"
 	"github.com/pkg/errors"
@@ -93,7 +94,7 @@ func (t InputFileInfo) GetMaxImage() (image.Image, error) {
 }
 
 func validateImageSize(file string, recommendedMinSize int) error {
-	firstFileBytes, err := util.ReadFile(file, 512)
+	firstFileBytes, err := fs.ReadFile(file, 512)
 	if err != nil {
 		return errors.WithStack(err)
 	}
