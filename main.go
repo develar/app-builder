@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
+	"github.com/develar/app-builder/appimage"
 	"github.com/develar/app-builder/asar"
 	"github.com/develar/app-builder/blockmap"
 	"github.com/develar/app-builder/download"
@@ -22,13 +22,8 @@ import (
 )
 
 var (
-	appVersion = "1.2.1"
+	appVersion = "1.3.0"
 	app        = kingpin.New("app-builder", "app-builder").Version(appVersion)
-
-	convertIcon          = app.Command("icon", "create ICNS or ICO or icon set from PNG files")
-	convertIconSources   = convertIcon.Flag("input", "input directory or file").Short('i').Required().Strings()
-	convertIconOutFormat = convertIcon.Flag("format", "output format").Short('f').Required().Enum("icns", "ico", "set")
-	convertIconRoots     = convertIcon.Flag("root", "base directory to resolve relative path").Short('r').Strings()
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
 	buildBlockMapInFile      = buildBlockMap.Flag("input", "input file").Short('i').Required().String()
@@ -43,7 +38,9 @@ func main() {
 	download.ConfigureCommand(app)
 	download.ConfigureArtifactCommand(app)
 	ConfigureCopyCommand(app)
+	appimage.ConfigureCommand(app)
 	snap.ConfigureCommand(app)
+	icons.ConfigureCommand(app)
 
 	log.SetHandler(log_cli.Default)
 
@@ -66,9 +63,6 @@ func main() {
 	}
 
 	switch command {
-	case convertIcon.FullCommand():
-		doConvertIcon()
-
 	case buildAsar.FullCommand():
 		err := asar.BuildAsar(*buildAsarOutFile)
 		if err != nil {
@@ -98,7 +92,7 @@ func ConfigureCopyCommand(app *kingpin.Application) {
 	command.Action(func(context *kingpin.ParseContext) error {
 		var fileCopier fs.FileCopier
 		fileCopier.IsUseHardLinks = *isUseHardLinks
-		return errors.WithStack(fileCopier.CopyDirOrFile(*to, *from))
+		return errors.WithStack(fileCopier.CopyDirOrFile(*from, *to))
 	})
 }
 
@@ -146,39 +140,6 @@ func compress() error {
 	return nil
 }
 
-func doConvertIcon() {
-	resultFile, err := icons.ConvertIcon(*convertIconSources, *convertIconRoots, *convertIconOutFormat)
-	if err != nil {
-		log.Debugf("%+v\n", err)
-
-		switch t := errors.Cause(err).(type) {
-		default:
-			log.Fatalf("%+v\n", err)
-			return
-
-		case *icons.ImageSizeError:
-			printAppError(t)
-			return
-
-		case *icons.ImageFormatError:
-			printAppError(t)
-			return
-		}
-	}
-
-	err = writeJsonToStdOut(icons.IconConvertResult{Icons: resultFile})
-	if err != nil {
-		log.Fatalf("%+v\n", err)
-	}
-}
-
-func printAppError(error icons.ImageError) {
-	err := writeJsonToStdOut(icons.MisConfigurationError{Message: error.Error(), Code: error.ErrorCode()})
-	if err != nil {
-		log.Fatalf("%+v\n", err)
-	}
-}
-
 func doBuildBlockMap() error {
 	var compressionFormat blockmap.CompressionFormat
 	switch *buildBlockMapCompression {
@@ -195,18 +156,5 @@ func doBuildBlockMap() error {
 		return err
 	}
 
-	return writeJsonToStdOut(inputInfo)
-}
-
-func writeJsonToStdOut(v interface{}) error {
-	serializedInputInfo, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-	_, err = os.Stdout.Write(serializedInputInfo)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return util.WriteJsonToStdOut(inputInfo)
 }

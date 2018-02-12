@@ -88,7 +88,7 @@ func (fileCopier *FileCopier) copyDirOrFile(from string, to string, isCreatePare
 		} else {
 			err = os.Mkdir(to, fromInfo.Mode())
 		}
-		if err != nil {
+		if err != nil && !os.IsExist(err) {
 			return errors.WithStack(err)
 		}
 

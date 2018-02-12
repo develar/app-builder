@@ -10,6 +10,8 @@ cp dist/linux_arm64/app-builder app-builder-bin/linux/arm64/app-builder
 cp dist/windows_386/app-builder.exe app-builder-bin/win/ia32/app-builder.exe
 cp dist/windows_amd64/app-builder.exe app-builder-bin/win/x64/app-builder.exe
 
+ln -f readme.md app-builder-bin/readme.md
+
 npm publish app-builder-bin/linux
 npm publish app-builder-bin/mac
 npm publish app-builder-bin/win

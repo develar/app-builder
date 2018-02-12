@@ -31,6 +31,8 @@ var unnecessaryFiles = []string{
 	"usr/bin/python*",
 }
 
+// --enable-geoip leads to very slow fetching - it seems local sources are more slow.
+
 type SnapOptions struct {
 	appDir   *string
 	stageDir *string
@@ -58,7 +60,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		isUseDockerDefault = "true"
 	}
 
-	snapOptions := SnapOptions{
+	options := SnapOptions{
 		appDir:   command.Flag("app", "The app dir.").Short('a').Required().String(),
 		stageDir: command.Flag("stage", "The stage dir.").Short('s').Required().String(),
 		icon: command.Flag("icon", "The path to the icon.").String(),
@@ -85,13 +87,13 @@ func ConfigureCommand(app *kingpin.Application) {
 		}
 
 		isUseDocker, err := DetectIsUseDocker(*isUseDockerCommandArg, len(	resolvedTemplateDir) != 0)
-		err = Snap(resolvedTemplateDir, isUseDocker, snapOptions)
+		err = Snap(resolvedTemplateDir, isUseDocker, options)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
 		if *isRemoveStage {
-			err = os.RemoveAll(*snapOptions.stageDir)
+			err = os.RemoveAll(*options.stageDir)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -178,7 +180,7 @@ func buildWithoutDocker(isUseTemplateApp bool, options SnapOptions) error {
 	if isUseTemplateApp {
 		primeDir = stageDir
 	} else {
-		execute(exec.Command("snapcraft", "prime", "--enable-geoip", "--target-arch", *options.arch), stageDir)
+		util.Execute(exec.Command("snapcraft", "prime", "--target-arch", *options.arch), stageDir)
 		primeDir = filepath.Join(stageDir, "prime")
 		err := cleanUpSnap(primeDir)
 		if err != nil {
@@ -191,7 +193,7 @@ func buildWithoutDocker(isUseTemplateApp bool, options SnapOptions) error {
 		return errors.WithStack(err)
 	}
 
-	err = execute(exec.Command("snapcraft", "pack", primeDir, "--output", *options.output), stageDir)
+	err = util.Execute(exec.Command("snapcraft", "pack", primeDir, "--output", *options.output), stageDir)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -199,23 +201,11 @@ func buildWithoutDocker(isUseTemplateApp bool, options SnapOptions) error {
 	return nil
 }
 
-func execute(command *exec.Cmd, currentWorkingDirectory string) error {
-	log.WithFields(log.Fields{
-		"path": command.Path,
-		"args": command.Args,
-	}).Debug("execute command")
-
-	command.Dir = currentWorkingDirectory
-	command.Stdout = os.Stdout
-	command.Stderr = os.Stderr
-	return errors.WithStack(command.Run())
-}
-
 func buildUsingDocker(isUseTemplateApp bool, options SnapOptions) error {
 	stageDir := *options.stageDir
 
 	if isUseTemplateApp {
-		err := execute(exec.Command("docker", "run", "--rm",
+		err := util.Execute(exec.Command("docker", "run", "--rm",
 			"-v", filepath.Dir(*options.output)+":/out:delegated",
 			// cannot be "ro" because we mount stage/app, so, "delegated"
 			"-v", stageDir+":/stage:delegated",
@@ -231,7 +221,7 @@ func buildUsingDocker(isUseTemplateApp bool, options SnapOptions) error {
 	commands = append(commands,
 		"cp -r /stage /s/",
 		"cd /s",
-		"snapcraft prime --enable-geoip --target-arch " + *options.arch,
+		"snapcraft prime --target-arch " + *options.arch,
 		"rm -rf prime/"+strings.Join(unnecessaryFiles, " prime/"),
 		"mv /s/prime/* /tmp/final-stage/",
 		"snapcraft pack /tmp/final-stage --output /out/"+filepath.Base(*options.output),
@@ -239,7 +229,7 @@ func buildUsingDocker(isUseTemplateApp bool, options SnapOptions) error {
 
 	log.WithField("command", strings.Join(commands, "\n")).Debug("build snap using docker")
 
-	err := execute(exec.Command("docker", "run", "--rm",
+	err := util.Execute(exec.Command("docker", "run", "--rm",
 		"-v", filepath.Dir(*options.output)+":/out:delegated",
 		"-v", stageDir+":/stage:ro",
 		"-v", *options.appDir+":/tmp/final-stage/app:ro",

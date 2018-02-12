@@ -7,12 +7,44 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
+	"github.com/develar/app-builder/errors"
 	"github.com/develar/app-builder/fs"
 	"github.com/develar/app-builder/util"
 	"github.com/disintegration/imaging"
-	"github.com/pkg/errors"
 )
+
+func ConfigureCommand(app *kingpin.Application) {
+	command := app.Command("icon", "create ICNS or ICO or icon set from PNG files")
+	sources := command.Flag("input", "input directory or file").Short('i').Required().Strings()
+	iconOutFormat := command.Flag("format", "output format").Short('f').Required().Enum("icns", "ico", "set")
+	iconRoots := command.Flag("root", "base directory to resolve relative path").Short('r').Strings()
+
+	command.Action(func(context *kingpin.ParseContext) error {
+		resultFile, err := ConvertIcon(*sources, *iconRoots, *iconOutFormat)
+		if err != nil {
+			log.Debugf("%+v\n", err)
+
+			switch t := errors.Cause(err).(type) {
+			default:
+				return err
+
+			case *ImageSizeError:
+				return writeUserError(t)
+
+			case *ImageFormatError:
+				return writeUserError(t)
+			}
+		}
+
+		return util.WriteJsonToStdOut(IconConvertResult{Icons: resultFile})
+	})
+}
+
+func writeUserError(error ImageError) error {
+	return util.WriteJsonToStdOut(MisConfigurationError{Message: error.Error(), Code: error.ErrorCode()})
+}
 
 // returns file if exists, null if file not exists, or error if unknown error
 func resolveSourceFileOrNull(sourceFile string, roots []string) (string, os.FileInfo, error) {
@@ -30,6 +62,10 @@ func resolveSourceFileOrNull(sourceFile string, roots []string) (string, os.File
 		fileInfo, err := os.Stat(resolvedPath)
 		if err == nil {
 			return resolvedPath, fileInfo, nil
+		} else if os.IsNotExist(err) {
+			log.WithFields(log.Fields{
+				"path":  resolvedPath,
+			}).Debug("path doesn't exist")
 		} else {
 			log.WithFields(log.Fields{
 				"path":  resolvedPath,

@@ -25,6 +25,10 @@ func LogErrorAndExit(err error) {
 }
 
 func WithStack(err error) error {
+	if err == nil {
+		return nil
+	}
+
 	_, ok := err.(causer)
 	if ok {
 		return err

@@ -1,6 +1,7 @@
 package icons
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"io/ioutil"
@@ -11,7 +12,9 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/apex/log"
 	"github.com/develar/app-builder/util"
 	"github.com/disintegration/imaging"
 	"github.com/pkg/errors"
@@ -68,11 +71,31 @@ func ConvertIcnsToPng(inFile string) ([]IconInfo, error) {
 			}
 		}
 	} else {
-		outputBytes, err := exec.Command("icns2png", "--extract", "--output", tempDir, inFile).CombinedOutput()
-		output := string(outputBytes)
-		if err != nil {
-			fmt.Println(output)
-			return nil, errors.WithStack(err)
+		log.Debug("executing icns2png")
+		command := exec.Command("icns2png", "--extract", "--output", tempDir, inFile)
+
+		var b bytes.Buffer
+		command.Stdout = &b
+		command.Stderr = &b
+
+		var output string
+
+		done := make(chan error, 1)
+		go func() {
+			done <- command.Run()
+		}()
+		select {
+		case <-time.After(1 * time.Minute):
+			if err := command.Process.Kill(); err != nil {
+				log.WithError(err).Error("failed to kill")
+			}
+			return nil, errors.Errorf("process killed as timeout reached")
+		case err := <-done:
+			output = string(b.Bytes())
+			if err != nil {
+				log.Debug(output)
+				return nil, errors.WithStack(err)
+			}
 		}
 
 		namePrefix := strings.TrimSuffix(filepath.Base(inFile), filepath.Ext(inFile))
