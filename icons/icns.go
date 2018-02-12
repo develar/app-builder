@@ -9,8 +9,8 @@ import (
 	"io/ioutil"
 
 	"github.com/develar/app-builder/util"
+	"github.com/develar/errors"
 	"github.com/disintegration/imaging"
-	"github.com/pkg/errors"
 )
 
 //noinspection GoSnakeCaseUsage
@@ -150,9 +150,12 @@ func ReadIcns(reader *bufio.Reader) (map[string]SubImage, error) {
 		offset += 8
 		imageDataLength := int(icon.Length) - 8
 
-		icons[string(icon.Type[:])] = SubImage{
-			Offset: offset,
-			Length: imageDataLength,
+		osType := string(icon.Type[:])
+		if osType != "info" && osType != "TOC" && osType != "icnV" && osType != "name" {
+			icons[osType] = SubImage{
+				Offset: offset,
+				Length: imageDataLength,
+			}
 		}
 
 		offset += imageDataLength

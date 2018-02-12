@@ -9,9 +9,9 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/develar/app-builder/download"
-	"github.com/develar/app-builder/errors"
 	"github.com/develar/app-builder/fs"
 	"github.com/develar/app-builder/util"
+	"github.com/develar/errors"
 )
 
 //noinspection GoSnakeCaseUsage,SpellCheckingInspection
@@ -93,7 +93,7 @@ func AppImage(options AppImageOptions) error {
 		vendorToolDir = filepath.Join(appImageToolDir, "darwin")
 
 	} else {
-		vendorToolDir = filepath.Join(appImageToolDir, "linux-"+arch)
+		vendorToolDir = filepath.Join(appImageToolDir, "linux-"+goArchToNodeArch(runtime.GOARCH))
 	}
 
 	command := exec.Command(filepath.Join(vendorToolDir, "appimagetool"), args...)
@@ -131,5 +131,16 @@ func toAppImageArch(arch string) (string, error) {
 
 	default:
 		return "", errors.Errorf("unsupported arch %s", arch)
+	}
+}
+
+func goArchToNodeArch(arch string) (string) {
+	switch arch {
+	case "amd64":
+		return "x64"
+	case "386":
+		return "ia32"
+	default:
+		return arch
 	}
 }

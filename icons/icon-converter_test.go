@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Flaque/filet"
 	"github.com/biessek/golang-ico"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,6 +37,26 @@ func TestIcnsToIco(t *testing.T) {
 	assert.Equal(t, GetIcoSizes(data), []Sizes([]Sizes{
 		{Width: 256, Height: 256},
 	}))
+}
+
+func TestIcnsToPng(t *testing.T) {
+	//defer filet.CleanUp(t)
+
+	tmpDir := filet.TmpDir(t, "/tmp")
+
+	result, err := ConvertIcnsToPngUsingOpenJpeg(filepath.Join(getTestDataPath(t), "icon.icns"), tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, 5, len(result))
+}
+
+func TestIcnsToPng2(t *testing.T) {
+	//defer filet.CleanUp(t)
+
+	tmpDir := filet.TmpDir(t, "/tmp")
+
+	result, err := ConvertIcnsToPngUsingOpenJpeg(filepath.Join(getTestDataPath(t), "icon-jpeg2.icns"), tmpDir)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(result))
 }
 
 func TestLargePngTo256Ico(t *testing.T) {

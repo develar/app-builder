@@ -1,23 +1,18 @@
 package icons
 
 import (
-	"bytes"
 	"fmt"
-	"image"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"sort"
-	"strings"
-	"sync"
-	"time"
 
 	"github.com/apex/log"
+	"github.com/develar/app-builder/fs"
 	"github.com/develar/app-builder/util"
+	"github.com/develar/errors"
 	"github.com/disintegration/imaging"
-	"github.com/pkg/errors"
 )
 
 type Icns2PngMapping struct {
@@ -25,14 +20,14 @@ type Icns2PngMapping struct {
 	Size int
 }
 
-var icns2PngMappingList = []Icns2PngMapping{
+var icnsTypeToSize = []Icns2PngMapping{
 	{"is32", 16},
 	{"il32", 32},
 	{"ih32", 48},
 	{"icp6", 64},
 	{"it32", 128},
-	{"ic08", 256},
-	{"ic09", 512},
+	{ICNS_256, 256},
+	{ICNS_512, 512},
 }
 
 func ConvertIcnsToPng(inFile string) ([]IconInfo, error) {
@@ -50,18 +45,18 @@ func ConvertIcnsToPng(inFile string) ([]IconInfo, error) {
 	if runtime.GOOS == "darwin" && os.Getenv("FORCE_ICNS2PNG") == "" {
 		output, err := exec.Command("iconutil", "--convert", "iconset", "--output", tempDir, inFile).CombinedOutput()
 		if err != nil {
-			fmt.Println(string(output))
+			log.Info(string(output))
 			return nil, errors.WithStack(err)
 		}
 
-		iconFiles, err := ioutil.ReadDir(tempDir)
+		iconFileNames, err := fs.ReadDirContent(tempDir)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 
-		for _, item := range icns2PngMappingList {
+		for _, item := range icnsTypeToSize {
 			fileName := fmt.Sprintf("icon_%dx%d.png", item.Size, item.Size)
-			if contains(iconFiles, fileName) {
+			if contains(iconFileNames, fileName) {
 				// list sorted by size, so, last assignment is a max size
 				maxIconPath = filepath.Join(tempDir, fileName)
 				maxSize = item.Size
@@ -71,44 +66,21 @@ func ConvertIcnsToPng(inFile string) ([]IconInfo, error) {
 			}
 		}
 	} else {
-		log.Debug("executing icns2png")
-		command := exec.Command("icns2png", "--extract", "--output", tempDir, inFile)
-
-		var b bytes.Buffer
-		command.Stdout = &b
-		command.Stderr = &b
-
-		var output string
-
-		done := make(chan error, 1)
-		go func() {
-			done <- command.Run()
-		}()
-		select {
-		case <-time.After(1 * time.Minute):
-			if err := command.Process.Kill(); err != nil {
-				log.WithError(err).Error("failed to kill")
-			}
-			return nil, errors.Errorf("process killed as timeout reached")
-		case err := <-done:
-			output = string(b.Bytes())
-			if err != nil {
-				log.Debug(output)
-				return nil, errors.WithStack(err)
-			}
+		result, err = ConvertIcnsToPngUsingOpenJpeg(inFile, tempDir)
+		if err != nil {
+			return nil, errors.WithStack(err)
 		}
 
-		namePrefix := strings.TrimSuffix(filepath.Base(inFile), filepath.Ext(inFile))
-
-		for _, item := range icns2PngMappingList {
-			if strings.Contains(output, item.Id) {
-				// list sorted by size, so, last assignment is a max size
-				maxIconPath = filepath.Join(tempDir, fmt.Sprintf("%s_%dx%dx32.png", namePrefix, item.Size, item.Size))
-				result = append(result, IconInfo{maxIconPath, item.Size})
-			} else {
+		sortBySize(result)
+		for _, item := range icnsTypeToSize {
+			if !hasSize(result, item.Size) {
 				sizeList = append(sizeList, item.Size)
 			}
 		}
+
+		maxIconInfo := result[len(result)-1]
+		maxIconPath = maxIconInfo.File
+		maxSize = maxIconInfo.Size
 	}
 
 	err = multiResizeImage(maxIconPath, outFileTemplate, &result, sizeList, maxSize)
@@ -116,13 +88,27 @@ func ConvertIcnsToPng(inFile string) ([]IconInfo, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	sort.Slice(result, func(i, j int) bool { return result[i].Size < result[j].Size })
+	sortBySize(result)
 	return result, nil
 }
 
-func contains(files []os.FileInfo, name string) bool {
-	for _, fileInfo := range files {
-		if fileInfo.Name() == name {
+func hasSize(list []IconInfo, size int) bool {
+	for _, info := range list {
+		if info.Size == size {
+			return true
+		}
+	}
+	return false
+}
+
+func sortBySize(list []IconInfo) {
+	sort.Slice(list, func(i, j int) bool { return list[i].Size < list[j].Size })
+	return
+}
+
+func contains(files []string, name string) bool {
+	for _, fileName := range files {
+		if fileName == name {
 			return true
 		}
 	}
@@ -130,21 +116,20 @@ func contains(files []os.FileInfo, name string) bool {
 }
 
 func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInfo, sizeList []int, maxSize int) (error) {
+	imageCount := len(sizeList)
+	if imageCount == 0 {
+		return nil
+	}
+
 	originalImage, err := LoadImage(inFile)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	var waitGroup sync.WaitGroup
-
-	imageCount := len(sizeList)
-	waitGroup.Add(imageCount)
-
-	for i := 0; i < imageCount; i++ {
-		size := sizeList[i]
-
+	return util.MapAsync(imageCount, func(taskIndex int) (func() error, error) {
+		size := sizeList[taskIndex]
 		if size > maxSize {
-			break
+			return nil, nil
 		}
 
 		outFilePath := fmt.Sprintf(outFileNameFormat, size, size)
@@ -152,15 +137,10 @@ func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInf
 			File: outFilePath,
 			Size: size,
 		})
-		go resizeImage(originalImage, size, size, outFilePath, &waitGroup)
-	}
 
-	waitGroup.Wait()
-	return nil
-}
-
-func resizeImage(originalImage image.Image, w int, h int, outFileName string, waitGroup *sync.WaitGroup) error {
-	defer waitGroup.Done()
-	newImage := imaging.Resize(originalImage, w, h, imaging.Lanczos)
-	return SaveImage(newImage, outFileName)
+		return func() error {
+			newImage := imaging.Resize(originalImage, size, size, imaging.Lanczos)
+			return SaveImage(newImage, outFilePath)
+		}, nil
+	})
 }

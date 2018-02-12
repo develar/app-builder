@@ -7,7 +7,7 @@ import (
 	"runtime"
 
 	"github.com/apex/log"
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 )
 
 type FileCopier struct {

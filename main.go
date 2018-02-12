@@ -13,16 +13,16 @@ import (
 	"github.com/develar/app-builder/asar"
 	"github.com/develar/app-builder/blockmap"
 	"github.com/develar/app-builder/download"
-	"github.com/develar/app-builder/errors"
 	"github.com/develar/app-builder/fs"
 	"github.com/develar/app-builder/icons"
 	"github.com/develar/app-builder/log-cli"
 	"github.com/develar/app-builder/snap"
 	"github.com/develar/app-builder/util"
+	"github.com/develar/errors"
 )
 
 var (
-	appVersion = "1.3.0"
+	appVersion = "1.3.1"
 	app        = kingpin.New("app-builder", "app-builder").Version(appVersion)
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
@@ -52,14 +52,14 @@ func main() {
 	if os.Getenv("SZA_ARCHIVE_TYPE") != "" {
 		err := compress()
 		if err != nil {
-			errors.LogErrorAndExit(err)
+			util.LogErrorAndExit(err)
 		}
 		return
 	}
 
 	command, err := app.Parse(os.Args[1:])
 	if err != nil {
-		errors.LogErrorAndExit(err)
+		util.LogErrorAndExit(err)
 	}
 
 	switch command {

@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/develar/app-builder/util"
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 )
 
 func ReadDirContent(dirPath string) ([]string, error) {

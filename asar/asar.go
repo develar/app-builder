@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 )
 
 type ResolvedFileSet struct {

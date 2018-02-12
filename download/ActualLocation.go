@@ -9,7 +9,7 @@ import (
 
 	"github.com/apex/log"
 	"github.com/develar/app-builder/util"
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 )
 
 // ActualLocation represents server's status 200 or 206 response meta data. It never holds redirect responses

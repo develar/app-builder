@@ -12,7 +12,7 @@ import (
 	"github.com/apex/log"
 	"github.com/develar/app-builder/util"
 	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 )
 
 func ConfigureArtifactCommand(app *kingpin.Application) {

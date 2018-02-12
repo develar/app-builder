@@ -1,13 +1,17 @@
 package util
 
 import (
+	"runtime"
+
 	"github.com/apex/log"
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 )
 
-const concurrency = 4
-
 func MapAsync(taskCount int, taskProducer func(taskIndex int) (func() error, error)) error {
+	return MapAsync2(taskCount, runtime.NumCPU(), taskProducer)
+}
+
+func MapAsync2(taskCount int, concurrency int, taskProducer func(taskIndex int) (func() error, error)) error {
 	if taskCount == 0 {
 		return nil
 	}
@@ -27,6 +31,10 @@ func MapAsync(taskCount int, taskProducer func(taskIndex int) (func() error, err
 		if err != nil {
 			close(quitChannel)
 			return errors.WithStack(err)
+		}
+		if task == nil {
+			<-sem
+			doneChannel <- true
 		}
 
 		go func(task func() error) {

@@ -4,7 +4,7 @@ import (
 	"image"
 	"io"
 
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 )
 
 func DecodeImageAndClose(reader io.Reader, closer io.Closer) (image.Image, error) {

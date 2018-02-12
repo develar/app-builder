@@ -14,7 +14,7 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/mitchellh/go-homedir"
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 	"github.com/zieckey/goini"
 )
 

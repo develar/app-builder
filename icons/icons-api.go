@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/biessek/golang-ico"
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 )
 
 const (
