@@ -42,12 +42,7 @@ func main() {
 	snap.ConfigureCommand(app)
 	icons.ConfigureCommand(app)
 
-	log.SetHandler(log_cli.Default)
-
-	debugEnv, isDebugDefined := os.LookupEnv("DEBUG")
-	if isDebugDefined && debugEnv != "false" {
-		log.SetLevel(log.DebugLevel)
-	}
+	log_cli.InitLogger()
 
 	if os.Getenv("SZA_ARCHIVE_TYPE") != "" {
 		err := compress()

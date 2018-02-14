@@ -10,6 +10,14 @@ import (
 	"github.com/apex/log"
 )
 
+func InitLogger() {
+	log.SetHandler(Default)
+	debugEnv, isDebugDefined := os.LookupEnv("DEBUG")
+	if isDebugDefined && debugEnv != "false" {
+		log.SetLevel(log.DebugLevel)
+	}
+}
+
 // Default handler outputting to stderr.
 var Default = New(os.Stderr)
 

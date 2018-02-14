@@ -9,8 +9,13 @@ import (
 
 	"github.com/Flaque/filet"
 	"github.com/biessek/golang-ico"
+	"github.com/develar/app-builder/pkg/log-cli"
 	"github.com/stretchr/testify/assert"
 )
+
+func init() {
+	log_cli.InitLogger()
+}
 
 func getTestDataPath(t *testing.T) string {
 	testDataPath, err := filepath.Abs(filepath.Join("..", "..", "testData"))
