@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/Flaque/filet"
+  packages = ["."]
+  revision = "70fb4a62b734b80db316664a8d0932432bebaa41"
+
+[[projects]]
+  branch = "master"
   name = "github.com/aclements/go-rabin"
   packages = ["rabin"]
   revision = "d0b643ea1a4c56db14f9cab09038c41e76767e58"
@@ -47,6 +53,12 @@
   version = "v1.1.0"
 
 [[projects]]
+  name = "github.com/develar/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   name = "github.com/disintegration/imaging"
   packages = ["."]
   revision = "1884593a19ddc6f2ea050403430d02c1d0fc1283"
@@ -77,7 +89,7 @@
   revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
 
 [[projects]]
-  name = "github.com/develar/errors"
+  name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
@@ -87,6 +99,15 @@
   packages = ["difflib"]
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
+
+[[projects]]
+  name = "github.com/spf13/afero"
+  packages = [
+    ".",
+    "mem"
+  ]
+  revision = "bb8f1927f2a9d3ab41c9340aa034f6b803f4359c"
+  version = "v1.0.2"
 
 [[projects]]
   name = "github.com/stretchr/testify"
@@ -110,9 +131,22 @@
   ]
   revision = "12117c17ca67ffa1ce22e9409f3b0b0a93ac08c7"
 
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/text"
+  packages = [
+    "internal/gen",
+    "internal/triegen",
+    "internal/ucd",
+    "transform",
+    "unicode/cldr",
+    "unicode/norm"
+  ]
+  revision = "4e4a3210bb54bb31f6ab2cdca2edcc0b50c420c1"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "c488ee6fdab4d75184d2478839a8bd7891f0359e6d9731bab5bc7751f0080e1a"
+  inputs-digest = "3b01336abf018fb3ea68da9761aa7b90cceed7b9801d89cd049ea068e426956a"
   solver-name = "gps-cdcl"
   solver-version = 1
