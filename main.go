@@ -1,4 +1,4 @@
-package app_builder
+package main
 
 import (
 	"fmt"
@@ -9,10 +9,10 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	"github.com/develar/app-builder/download"
 	"github.com/develar/app-builder/pkg/appimage"
 	"github.com/develar/app-builder/pkg/asar"
 	"github.com/develar/app-builder/pkg/blockmap"
+	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/icons"
 	"github.com/develar/app-builder/pkg/log-cli"

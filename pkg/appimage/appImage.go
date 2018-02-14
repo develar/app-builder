@@ -8,7 +8,7 @@ import (
 	"runtime"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/develar/app-builder/download"
+	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
