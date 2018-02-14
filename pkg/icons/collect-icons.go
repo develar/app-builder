@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/develar/app-builder/fs"
+	"github.com/develar/app-builder/pkg/fs"
 )
 
 func CollectIcons(sourceDir string) ([]IconInfo, error) {

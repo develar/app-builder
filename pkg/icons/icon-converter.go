@@ -9,8 +9,8 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	"github.com/develar/app-builder/fs"
-	"github.com/develar/app-builder/util"
+	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/disintegration/imaging"
 )
@@ -106,16 +106,6 @@ func resolveSourceFile(sourceFiles []string, roots []string, extraExtension stri
 	}
 
 	return "", nil, errors.Errorf("icon source \"%s\" not found", strings.Join(sourceFiles, ", "))
-}
-
-type InputFileInfo struct {
-	MaxIconSize int
-	MaxIconPath string
-	SizeToPath  map[int]string
-
-	maxImage image.Image
-
-	recommendedMinSize int
 }
 
 func (t InputFileInfo) GetMaxImage() (image.Image, error) {

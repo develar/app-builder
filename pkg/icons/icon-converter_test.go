@@ -13,7 +13,7 @@ import (
 )
 
 func getTestDataPath(t *testing.T) string {
-	testDataPath, err := filepath.Abs(filepath.Join("..", "testData"))
+	testDataPath, err := filepath.Abs(filepath.Join("..", "..", "testData"))
 	assert.NoError(t, err)
 	return testDataPath
 }
@@ -40,7 +40,7 @@ func TestIcnsToIco(t *testing.T) {
 }
 
 func TestIcnsToPng(t *testing.T) {
-	//defer filet.CleanUp(t)
+	defer filet.CleanUp(t)
 
 	tmpDir := filet.TmpDir(t, "/tmp")
 
@@ -49,8 +49,8 @@ func TestIcnsToPng(t *testing.T) {
 	assert.Equal(t, 5, len(result))
 }
 
-func TestIcnsToPng2(t *testing.T) {
-	//defer filet.CleanUp(t)
+func TestConvertIcnsToPngUsingOpenJpeg(t *testing.T) {
+	defer filet.CleanUp(t)
 
 	tmpDir := filet.TmpDir(t, "/tmp")
 

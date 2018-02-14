@@ -8,7 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/develar/app-builder/util"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/disintegration/imaging"
 )
@@ -112,7 +112,7 @@ func ConvertToIcns(inputInfo InputFileInfo) (string, error) {
 	return outFile.Name(), nil
 }
 
-func isIcns(reader *bufio.Reader) (bool, error) {
+func IsIcns(reader *bufio.Reader) (bool, error) {
 	data, err := reader.Peek(4)
 	if err != nil {
 		return false, errors.WithStack(err)
@@ -136,7 +136,7 @@ func ReadIcns(reader *bufio.Reader) (map[string]SubImage, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	icons := make(map[string]SubImage)
+	typeToImage := make(map[string]SubImage)
 	offset := 8
 	for {
 		icon := IcnsIconEntry{}
@@ -152,7 +152,7 @@ func ReadIcns(reader *bufio.Reader) (map[string]SubImage, error) {
 
 		osType := string(icon.Type[:])
 		if osType != "info" && osType != "TOC" && osType != "icnV" && osType != "name" {
-			icons[osType] = SubImage{
+			typeToImage[osType] = SubImage{
 				Offset: offset,
 				Length: imageDataLength,
 			}
@@ -166,6 +166,6 @@ func ReadIcns(reader *bufio.Reader) (map[string]SubImage, error) {
 		}
 	}
 
-	return icons, nil
+	return typeToImage, nil
 }
 

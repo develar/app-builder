@@ -10,7 +10,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	"github.com/develar/app-builder/util"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/mitchellh/go-homedir"
 	"github.com/develar/errors"
 )

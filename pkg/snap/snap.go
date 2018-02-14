@@ -10,8 +10,8 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/develar/app-builder/download"
-	"github.com/develar/app-builder/fs"
-	"github.com/develar/app-builder/util"
+	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/mcuadros/go-version"
 )

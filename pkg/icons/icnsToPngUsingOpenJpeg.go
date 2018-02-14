@@ -11,7 +11,7 @@ import (
 	"strings"
 
 	"github.com/apex/log"
-	"github.com/develar/app-builder/util"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 )
 

@@ -13,8 +13,8 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	"github.com/mitchellh/go-homedir"
 	"github.com/develar/errors"
+	"github.com/mitchellh/go-homedir"
 	"github.com/zieckey/goini"
 )
 
