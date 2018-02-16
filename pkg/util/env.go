@@ -10,3 +10,8 @@ func GetEnvOrDefault(envName string, defaultValue string) string {
 		return result
 	}
 }
+
+func IsEnvTrue(envName string) bool {
+	value, ok := os.LookupEnv(envName)
+	return ok && (value == "true" || value == "" || value == "1")
+}

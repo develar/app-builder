@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	appVersion = "1.3.1"
+	appVersion = "1.3.3"
 	app        = kingpin.New("app-builder", "app-builder").Version(appVersion)
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
@@ -35,13 +35,6 @@ var (
 )
 
 func main() {
-	download.ConfigureCommand(app)
-	download.ConfigureArtifactCommand(app)
-	ConfigureCopyCommand(app)
-	appimage.ConfigureCommand(app)
-	snap.ConfigureCommand(app)
-	icons.ConfigureCommand(app)
-
 	log_cli.InitLogger()
 
 	if os.Getenv("SZA_ARCHIVE_TYPE") != "" {
@@ -51,6 +44,13 @@ func main() {
 		}
 		return
 	}
+
+	download.ConfigureCommand(app)
+	download.ConfigureArtifactCommand(app)
+	ConfigureCopyCommand(app)
+	appimage.ConfigureCommand(app)
+	snap.ConfigureCommand(app)
+	icons.ConfigureCommand(app)
 
 	command, err := app.Parse(os.Args[1:])
 	if err != nil {

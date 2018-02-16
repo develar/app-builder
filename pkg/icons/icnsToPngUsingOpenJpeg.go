@@ -36,7 +36,7 @@ var typeToSize = map[string]int{
 	"ic14": 512,
 }
 
-func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, tempDir string) ([]IconInfo, error) {
+func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, error) {
 	reader, err := os.Open(icnsPath)
 	defer reader.Close()
 
@@ -58,7 +58,7 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, tempDir string) ([]IconInfo,
 		}
 	}
 
-	outFileNamePrefix := filepath.Join(tempDir, strings.TrimSuffix(filepath.Base(icnsPath), filepath.Ext(icnsPath))) + "_"
+	outFileNamePrefix := filepath.Join(outDir, strings.TrimSuffix(filepath.Base(icnsPath), filepath.Ext(icnsPath))) + "_"
 	for imageType, subImage := range subImageInfoList {
 		if isIgnoredType(imageType) {
 			log.WithFields(log.Fields{
@@ -89,7 +89,7 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, tempDir string) ([]IconInfo,
 
 		outWriter, err := os.Create(outFileName)
 		if err != nil {
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 
 		_, err = io.Copy(outWriter, io.LimitReader(reader, int64(subImage.Length)))
@@ -98,8 +98,15 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, tempDir string) ([]IconInfo,
 		if formatName == "" {
 			size := typeToSize[imageType]
 			pngFile := fmt.Sprintf("%s%d.png", outFileNamePrefix, size)
-			util.Execute(exec.Command("opj_decompress", "-i", outFileName, "-o", pngFile), "")
-			os.Remove(outFileName)
+			err = util.Execute(exec.Command("opj_decompress", "-i", outFileName, "-o", pngFile), "")
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+
+			err = os.Remove(outFileName)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
 
 			result = append(result, IconInfo{
 				File: pngFile,

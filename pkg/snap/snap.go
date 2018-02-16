@@ -74,7 +74,7 @@ func ConfigureCommand(app *kingpin.Application) {
 	}
 
 	isUseDockerCommandArg := command.Flag("docker", "Whether to use Docker.").Default(isUseDockerDefault).Envar("SNAP_USE_DOCKER").Bool()
-	isRemoveStage := command.Flag("remove-stage", "Whether to remove stage after build.").Default("true").Bool()
+	isRemoveStage := util.ConfigureIsRemoveStageParam(command)
 
 	command.Action(func(context *kingpin.ParseContext) error {
 		resolvedTemplateDir := *templateDir
@@ -180,7 +180,7 @@ func buildWithoutDocker(isUseTemplateApp bool, options SnapOptions) error {
 	if isUseTemplateApp {
 		primeDir = stageDir
 	} else {
-		util.Execute(exec.Command("snapcraft", "prime", "--target-arch", *options.arch), stageDir)
+		util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("snapcraft", "prime", "--target-arch", *options.arch), stageDir)
 		primeDir = filepath.Join(stageDir, "prime")
 		err := cleanUpSnap(primeDir)
 		if err != nil {
@@ -229,10 +229,10 @@ func buildUsingDocker(isUseTemplateApp bool, options SnapOptions) error {
 
 	log.WithField("command", strings.Join(commands, "\n")).Debug("build snap using docker")
 
-	err := util.Execute(exec.Command("docker", "run", "--rm",
+	err := util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("docker", "run", "--rm",
 		"-v", filepath.Dir(*options.output)+":/out:delegated",
-		"-v", stageDir+":/stage:ro",
-		"-v", *options.appDir+":/tmp/final-stage/app:ro",
+		"--mount", "type=bind,source=" + stageDir+",destination=/stage,readonly",
+		"--mount", "type=bind,source=" + *options.appDir+",destination=/tmp/final-stage/app,readonly",
 		*options.dockerImage,
 		"/bin/bash", "-c", strings.Join(commands, " && "),
 	), stageDir)

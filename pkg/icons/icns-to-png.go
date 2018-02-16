@@ -30,43 +30,22 @@ var icnsTypeToSize = []Icns2PngMapping{
 	{ICNS_512, 512},
 }
 
-func ConvertIcnsToPng(inFile string) ([]IconInfo, error) {
-	tempDir, err := util.TempDir("", ".iconset")
+func ConvertIcnsToPng(inFile string, outDir string) ([]IconInfo, error) {
+	err := fs.EnsureEmptyDir(outDir)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
-	var maxIconPath string
-	var result []IconInfo
-
 	sizeList := []int{24, 96}
-	outFileTemplate := filepath.Join(tempDir, "icon_%dx%d.png")
-	maxSize := 0
+	var result []IconInfo
+	outFileTemplate := filepath.Join(outDir, "icon_%dx%d.png")
 	if runtime.GOOS == "darwin" && os.Getenv("FORCE_ICNS2PNG") == "" {
-		output, err := exec.Command("iconutil", "--convert", "iconset", "--output", tempDir, inFile).CombinedOutput()
-		if err != nil {
-			log.Info(string(output))
-			return nil, errors.WithStack(err)
-		}
-
-		iconFileNames, err := fs.ReadDirContent(tempDir)
+		result, err = ConvertIcnsToPngUsingIconUtil(inFile, outDir, &sizeList)
 		if err != nil {
 			return nil, errors.WithStack(err)
-		}
-
-		for _, item := range icnsTypeToSize {
-			fileName := fmt.Sprintf("icon_%dx%d.png", item.Size, item.Size)
-			if contains(iconFileNames, fileName) {
-				// list sorted by size, so, last assignment is a max size
-				maxIconPath = filepath.Join(tempDir, fileName)
-				maxSize = item.Size
-				result = append(result, IconInfo{maxIconPath, item.Size})
-			} else {
-				sizeList = append(sizeList, item.Size)
-			}
 		}
 	} else {
-		result, err = ConvertIcnsToPngUsingOpenJpeg(inFile, tempDir)
+		result, err = ConvertIcnsToPngUsingOpenJpeg(inFile, outDir)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -77,18 +56,46 @@ func ConvertIcnsToPng(inFile string) ([]IconInfo, error) {
 				sizeList = append(sizeList, item.Size)
 			}
 		}
-
-		maxIconInfo := result[len(result)-1]
-		maxIconPath = maxIconInfo.File
-		maxSize = maxIconInfo.Size
 	}
 
-	err = multiResizeImage(maxIconPath, outFileTemplate, &result, sizeList, maxSize)
+	maxIconInfo := result[len(result)-1]
+	err = multiResizeImage(maxIconInfo.File, outFileTemplate, &result, sizeList, maxIconInfo.Size)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	sortBySize(result)
+	return result, nil
+}
+
+func ConvertIcnsToPngUsingIconUtil(inFile string, outDir string, sizeList *[]int) ([]IconInfo, error) {
+	// iconutil requires suffix .iconset
+	outDir = filepath.Join(outDir, "result.iconset")
+	err := os.Mkdir(outDir, 0755)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	output, err := exec.Command("iconutil", "--convert", "iconset", "--output", outDir, inFile).CombinedOutput()
+	if err != nil {
+		log.Info(string(output))
+		return nil, errors.WithStack(err)
+	}
+
+	iconFileNames, err := fs.ReadDirContent(outDir)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var result []IconInfo
+	for _, item := range icnsTypeToSize {
+		fileName := fmt.Sprintf("icon_%dx%d.png", item.Size, item.Size)
+		if contains(iconFileNames, fileName) {
+			result = append(result, IconInfo{filepath.Join(outDir, fileName), item.Size})
+		} else {
+			*sizeList = append(*sizeList, item.Size)
+		}
+	}
 	return result, nil
 }
 
@@ -140,7 +147,7 @@ func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInf
 
 		return func() error {
 			newImage := imaging.Resize(originalImage, size, size, imaging.Lanczos)
-			return SaveImage(newImage, outFilePath)
+			return SaveImage(newImage, outFilePath, PNG)
 		}, nil
 	})
 }

@@ -17,12 +17,14 @@ import (
 
 func ConfigureCommand(app *kingpin.Application) {
 	command := app.Command("icon", "create ICNS or ICO or icon set from PNG files")
+
 	sources := command.Flag("input", "input directory or file").Short('i').Required().Strings()
 	iconOutFormat := command.Flag("format", "output format").Short('f').Required().Enum("icns", "ico", "set")
+	outDir := command.Flag("out", "output directory").Required().String()
 	iconRoots := command.Flag("root", "base directory to resolve relative path").Short('r').Strings()
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		resultFile, err := ConvertIcon(*sources, *iconRoots, *iconOutFormat)
+		resultFile, err := ConvertIcon(*sources, *iconRoots, *iconOutFormat, *outDir)
 		if err != nil {
 			log.Debugf("%+v\n", err)
 
@@ -152,7 +154,7 @@ func outputFormatToSingleFileExtension(outputFormat string) string {
 	return "." + outputFormat
 }
 
-func ConvertIcon(sourceFiles []string, roots []string, outputFormat string) ([]IconInfo, error) {
+func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outDir string) ([]IconInfo, error) {
 	// allowed to specify path to icns without extension, so, if file not resolved, try to add ".icns" extension
 	outExt := outputFormatToSingleFileExtension(outputFormat)
 	resolvedPath, fileInfo, err := resolveSourceFile(sourceFiles, roots, outExt)
@@ -201,7 +203,7 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string) ([]I
 		inputInfo.MaxIconSize = maxIcon.Size
 	} else {
 		if outputFormat == "set" && strings.HasSuffix(resolvedPath, ".icns") {
-			result, err := ConvertIcnsToPng(resolvedPath)
+			result, err := ConvertIcnsToPng(resolvedPath, outDir)
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
@@ -223,13 +225,14 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string) ([]I
 		inputInfo.SizeToPath[inputInfo.MaxIconSize] = resolvedPath
 	}
 
+	outFile := filepath.Join(outDir, "icon" + outExt)
 	switch outputFormat {
 	case "icns":
-		file, err := ConvertToIcns(inputInfo)
+		err := ConvertToIcns(inputInfo, outFile)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		return []IconInfo{{File: file}}, err
+		return []IconInfo{{File: outFile}}, err
 
 	case "ico":
 		maxImage, err := inputInfo.GetMaxImage()
@@ -237,16 +240,11 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string) ([]I
 			return nil, errors.WithStack(err)
 		}
 
-		outFile, err := util.TempFile("", outExt)
+		err = SaveImage(maxImage, outFile, ICO)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-
-		err = SaveImage2(maxImage, outFile, ICO)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-		return []IconInfo{{File: outFile.Name()}}, nil
+		return []IconInfo{{File: outFile}}, nil
 
 	default:
 		return nil, fmt.Errorf("unknown output format %s", resolvedPath)

@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 
+	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/disintegration/imaging"
@@ -39,7 +40,7 @@ var (
 	}
 )
 
-func ConvertToIcns(inputInfo InputFileInfo) (string, error) {
+func ConvertToIcns(inputInfo InputFileInfo, outFilePath string) error {
 	// create a new buffer to hold the series of icons generated via resizing
 	icns := new(bytes.Buffer)
 
@@ -55,18 +56,18 @@ func ConvertToIcns(inputInfo InputFileInfo) (string, error) {
 		if exists {
 			imageData, err = ioutil.ReadFile(existingFile)
 			if err != nil {
-				return "", errors.WithStack(err)
+				return errors.WithStack(err)
 			}
 		} else {
 			maxImage, err := inputInfo.GetMaxImage()
 			if err != nil {
-				return "", errors.WithStack(err)
+				return errors.WithStack(err)
 			}
 
 			imageBuffer := new(bytes.Buffer)
 			err = png.Encode(imageBuffer, imaging.Resize(maxImage, size, size, imaging.Lanczos))
 			if err != nil {
-				return "", errors.WithStack(err)
+				return errors.WithStack(err)
 			}
 
 			imageData = imageBuffer.Bytes()
@@ -81,15 +82,15 @@ func ConvertToIcns(inputInfo InputFileInfo) (string, error) {
 		for _, ostype := range sizeToType[size] {
 			_, err = icns.Write([]byte(ostype))
 			if err != nil {
-				return "", errors.WithStack(err)
+				return errors.WithStack(err)
 			}
 			_, err = icns.Write(lengthBytes)
 			if err != nil {
-				return "", errors.WithStack(err)
+				return errors.WithStack(err)
 			}
 			_, err = icns.Write(imageData)
 			if err != nil {
-				return "", errors.WithStack(err)
+				return errors.WithStack(err)
 			}
 		}
 	}
@@ -98,18 +99,29 @@ func ConvertToIcns(inputInfo InputFileInfo) (string, error) {
 	lengthBytes := make([]byte, 4, 4)
 	binary.BigEndian.PutUint32(lengthBytes, uint32(icns.Len()+8))
 
-	outFile, err := util.TempFile("", ".icns")
+	outFile, err := fs.CreateFile(outFilePath)
 	if err != nil {
-		return "", errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	defer outFile.Close()
+	_, err = outFile.Write(icnsHeader)
+	if err != nil {
+		outFile.Close()
+		return errors.WithStack(err)
+	}
+	_, err = outFile.Write(lengthBytes)
+	if err != nil {
+		outFile.Close()
+		return errors.WithStack(err)
+	}
 
-	outFile.Write(icnsHeader)
-	outFile.Write(lengthBytes)
-	io.Copy(outFile, icns)
+	_, err = io.Copy(outFile, icns)
+	err = util.CloseAndCheckError(err, outFile)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
-	return outFile.Name(), nil
+	return nil
 }
 
 func IsIcns(reader *bufio.Reader) (bool, error) {

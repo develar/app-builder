@@ -8,6 +8,7 @@ import (
 	"runtime"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/develar/app-builder/pkg/blockmap"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
@@ -38,7 +39,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		compression: command.Flag("compression", "The compression.").Enum("xz", "gzip"),
 	}
 
-	isRemoveStage := command.Flag("remove-stage", "Whether to remove stage after build.").Default("true").Bool()
+	isRemoveStage := util.ConfigureIsRemoveStageParam(command)
 
 	command.Action(func(context *kingpin.ParseContext) error {
 		err := AppImage(options)
@@ -75,7 +76,7 @@ func AppImage(options AppImageOptions) error {
 	if arch == "x64" || arch == "ia32" {
 		err = fs.CopyUsingHardlink(filepath.Join(appImageToolDir, "lib", arch), filepath.Join(stageDir, "usr", "lib"))
 		if err != nil {
-			return err
+			return errors.WithStack(err)
 		}
 	}
 
@@ -100,7 +101,7 @@ func AppImage(options AppImageOptions) error {
 
 	appImageArch, err := toAppImageArch(arch)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	env := os.Environ()
@@ -113,8 +114,19 @@ func AppImage(options AppImageOptions) error {
 
 	err = util.Execute(command, stageDir)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
+
+	updateInfo, err := blockmap.BuildBlockMap(*options.output, blockmap.DefaultChunkerConfiguration, blockmap.DEFLATE, "")
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = util.WriteJsonToStdOut(updateInfo)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	return nil
 }
 
