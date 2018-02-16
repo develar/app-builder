@@ -55,8 +55,8 @@
 [[projects]]
   name = "github.com/develar/errors"
   packages = ["."]
-  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
-  version = "v0.8.0"
+  revision = "25fc63f959d98d6b6ef342978dfb8080357690c0"
+  version = "v0.8.1"
 
 [[projects]]
   name = "github.com/disintegration/imaging"
@@ -93,6 +93,12 @@
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
   version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/pkg/xattr"
+  packages = ["."]
+  revision = "23c75e3f6c1d8b13b3dd905b011a7f38a06044b7"
+  version = "v0.2.1"
 
 [[projects]]
   name = "github.com/pmezard/go-difflib"
@@ -147,6 +153,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "3b01336abf018fb3ea68da9761aa7b90cceed7b9801d89cd049ea068e426956a"
+  inputs-digest = "d47e4c7fc33d05d07013f08ec29f0d672b2130783f816750a0f960fa5c33f201"
   solver-name = "gps-cdcl"
   solver-version = 1

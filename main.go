@@ -12,6 +12,7 @@ import (
 	"github.com/develar/app-builder/pkg/appimage"
 	"github.com/develar/app-builder/pkg/asar"
 	"github.com/develar/app-builder/pkg/blockmap"
+	"github.com/develar/app-builder/pkg/dmg"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/icons"
@@ -22,7 +23,7 @@ import (
 )
 
 var (
-	appVersion = "1.3.3"
+	appVersion = "1.3.4"
 	app        = kingpin.New("app-builder", "app-builder").Version(appVersion)
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
@@ -51,6 +52,7 @@ func main() {
 	appimage.ConfigureCommand(app)
 	snap.ConfigureCommand(app)
 	icons.ConfigureCommand(app)
+	dmg.ConfigureCommand(app)
 
 	command, err := app.Parse(os.Args[1:])
 	if err != nil {
