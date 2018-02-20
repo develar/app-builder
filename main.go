@@ -14,6 +14,7 @@ import (
 	"github.com/develar/app-builder/pkg/blockmap"
 	"github.com/develar/app-builder/pkg/dmg"
 	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/elfExecStack"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/icons"
 	"github.com/develar/app-builder/pkg/log-cli"
@@ -53,6 +54,7 @@ func main() {
 	snap.ConfigureCommand(app)
 	icons.ConfigureCommand(app)
 	dmg.ConfigureCommand(app)
+	elfExecStack.ConfigureCommand(app)
 
 	command, err := app.Parse(os.Args[1:])
 	if err != nil {

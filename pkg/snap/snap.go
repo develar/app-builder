@@ -61,12 +61,12 @@ func ConfigureCommand(app *kingpin.Application) {
 	}
 
 	options := SnapOptions{
-		appDir:   command.Flag("app", "The app dir.").Short('a').Required().String(),
-		stageDir: command.Flag("stage", "The stage dir.").Short('s').Required().String(),
-		icon: command.Flag("icon", "The path to the icon.").String(),
-		hooksDir: command.Flag("hooks", "The hooks dir.").String(),
+		appDir:         command.Flag("app", "The app dir.").Short('a').Required().String(),
+		stageDir:       command.Flag("stage", "The stage dir.").Short('s').Required().String(),
+		icon:           command.Flag("icon", "The path to the icon.").String(),
+		hooksDir:       command.Flag("hooks", "The hooks dir.").String(),
 
-		arch:          command.Flag("arch", "The arch.").Default("amd64").Enum("amd64", "i386", "armv7l", "arm64"),
+		arch: command.Flag("arch", "The arch.").Default("amd64").Enum("amd64", "i386", "armv7l", "arm64"),
 
 		output: command.Flag("output", "The output file.").Short('o').Required().String(),
 
@@ -86,7 +86,7 @@ func ConfigureCommand(app *kingpin.Application) {
 			}
 		}
 
-		isUseDocker, err := DetectIsUseDocker(*isUseDockerCommandArg, len(	resolvedTemplateDir) != 0)
+		isUseDocker, err := DetectIsUseDocker(*isUseDockerCommandArg, len(resolvedTemplateDir) != 0)
 		err = Snap(resolvedTemplateDir, isUseDocker, options)
 		if err != nil {
 			return errors.WithStack(err)
@@ -153,7 +153,7 @@ func Snap(templateDir string, isUseDocker bool, options SnapOptions) error {
 
 	iconPath := *options.icon
 	if len(iconPath) != 0 {
-		err := fs.CopyUsingHardlink(iconPath, filepath.Join(snapMetaDir, "gui", "icon" + filepath.Ext(iconPath)))
+		err := fs.CopyUsingHardlink(iconPath, filepath.Join(snapMetaDir, "gui", "icon"+filepath.Ext(iconPath)))
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -231,7 +231,7 @@ func buildUsingDocker(isUseTemplateApp bool, options SnapOptions) error {
 
 	err := util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("docker", "run", "--rm",
 		"-v", filepath.Dir(*options.output)+":/out:delegated",
-		"--mount", "type=bind,source=" + stageDir+",destination=/stage,readonly",
+		"--mount", "type=bind,source="+stageDir+",destination=/stage,readonly",
 		"--mount", "type=bind,source=" + *options.appDir+",destination=/tmp/final-stage/app,readonly",
 		*options.dockerImage,
 		"/bin/bash", "-c", strings.Join(commands, " && "),
