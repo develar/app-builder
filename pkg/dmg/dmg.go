@@ -3,10 +3,16 @@
 package dmg
 
 import (
+	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/pkg/xattr"
 )
@@ -28,12 +34,11 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
-func BuildDmg(volumePath string, icon string, background string) error {
-	var fileCopier fs.FileCopier
+func BuildDmg(volumePath string, icon string, backgroundPath string) error {
 	if icon != "" {
 		// cannot use hard link because volume uses different disk
 		iconPath := filepath.Join(volumePath, ".VolumeIcon.icns")
-		err := fileCopier.CopyDirOrFile(icon, iconPath)
+		err := fs.CopyDirOrFile(icon, iconPath)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -49,13 +54,55 @@ func BuildDmg(volumePath string, icon string, background string) error {
 		}
 	}
 
-	if background != "" {
-		err := fileCopier.CopyDirOrFile(icon, filepath.Join(volumePath, ".background", filepath.Base(background)))
+	if backgroundPath != "" {
+		backgroundPath, err := GetEffectiveBackgroundPath(backgroundPath)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		err = fs.CopyDirOrFile(backgroundPath, filepath.Join(volumePath, ".background", filepath.Base(backgroundPath)))
 		if err != nil {
 			return errors.WithStack(err)
 		}
 	}
 	return nil
+}
+
+func GetEffectiveBackgroundPath(path string) (string, error) {
+	if strings.HasSuffix(path, ".tiff") || strings.HasSuffix(path, ".TIFF") {
+		return path, nil
+	}
+
+	re, err := regexp.Compile("\\.([a-z]+)$")
+	if err != nil {
+		return "", err
+	}
+
+	retinaFile := re.ReplaceAllString(path, "@2x.$1")
+	_, err = os.Stat(retinaFile)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			log.WithError(err).Debug("checking retina file")
+		}
+		return path, nil
+	}
+
+	tiffFile, err := util.TempFile("", ".tiff")
+	if err != nil {
+		return "", err
+	}
+
+	err = tiffFile.Close()
+	if err != nil {
+		return "", err
+	}
+
+	err = util.Execute(exec.Command("tiffutil", "-cathidpicheck", path, retinaFile, "-out", tiffFile.Name()), "")
+	if err != nil {
+		return "", err
+	}
+
+	return tiffFile.Name(), nil
 }
 
 func setHasCustomIconAttribute(path string) error {

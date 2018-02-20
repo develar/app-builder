@@ -63,6 +63,10 @@ func Download(url string, output string, sha512 string) error {
 		return errors.WithStack(err)
 	}
 
+	if actualLocation.ContentLength < 0 {
+		return errors.Errorf("Invalid content length: %d", actualLocation.ContentLength)
+	}
+
 	partDownloadClient := &http.Client{
 		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 			return http.ErrUseLastResponse

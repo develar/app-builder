@@ -24,12 +24,16 @@ func getTestDataPath(t *testing.T) string {
 }
 
 func TestCheckIcoImageSize(t *testing.T) {
-	_, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "icon.ico")}, nil, "ico")
+	defer filet.CleanUp(t)
+
+	_, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "icon.ico")}, nil, "ico", filet.TmpDir(t, ""))
 	assert.NoError(t, err)
 }
 
 func TestIcnsToIco(t *testing.T) {
-	files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "icon.icns")}, nil, "ico")
+	defer filet.CleanUp(t)
+
+	files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "icon.icns")}, nil, "ico", filet.TmpDir(t, ""))
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(files))
 	file := files[0].File
@@ -65,7 +69,9 @@ func TestConvertIcnsToPngUsingOpenJpeg(t *testing.T) {
 }
 
 func TestLargePngTo256Ico(t *testing.T) {
-	files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "512x512.png")}, nil, "ico")
+	defer filet.CleanUp(t)
+
+	files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "512x512.png")}, nil, "ico", filet.TmpDir(t, ""))
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(files))
 	file := files[0].File

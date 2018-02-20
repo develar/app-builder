@@ -48,6 +48,11 @@ func CopyUsingHardlink(from string, to string) error {
 	return fileCopier.CopyDirOrFile(from, to)
 }
 
+func CopyDirOrFile(from string, to string) error {
+	var fileCopier FileCopier
+	return fileCopier.CopyDirOrFile(from, to)
+}
+
 func (fileCopier *FileCopier) CopyDirOrFile(from string, to string) error {
 	if runtime.GOOS == "windows" {
 		fileCopier.IsUseHardLinks = false
@@ -107,6 +112,12 @@ func (fileCopier *FileCopier) copyDirOrFile(from string, to string, isCreatePare
 		log.WithError(err).WithField("from", from).WithField("to", to).Debug("cannot copy using hard link")
 	}
 
+	if isCreateParentDirs {
+		err = os.MkdirAll(filepath.Dir(to), 0755)
+		if err != nil {
+			return err
+		}
+	}
 	return copyFile(from, to, fromInfo)
 }
 
@@ -133,25 +144,25 @@ func (fileCopier *FileCopier) copySymlink(from string, to string) error {
 }
 
 func copyFile(from string, to string, fromInfo os.FileInfo) error {
-	s, err := os.Open(from)
+	sourceFile, err := os.Open(from)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	defer s.Close()
-	d, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fromInfo.Mode())
+	defer sourceFile.Close()
+	destinationFile, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fromInfo.Mode())
 	if err != nil {
-		s.Close()
+		sourceFile.Close()
 		return errors.WithStack(err)
 	}
 
-	_, err = io.Copy(d, s)
+	_, err = io.Copy(destinationFile, sourceFile)
 	if err != nil {
-		d.Close()
+		destinationFile.Close()
 		return errors.WithStack(err)
 	}
 
-	err = d.Close()
+	err = destinationFile.Close()
 	if err != nil {
 		return errors.WithStack(err)
 	}
