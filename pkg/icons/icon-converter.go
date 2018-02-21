@@ -47,17 +47,6 @@ func writeUserError(error ImageError) error {
 	return util.WriteJsonToStdOut(MisConfigurationError{Message: error.Error(), Code: error.ErrorCode()})
 }
 
-func (t InputFileInfo) GetMaxImage() (image.Image, error) {
-	if t.maxImage == nil {
-		var err error
-		t.maxImage, err = loadImage(t.MaxIconPath, t.recommendedMinSize)
-		if err != nil {
-			return nil, errors.WithStack(err)
-		}
-	}
-	return t.maxImage, nil
-}
-
 func validateImageSize(file string, recommendedMinSize int) error {
 	firstFileBytes, err := fs.ReadFile(file, 512)
 	if err != nil {
@@ -127,9 +116,20 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outD
 	}
 
 	if fileInfo.IsDir() {
-		icons, err := CollectIcons(resolvedPath)
+		icons, iconFileName, err := CollectIcons(resolvedPath)
 		if err != nil {
 			return nil, errors.WithStack(err)
+		}
+
+		if len(icons) == 0 {
+			err = configureInputInfoFromSingleFile(iconFileName, isOutputFormatIco, &inputInfo)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+
+			if outputFormat == "set" {
+				return resizePngForLinux(&inputInfo, iconFileName, outDir)
+			}
 		}
 
 		if outputFormat == "set" {
@@ -152,25 +152,42 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outD
 			return result, nil
 		}
 
-		maxImage, err := loadImage(resolvedPath, inputInfo.recommendedMinSize)
+		err = configureInputInfoFromSingleFile(resolvedPath, isOutputFormatIco, &inputInfo)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-
-		if isOutputFormatIco && maxImage.Bounds().Max.X > 256 {
-			image256 := imaging.Resize(maxImage, 256, 256, imaging.Lanczos)
-			maxImage = image256
-		}
-
-		inputInfo.MaxIconSize = maxImage.Bounds().Max.X
-		inputInfo.maxImage = maxImage
-		inputInfo.SizeToPath[inputInfo.MaxIconSize] = resolvedPath
 	}
 
-	outFile := filepath.Join(outDir, "icon" + outExt)
+	return convertSingleFile(&inputInfo, filepath.Join(outDir, "icon"+outExt), outputFormat)
+}
+
+func resizePngForLinux(inputInfo *InputFileInfo, iconFileName string, outDir string) ([]IconInfo, error) {
+	var result []IconInfo
+	result = append(result, IconInfo{
+		File: iconFileName,
+		Size: inputInfo.MaxIconSize,
+	})
+
+	sizeList := []int{24, 96}
+	for _, item := range icnsTypeToSize {
+		if item.Size < inputInfo.MaxIconSize {
+			sizeList = append(sizeList, item.Size)
+		}
+	}
+
+	err := multiResizeImage2(&inputInfo.maxImage, filepath.Join(outDir, "icon_%dx%d.png"), &result, sizeList)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	sortBySize(result)
+	return result, nil
+}
+
+func convertSingleFile(inputInfo *InputFileInfo, outFile string, outputFormat string) ([]IconInfo, error) {
 	switch outputFormat {
 	case "icns":
-		err := ConvertToIcns(inputInfo, outFile)
+		err := ConvertToIcns(*inputInfo, outFile)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -189,8 +206,26 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outD
 		return []IconInfo{{File: outFile}}, nil
 
 	default:
-		return nil, fmt.Errorf("unknown output format %s", resolvedPath)
+		return nil, fmt.Errorf("unknown output format %s", outputFormat)
 	}
+}
+
+func configureInputInfoFromSingleFile(file string, isOutputFormatIco bool, inputInfo *InputFileInfo) error {
+	maxImage, err := loadImage(file, inputInfo.recommendedMinSize)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	if isOutputFormatIco && maxImage.Bounds().Max.X > 256 {
+		image256 := imaging.Resize(maxImage, 256, 256, imaging.Lanczos)
+		maxImage = image256
+	}
+
+	inputInfo.MaxIconSize = maxImage.Bounds().Max.X
+	inputInfo.maxImage = maxImage
+	inputInfo.SizeToPath[inputInfo.MaxIconSize] = file
+
+	return nil
 }
 
 func loadImage(sourceFile string, recommendedMinSize int) (image.Image, error) {

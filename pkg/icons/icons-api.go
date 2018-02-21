@@ -3,6 +3,8 @@ package icons
 import (
 	"image"
 	"sort"
+
+	"github.com/develar/errors"
 )
 
 type IconInfo struct {
@@ -32,4 +34,15 @@ type InputFileInfo struct {
 	maxImage image.Image
 
 	recommendedMinSize int
+}
+
+func (t InputFileInfo) GetMaxImage() (image.Image, error) {
+	if t.maxImage == nil {
+		var err error
+		t.maxImage, err = loadImage(t.MaxIconPath, t.recommendedMinSize)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+	}
+	return t.maxImage, nil
 }

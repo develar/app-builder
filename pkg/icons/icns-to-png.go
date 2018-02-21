@@ -2,6 +2,7 @@ package icons
 
 import (
 	"fmt"
+	"image"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -37,7 +38,6 @@ func ConvertIcnsToPng(inFile string, outDir string) ([]IconInfo, error) {
 
 	sizeList := []int{24, 96}
 	var result []IconInfo
-	outFileTemplate := filepath.Join(outDir, "icon_%dx%d.png")
 	if runtime.GOOS == "darwin" && os.Getenv("FORCE_ICNS2PNG") == "" {
 		result, err = ConvertIcnsToPngUsingIconUtil(inFile, outDir, &sizeList)
 		if err != nil {
@@ -58,7 +58,7 @@ func ConvertIcnsToPng(inFile string, outDir string) ([]IconInfo, error) {
 	}
 
 	maxIconInfo := result[len(result)-1]
-	err = multiResizeImage(maxIconInfo.File, outFileTemplate, &result, sizeList, maxIconInfo.Size)
+	err = multiResizeImage(maxIconInfo.File, filepath.Join(outDir, "icon_%dx%d.png"), &result, sizeList)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -116,7 +116,7 @@ func contains(files []string, name string) bool {
 	return false
 }
 
-func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInfo, sizeList []int, maxSize int) (error) {
+func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInfo, sizeList []int) (error) {
 	imageCount := len(sizeList)
 	if imageCount == 0 {
 		return nil
@@ -126,6 +126,17 @@ func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInf
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	return multiResizeImage2(&originalImage, outFileNameFormat, result, sizeList)
+}
+
+func multiResizeImage2(originalImage *image.Image, outFileNameFormat string, result *[]IconInfo, sizeList []int) (error) {
+	imageCount := len(sizeList)
+	if imageCount == 0 {
+		return nil
+	}
+
+	maxSize := (*originalImage).Bounds().Max.X
 
 	return util.MapAsync(imageCount, func(taskIndex int) (func() error, error) {
 		size := sizeList[taskIndex]
@@ -140,7 +151,7 @@ func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInf
 		})
 
 		return func() error {
-			newImage := imaging.Resize(originalImage, size, size, imaging.Lanczos)
+			newImage := imaging.Resize(*originalImage, size, size, imaging.Lanczos)
 			return SaveImage(newImage, outFilePath, PNG)
 		}, nil
 	})
