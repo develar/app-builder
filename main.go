@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	appVersion = "1.3.6"
+	appVersion = "1.3.7"
 	app        = kingpin.New("app-builder", "app-builder").Version(appVersion)
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")

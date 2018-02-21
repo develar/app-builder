@@ -77,6 +77,10 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 		config, formatName, err := image.DecodeConfig(bufferedReader)
 		if err != nil {
 			outFileName = outFileNamePrefix + imageType + ".jp2"
+			result = append(result, IconInfo{
+				File: outFileName,
+				Size: typeToSize[imageType],
+			})
 		} else {
 			outFileName = outFileNamePrefix + fmt.Sprintf("%d.%s", config.Width, formatName)
 			result = append(result, IconInfo{
@@ -93,27 +97,36 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 		}
 
 		_, err = io.Copy(outWriter, io.LimitReader(reader, int64(subImage.Length)))
-		util.CloseAndCheckError(err, outWriter)
-
-		if formatName == "" {
-			size := typeToSize[imageType]
-			pngFile := fmt.Sprintf("%s%d.png", outFileNamePrefix, size)
-			err = util.Execute(exec.Command("opj_decompress", "-i", outFileName, "-o", pngFile), "")
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
-
-			err = os.Remove(outFileName)
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
-
-			result = append(result, IconInfo{
-				File: pngFile,
-				Size: config.Width,
-			})
+		err = util.CloseAndCheckError(err, outWriter)
+		if err != nil {
+			return nil, errors.WithStack(err)
 		}
 	}
+
+	util.MapAsync(len(result), func(taskIndex int) (func() error, error) {
+		imageInfo := &result[taskIndex]
+		jpeg2File := imageInfo.File
+		if !strings.HasSuffix(jpeg2File, ".jp2") {
+			return nil, nil
+		}
+
+		pngFile := fmt.Sprintf("%s%d.png", outFileNamePrefix, imageInfo.Size)
+		imageInfo.File = pngFile
+
+		return func() error {
+			err = util.Execute(exec.Command("opj_decompress", "-quiet", "-i", jpeg2File, "-o", pngFile), "")
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			err = os.Remove(jpeg2File)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			return nil
+		}, nil
+	})
 
 	return result, nil
 }

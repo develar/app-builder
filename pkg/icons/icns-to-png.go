@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"sort"
 
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/fs"
@@ -106,11 +105,6 @@ func hasSize(list []IconInfo, size int) bool {
 		}
 	}
 	return false
-}
-
-func sortBySize(list []IconInfo) {
-	sort.Slice(list, func(i, j int) bool { return list[i].Size < list[j].Size })
-	return
 }
 
 func contains(files []string, name string) bool {

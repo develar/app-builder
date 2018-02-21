@@ -2,11 +2,17 @@ package icons
 
 import (
 	"image"
+	"sort"
 )
 
 type IconInfo struct {
 	File string `json:"file"`
 	Size int    `json:"size"`
+}
+
+func sortBySize(list []IconInfo) {
+	sort.Slice(list, func(i, j int) bool { return list[i].Size < list[j].Size })
+	return
 }
 
 type IconConvertResult struct {

@@ -1,29 +1,28 @@
 package icons
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/errors"
 )
 
 func CollectIcons(sourceDir string) ([]IconInfo, error) {
 	files, err := fs.ReadDirContent(sourceDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("icon directory %s doesn't exist", sourceDir)
+			return nil, errors.Errorf("icon directory %s doesn't exist", sourceDir)
 		}
 
 		fileInfo, statErr := os.Stat(sourceDir)
 		if statErr == nil && !fileInfo.IsDir() {
-			return nil, fmt.Errorf("icon directory %s is not a directory", sourceDir)
+			return nil, errors.Errorf("icon directory %s is not a directory", sourceDir)
 		}
-		return nil, err
+		return nil, errors.WithStack(err)
 	}
 
 	var result []IconInfo
@@ -42,7 +41,7 @@ func CollectIcons(sourceDir string) ([]IconInfo, error) {
 		size, err := strconv.Atoi(sizeString)
 		if err != nil {
 			// unrealistic case
-			return nil, err
+			return nil, errors.WithStack(err)
 		}
 
 		iconPath := filepath.Join(sourceDir, name)
@@ -50,10 +49,9 @@ func CollectIcons(sourceDir string) ([]IconInfo, error) {
 	}
 
 	if len(result) == 0 {
-		return nil, fmt.Errorf("icon directory %s doesn't contain icons", sourceDir)
+		return nil, errors.Errorf("icon directory %s doesn't contain icons", sourceDir)
 	}
 
-	sort.Slice(result, func(i, j int) bool { return result[i].Size < result[j].Size })
-
+	sortBySize(result)
 	return result, nil
 }
