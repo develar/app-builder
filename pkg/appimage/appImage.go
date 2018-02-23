@@ -58,6 +58,24 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
+func GetAppImageToolDir() (string, error) {
+	dirName := "appimage-9.0.6"
+	result, err := download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", APPIMAGE_TOOL_SHA512)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	return result, nil
+}
+
+func GetAppImageToolBin(toolDir string) string {
+	if runtime.GOOS == "darwin" {
+		return filepath.Join(toolDir, "darwin")
+
+	} else {
+		return filepath.Join(toolDir, "linux-"+goArchToNodeArch(runtime.GOARCH))
+	}
+}
+
 func AppImage(options AppImageOptions) error {
 	stageDir := *options.stageDir
 
@@ -66,8 +84,7 @@ func AppImage(options AppImageOptions) error {
 		return errors.WithStack(err)
 	}
 
-	dirName := "appimage-9.0.6"
-	appImageToolDir, err := download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", APPIMAGE_TOOL_SHA512)
+	appImageToolDir, err := GetAppImageToolDir()
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -89,14 +106,7 @@ func AppImage(options AppImageOptions) error {
 	}
 	args = append(args, stageDir, *options.output)
 
-	var vendorToolDir string
-	if runtime.GOOS == "darwin" {
-		vendorToolDir = filepath.Join(appImageToolDir, "darwin")
-
-	} else {
-		vendorToolDir = filepath.Join(appImageToolDir, "linux-"+goArchToNodeArch(runtime.GOARCH))
-	}
-
+	vendorToolDir := GetAppImageToolBin(appImageToolDir)
 	command := exec.Command(filepath.Join(vendorToolDir, "appimagetool"), args...)
 
 	appImageArch, err := toAppImageArch(arch)

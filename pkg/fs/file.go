@@ -21,7 +21,7 @@ func CreateFile(name string) (*os.File, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	err = os.MkdirAll(filepath.Dir(name), 0755)
+	err = os.MkdirAll(filepath.Dir(name), 0777)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -48,7 +48,7 @@ func EnsureEmptyDir(dirPath string) error {
 	dir, err := os.Open(dirPath)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return errors.WithStack(os.MkdirAll(dirPath, 0755))
+			return errors.WithStack(os.MkdirAll(dirPath, 0777))
 		} else {
 			return errors.WithStack(err)
 		}

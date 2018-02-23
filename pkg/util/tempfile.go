@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/pkg/errors"
 )
 
 // Random number state.
@@ -44,7 +46,7 @@ func nextPrefix() string {
 // will not choose the same file. The caller can use f.Name()
 // to find the pathname of the file. It is the caller's responsibility
 // to remove the file when no longer needed.
-func TempFile(dir, suffix string) (f *os.File, err error) {
+func TempFile(dir, suffix string) (string, error) {
 	if dir == "" {
 		dir = os.TempDir()
 	}
@@ -52,18 +54,18 @@ func TempFile(dir, suffix string) (f *os.File, err error) {
 	nConflict := 0
 	for i := 0; i < 10000; i++ {
 		name := filepath.Join(dir, nextPrefix()+suffix)
-		f, err = os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0600)
-		if os.IsExist(err) {
-			if nConflict++; nConflict > 10 {
-				randmu.Lock()
-				rand = reseed()
-				randmu.Unlock()
-			}
-			continue
+		_, err := os.Lstat(name)
+		if os.IsNotExist(err) {
+			return name, nil
 		}
-		break
+
+		if nConflict++; nConflict > 10 {
+			randmu.Lock()
+			rand = reseed()
+			randmu.Unlock()
+		}
 	}
-	return
+	return "", errors.Errorf("cannot find unique file name")
 }
 
 // TempDir creates a new temporary directory in the directory dir

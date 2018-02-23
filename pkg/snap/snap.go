@@ -1,7 +1,6 @@
 package snap
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/appimage"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
@@ -41,8 +41,8 @@ type TemplateInfo struct {
 
 //noinspection SpellCheckingInspection
 var electronTemplate = TemplateInfo {
-	Url: fmt.Sprintf("https://github.com/electron-userland/electron-builder-binaries/releases/download/%[1]s/%[1]s.7z", "snap-template-0.2.0"),
-	Sha512: "2Uxlk/+BkZt5T4CePfi5Cbt35TLlCuO34M5kGaFeT/V1JCx5D6i+EAdMMp1AX9vi6/4zSKW/wB5Z+DZIaHacNg==",
+	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-1/electron-template-1.snap",
+	Sha512: "521uTX/pzhEKaqAeGy8xUlfaeu8qhG9lyA2NUuQk4DeFL3DtoK9vcZpLKUsZ1VjzXbO0sveDf3ZdFcWwH2seuQ==",
 }
 
 // --enable-geoip leads to very slow fetching - it seems local sources are more slow.
@@ -62,7 +62,7 @@ type SnapOptions struct {
 func ConfigureCommand(app *kingpin.Application) {
 	command := app.Command("snap", "Build snap.")
 
-	templateDir := command.Flag("template", "The template dir.").Short('t').String()
+	templateFile := command.Flag("template", "The template file.").Short('t').String()
 
 	templateUrl := command.Flag("template-url", "The template archive URL.").Short('u').String()
 	templateSha512 := command.Flag("template-sha512", "The expected sha512 of template archive.").String()
@@ -91,13 +91,13 @@ func ConfigureCommand(app *kingpin.Application) {
 	isRemoveStage := util.ConfigureIsRemoveStageParam(command)
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		resolvedTemplateDir, err := resolveTemplateDir(*templateDir, *templateUrl, *templateSha512)
+		resolvedTemplateFile, err := resolveTemplateFile(*templateFile, *templateUrl, *templateSha512)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
-		isUseDocker, err := DetectIsUseDocker(*isUseDockerCommandArg, len(resolvedTemplateDir) != 0)
-		err = Snap(resolvedTemplateDir, isUseDocker, options)
+		isUseDocker, err := DetectIsUseDocker(*isUseDockerCommandArg, len(resolvedTemplateFile) != 0)
+		err = Snap(resolvedTemplateFile, isUseDocker, options)
 		if err != nil {
 			switch e := errors.Cause(err).(type) {
 			case util.MessageError:
@@ -119,9 +119,9 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
-func resolveTemplateDir(templateDir string, templateUrl string, templateSha512 string) (string, error) {
-	if len(templateDir) != 0 || len(templateUrl) == 0 {
-		return templateDir, nil
+func resolveTemplateFile(templateFile string, templateUrl string, templateSha512 string) (string, error) {
+	if len(templateFile) != 0 || len(templateUrl) == 0 {
+		return templateFile, nil
 	}
 
 	var templateInfo TemplateInfo
@@ -134,7 +134,7 @@ func resolveTemplateDir(templateDir string, templateUrl string, templateSha512 s
 		}
 	}
 
-	result, err := download.DownloadArtifact("", templateInfo.Url, templateInfo.Sha512)
+	result, err := download.DownloadCompressedArtifact("snap-templates", templateInfo.Url, templateInfo.Sha512)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -177,35 +177,12 @@ func DetectIsUseDocker(isUseDocker bool, isUseTemplateApp bool) (bool, error) {
 		return isUseDocker, nil
 	}
 
-	if !isUseTemplateApp {
-		return true, nil
-	}
-
-	err := CheckSnapcraftVersion(false)
-	if err != nil {
-		return true, errors.WithStack(err)
-	} else {
-		return false, nil
-	}
-
-	log.WithFields(log.Fields{
-		"reason":   "snapcraft not installed",
-		"solution": "brew install snapcraft",
-	}).Warn("docker is used to build snap")
-
-	return true, nil
+	return !isUseTemplateApp, nil
 }
 
-func Snap(templateDir string, isUseDocker bool, options SnapOptions) error {
+func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
 	stageDir := *options.stageDir
-	isUseTemplateApp := len(templateDir) != 0
-	if isUseTemplateApp {
-		err := fs.CopyUsingHardlink(templateDir, stageDir)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
+	isUseTemplateApp := len(templateFile) != 0
 	var snapMetaDir string
 	if isUseTemplateApp {
 		snapMetaDir = filepath.Join(stageDir, "meta")
@@ -228,10 +205,12 @@ func Snap(templateDir string, isUseDocker bool, options SnapOptions) error {
 		}
 	}
 
-	if isUseDocker {
-		return buildUsingDocker(isUseTemplateApp, options)
+	if len(templateFile) != 0 {
+		return buildWithoutDockerUsingTemplate(templateFile, options)
+	} else if isUseDocker {
+		return buildUsingDocker(options)
 	} else {
-		return buildWithoutDocker(isUseTemplateApp, options)
+		return buildWithoutDockerAndWithoutTemplate(options)
 	}
 }
 
@@ -257,29 +236,53 @@ func RemoveAdapter(snapFilePath string) error {
 	return nil
 }
 
-func buildWithoutDocker(isUseTemplateApp bool, options SnapOptions) error {
+func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) error {
+	err := fs.CopyDirOrFile(templateFile, *options.output)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	mksquashfsPath := "mksquashfs"
+	if !util.IsEnvTrue("USE_SYSTEM_MKSQUASHFS") {
+		mksquashfsPath = os.Getenv("MKSQUASHFS_PATH")
+		if mksquashfsPath == "" {
+			toolDir, err := appimage.GetAppImageToolDir()
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			mksquashfsPath = filepath.Join(appimage.GetAppImageToolBin(toolDir), "mksquashfs")
+		}
+	}
+
+	// will be not merged into root if pass several source dirs, so, call for each source dir
+	for _, sourceDir := range []string{*options.stageDir, *options.appDir} {
+		err = util.Execute(exec.Command(mksquashfsPath, sourceDir, *options.output, "-no-progress", "-all-root", "-no-duplicates", "-no-recovery"), "")
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+	return nil
+}
+
+func buildWithoutDockerAndWithoutTemplate(options SnapOptions) error {
+	stageDir := *options.stageDir
+
+	var primeDir string
 	err := CheckSnapcraftVersion(true)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	stageDir := *options.stageDir
+	util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("snapcraft", "prime", "--target-arch", *options.arch), stageDir)
+	primeDir = filepath.Join(stageDir, "prime")
+	err = cleanUpSnap(primeDir)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
-	var primeDir string
-	if isUseTemplateApp {
-		primeDir = stageDir
-	} else {
-		util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("snapcraft", "prime", "--target-arch", *options.arch), stageDir)
-		primeDir = filepath.Join(stageDir, "prime")
-		err := cleanUpSnap(primeDir)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		err = RemoveAdapter(filepath.Join(primeDir, "meta", "snap.yaml"))
-		if err != nil {
-			return errors.WithStack(err)
-		}
+	err = RemoveAdapter(filepath.Join(primeDir, "meta", "snap.yaml"))
+	if err != nil {
+		return errors.WithStack(err)
 	}
 
 	err = fs.CopyUsingHardlink(*options.appDir, filepath.Join(primeDir, "app"))
@@ -295,21 +298,7 @@ func buildWithoutDocker(isUseTemplateApp bool, options SnapOptions) error {
 	return nil
 }
 
-func buildUsingDocker(isUseTemplateApp bool, options SnapOptions) error {
-	stageDir := *options.stageDir
-
-	if isUseTemplateApp {
-		err := util.Execute(exec.Command("docker", "run", "--rm",
-			"-v", filepath.Dir(*options.output)+":/out:delegated",
-			// cannot be "ro" because we mount stage/app, so, "delegated"
-			"-v", stageDir+":/stage:delegated",
-			"-v", *options.appDir+":/stage/app:ro",
-			*options.dockerImage,
-			"snapcraft", "pack", "/stage", "--output", "/out/"+filepath.Base(*options.output),
-		), stageDir)
-		return errors.WithStack(err)
-	}
-
+func buildUsingDocker(options SnapOptions) error {
 	var commands []string
 	// copy stage to linux fs to avoid performance issues (https://docs.docker.com/docker-for-mac/osxfs-caching/)
 	commands = append(commands,
@@ -318,11 +307,14 @@ func buildUsingDocker(isUseTemplateApp bool, options SnapOptions) error {
 		"snapcraft prime --target-arch " + *options.arch,
 		"rm -rf prime/"+strings.Join(unnecessaryFiles, " prime/"),
 		"mv /s/prime/* /tmp/final-stage/",
+		"mv /s/command.sh /tmp/final-stage/command.sh",
+		"sed -i '/adapter: none/d' /tmp/final-stage/meta/snap.yaml",
 		"snapcraft pack /tmp/final-stage --output /out/"+filepath.Base(*options.output),
 	)
 
 	log.WithField("command", strings.Join(commands, "\n")).Debug("build snap using docker")
 
+	stageDir := *options.stageDir
 	err := util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("docker", "run", "--rm",
 		"-v", filepath.Dir(*options.output)+":/out:delegated",
 		"--mount", "type=bind,source="+stageDir+",destination=/stage,readonly",

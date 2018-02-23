@@ -92,17 +92,12 @@ func GetEffectiveBackgroundPath(path string) (string, error) {
 		return "", err
 	}
 
-	err = tiffFile.Close()
+	err = util.Execute(exec.Command("tiffutil", "-cathidpicheck", path, retinaFile, "-out", tiffFile), "")
 	if err != nil {
 		return "", err
 	}
 
-	err = util.Execute(exec.Command("tiffutil", "-cathidpicheck", path, retinaFile, "-out", tiffFile.Name()), "")
-	if err != nil {
-		return "", err
-	}
-
-	return tiffFile.Name(), nil
+	return tiffFile, nil
 }
 
 func setHasCustomIconAttribute(path string) error {

@@ -7,6 +7,7 @@
       <w>chunking</w>
       <w>geoip</w>
       <w>lintian</w>
+      <w>mksquashfs</w>
       <w>ostype</w>
       <w>snapcore</w>
       <w>umask</w>

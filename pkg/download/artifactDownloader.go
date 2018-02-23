@@ -46,8 +46,8 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	cachePath := filepath.Join(cacheDir, dirName[0:strings.Index(dirName, "-")])
-	dirPath := filepath.Join(cachePath, dirName)
+	cacheDir = filepath.Join(cacheDir, dirName[0:strings.Index(dirName, "-")])
+	dirPath := filepath.Join(cacheDir, dirName)
 
 	logFields := log.Fields{
 		"path": dirPath,
@@ -63,7 +63,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		return "", errors.WithMessage(err, "error during cache check for path "+dirPath)
 	}
 
-	err = os.MkdirAll(cachePath, 0755)
+	err = os.MkdirAll(cacheDir, 0777)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -71,7 +71,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	log.WithFields(logFields).WithField("url", url).Info("downloading")
 
 	// 7z cannot be extracted from the input stream, temp file is required
-	tempUnpackDir, err := util.TempDir(cachePath, "")
+	tempUnpackDir, err := util.TempDir(cacheDir, "")
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -83,7 +83,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	}
 
 	command := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "x", "-bd", archiveName, "-o"+tempUnpackDir)
-	command.Dir = cachePath
+	command.Dir = cacheDir
 	output, err := command.CombinedOutput()
 	if err != nil {
 		return "", errors.WithStack(err)
@@ -106,6 +106,56 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	log.WithFields(logFields).Debug("downloaded")
 
 	return dirPath, nil
+}
+
+func DownloadCompressedArtifact(subDir string, url string, checksum string) (string, error) {
+	cacheDir, err := getCacheDirectory("electron-builder")
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	if len(subDir) != 0 {
+		cacheDir = filepath.Join(cacheDir, subDir)
+	}
+
+	filePath := filepath.Join(cacheDir, path.Base(url))
+	logFields := log.Fields{
+		"file": filePath,
+	}
+
+	_, err = os.Stat(filePath)
+	if err == nil {
+		log.WithFields(logFields).Debug("found existing")
+		return filePath, nil
+	}
+
+	if err != nil && !os.IsNotExist(err) {
+		return "", errors.WithMessage(err, "error during cache check for path "+filePath)
+	}
+
+	err = os.MkdirAll(cacheDir, 0777)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	tempFile, err := util.TempFile(cacheDir, ".snap")
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	log.WithFields(logFields).WithField("url", url).Info("downloading")
+	err = Download(url, tempFile, checksum)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	log.WithFields(logFields).Debug("downloaded")
+
+	err = os.Rename(tempFile, filePath)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	return filePath, nil
 }
 
 func getCacheDirectory(dirName string) (string, error) {

@@ -39,7 +39,7 @@ func ConfigureCommand(app *kingpin.Application) {
 
 func Download(url string, output string, sha512 string) error {
 	dir := filepath.Dir(output)
-	err := os.MkdirAll(dir, 0755)
+	err := os.MkdirAll(dir, 0777)
 	if err != nil {
 		return errors.WithStack(err)
 	}
