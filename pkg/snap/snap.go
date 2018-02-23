@@ -1,6 +1,7 @@
 package snap
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -31,6 +32,17 @@ var unnecessaryFiles = []string{
 
 	"usr/lib/python*",
 	"usr/bin/python*",
+}
+
+type TemplateInfo struct {
+	Url    string
+	Sha512 string
+}
+
+//noinspection SpellCheckingInspection
+var electronTemplate = TemplateInfo {
+	Url: fmt.Sprintf("https://github.com/electron-userland/electron-builder-binaries/releases/download/%[1]s/%[1]s.7z", "snap-template-0.2.0"),
+	Sha512: "2Uxlk/+BkZt5T4CePfi5Cbt35TLlCuO34M5kGaFeT/V1JCx5D6i+EAdMMp1AX9vi6/4zSKW/wB5Z+DZIaHacNg==",
 }
 
 // --enable-geoip leads to very slow fetching - it seems local sources are more slow.
@@ -79,13 +91,9 @@ func ConfigureCommand(app *kingpin.Application) {
 	isRemoveStage := util.ConfigureIsRemoveStageParam(command)
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		resolvedTemplateDir := *templateDir
-		if len(resolvedTemplateDir) == 0 && len(*templateUrl) != 0 {
-			var err error
-			resolvedTemplateDir, err = download.DownloadArtifact("", *templateUrl, *templateSha512)
-			if err != nil {
-				return errors.WithStack(err)
-			}
+		resolvedTemplateDir, err := resolveTemplateDir(*templateDir, *templateUrl, *templateSha512)
+		if err != nil {
+			return errors.WithStack(err)
 		}
 
 		isUseDocker, err := DetectIsUseDocker(*isUseDockerCommandArg, len(resolvedTemplateDir) != 0)
@@ -109,6 +117,28 @@ func ConfigureCommand(app *kingpin.Application) {
 
 		return nil
 	})
+}
+
+func resolveTemplateDir(templateDir string, templateUrl string, templateSha512 string) (string, error) {
+	if len(templateDir) != 0 || len(templateUrl) == 0 {
+		return templateDir, nil
+	}
+
+	var templateInfo TemplateInfo
+	if templateUrl == "electron1" {
+		templateInfo = electronTemplate
+	} else {
+		templateInfo = TemplateInfo{
+			Url:    templateUrl,
+			Sha512: templateSha512,
+		}
+	}
+
+	result, err := download.DownloadArtifact("", templateInfo.Url, templateInfo.Sha512)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	return result, nil
 }
 
 func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {

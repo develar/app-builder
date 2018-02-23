@@ -88,11 +88,21 @@ func (fileCopier *FileCopier) copyDirOrFile(from string, to string, isCreatePare
 	}
 
 	if fromInfo.IsDir() {
+		// cannot use file mode as is because of *** *** *** umask
 		if isCreateParentDirs {
-			err = os.MkdirAll(to, fromInfo.Mode())
+			err = os.MkdirAll(to, 0777)
 		} else {
-			err = os.Mkdir(to, fromInfo.Mode())
+			err = os.Mkdir(to, 0777)
 		}
+
+		perm := fromInfo.Mode().Perm()
+		if perm != 0755 {
+			err = os.Chmod(to, fromInfo.Mode())
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		}
+
 		if err != nil && !os.IsExist(err) {
 			return errors.WithStack(err)
 		}
@@ -113,7 +123,7 @@ func (fileCopier *FileCopier) copyDirOrFile(from string, to string, isCreatePare
 	}
 
 	if isCreateParentDirs {
-		err = os.MkdirAll(filepath.Dir(to), 0755)
+		err = os.MkdirAll(filepath.Dir(to), 0777)
 		if err != nil {
 			return err
 		}
@@ -150,7 +160,9 @@ func copyFile(from string, to string, fromInfo os.FileInfo) error {
 	}
 
 	defer sourceFile.Close()
-	destinationFile, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, fromInfo.Mode())
+	// cannot use file mode as is because of *** *** *** umask
+	destinationFile, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+
 	if err != nil {
 		sourceFile.Close()
 		return errors.WithStack(err)
@@ -160,6 +172,14 @@ func copyFile(from string, to string, fromInfo os.FileInfo) error {
 	if err != nil {
 		destinationFile.Close()
 		return errors.WithStack(err)
+	}
+
+	perm := fromInfo.Mode().Perm()
+	if perm != 0644 {
+		err = os.Chmod(to, fromInfo.Mode())
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 
 	err = destinationFile.Close()

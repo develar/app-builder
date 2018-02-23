@@ -9,6 +9,7 @@
       <w>lintian</w>
       <w>ostype</w>
       <w>snapcore</w>
+      <w>umask</w>
     </words>
   </dictionary>
 </component>
