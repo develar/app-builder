@@ -25,17 +25,17 @@ func ConfigureCommand(app *kingpin.Application) {
 	command.Action(func(context *kingpin.ParseContext) error {
 		resultFile, err := ConvertIcon(*sources, *iconRoots, *iconOutFormat, *outDir)
 		if err != nil {
-			log.Debugf("%+v\n", err)
-
 			switch t := errors.Cause(err).(type) {
-			default:
-				return err
-
 			case *ImageSizeError:
+				log.Debugf("%+v\n", err)
 				return writeUserError(t)
 
 			case *ImageFormatError:
+				log.Debugf("%+v\n", err)
 				return writeUserError(t)
+
+			default:
+				return err
 			}
 		}
 
@@ -43,7 +43,7 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
-func writeUserError(error ImageError) error {
+func writeUserError(error util.MessageError) error {
 	return util.WriteJsonToStdOut(MisConfigurationError{Message: error.Error(), Code: error.ErrorCode()})
 }
 
@@ -89,7 +89,7 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outD
 	}
 
 	log.WithFields(log.Fields{
-		"path": resolvedPath,
+		"path":         resolvedPath,
 		"outputFormat": outputFormat,
 	}).Debug("path resolved")
 

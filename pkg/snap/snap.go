@@ -1,9 +1,11 @@
 package snap
 
 import (
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -61,10 +63,10 @@ func ConfigureCommand(app *kingpin.Application) {
 	}
 
 	options := SnapOptions{
-		appDir:         command.Flag("app", "The app dir.").Short('a').Required().String(),
-		stageDir:       command.Flag("stage", "The stage dir.").Short('s').Required().String(),
-		icon:           command.Flag("icon", "The path to the icon.").String(),
-		hooksDir:       command.Flag("hooks", "The hooks dir.").String(),
+		appDir:   command.Flag("app", "The app dir.").Short('a').Required().String(),
+		stageDir: command.Flag("stage", "The stage dir.").Short('s').Required().String(),
+		icon:     command.Flag("icon", "The path to the icon.").String(),
+		hooksDir: command.Flag("hooks", "The hooks dir.").String(),
 
 		arch: command.Flag("arch", "The arch.").Default("amd64").Enum("amd64", "i386", "armv7l", "arm64"),
 
@@ -89,7 +91,13 @@ func ConfigureCommand(app *kingpin.Application) {
 		isUseDocker, err := DetectIsUseDocker(*isUseDockerCommandArg, len(resolvedTemplateDir) != 0)
 		err = Snap(resolvedTemplateDir, isUseDocker, options)
 		if err != nil {
-			return errors.WithStack(err)
+			switch e := errors.Cause(err).(type) {
+			case util.MessageError:
+				log.Fatal(e.Error())
+
+			default:
+				return err
+			}
 		}
 
 		if *isRemoveStage {
@@ -101,6 +109,33 @@ func ConfigureCommand(app *kingpin.Application) {
 
 		return nil
 	})
+}
+
+func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {
+	out, err := exec.Command("snapcraft", "--version").Output()
+
+	var install string
+	if runtime.GOOS == "darwin" {
+		install = "brew update snapcraft"
+	} else {
+		install = "sudo snap install snapcraft --classic"
+	}
+
+	if err == nil {
+		if version.CompareSimple(strings.TrimSpace(string(out)), "2.39.0") == 1 {
+			return util.NewMessageError("at least snapcraft 2.39.0 is required, please: "+install, "ERR_SNAPCRAFT_OUTDATED")
+		} else {
+			return nil
+		}
+	}
+
+	log.Debug(err.Error())
+
+	if isRequireToBeInstalled {
+		return util.NewMessageError("snapcraft is not installed, please: "+install, "ERR_SNAPCRAFT_NOT_INSTALLED")
+	} else {
+		return nil
+	}
 }
 
 func DetectIsUseDocker(isUseDocker bool, isUseTemplateApp bool) (bool, error) {
@@ -116,16 +151,13 @@ func DetectIsUseDocker(isUseDocker bool, isUseTemplateApp bool) (bool, error) {
 		return true, nil
 	}
 
-	out, err := exec.Command("snapcraft", "--version").Output()
-	if err == nil {
-		if version.CompareSimple(strings.TrimSpace(string(out)), "2.39.0") == 1 {
-			return true, errors.Errorf("at least snapcraft 2.39.0 is required, please 'brew update snapcraft'")
-		} else {
-			return false, nil
-		}
+	err := CheckSnapcraftVersion(false)
+	if err != nil {
+		return true, errors.WithStack(err)
+	} else {
+		return false, nil
 	}
 
-	log.WithError(err).Debug("snapcraft not installed")
 	log.WithFields(log.Fields{
 		"reason":   "snapcraft not installed",
 		"solution": "brew install snapcraft",
@@ -173,7 +205,34 @@ func Snap(templateDir string, isUseDocker bool, options SnapOptions) error {
 	}
 }
 
+func RemoveAdapter(snapFilePath string) error {
+	data, err := ioutil.ReadFile(snapFilePath)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	re, err := regexp.Compile("(?m)[\r\n]+^\\s+adapter: none.*$")
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	fixedData := re.ReplaceAll(data, []byte{})
+	if len(fixedData) != len(data) {
+		err = ioutil.WriteFile(snapFilePath, fixedData, 0)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	return nil
+}
+
 func buildWithoutDocker(isUseTemplateApp bool, options SnapOptions) error {
+	err := CheckSnapcraftVersion(true)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	stageDir := *options.stageDir
 
 	var primeDir string
@@ -186,9 +245,14 @@ func buildWithoutDocker(isUseTemplateApp bool, options SnapOptions) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
+
+		err = RemoveAdapter(filepath.Join(primeDir, "meta", "snap.yaml"))
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 
-	err := fs.CopyUsingHardlink(*options.appDir, filepath.Join(primeDir, "app"))
+	err = fs.CopyUsingHardlink(*options.appDir, filepath.Join(primeDir, "app"))
 	if err != nil {
 		return errors.WithStack(err)
 	}

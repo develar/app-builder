@@ -2,11 +2,6 @@ package icons
 
 import "fmt"
 
-type ImageError interface {
-	Error() string
-	ErrorCode() string
-}
-
 type ImageSizeError struct {
 	File            string
 	RequiredMinSize int
