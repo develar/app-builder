@@ -29,6 +29,7 @@ func CollectIcons(sourceDir string) ([]IconInfo, string, error) {
 	var result []IconInfo
 	re := regexp.MustCompile("[0-9]+")
 	var iconFilename string
+	sizeToFileName := make(map[int]*IconInfo)
 	for _, name := range files {
 		if !(strings.HasSuffix(name, ".png") || strings.HasSuffix(name, ".PNG")) {
 			continue
@@ -49,7 +50,21 @@ func CollectIcons(sourceDir string) ([]IconInfo, string, error) {
 		}
 
 		iconPath := filepath.Join(sourceDir, name)
-		result = append(result, IconInfo{iconPath, size})
+
+		existing := sizeToFileName[size]
+		if existing != nil {
+			// 16x16.png vs 16x16-dev.png - select shorter name
+			if len(name) >= len(filepath.Base(existing.File)) {
+				continue
+			} else {
+				existing.File = iconPath
+				break
+			}
+		}
+
+		iconInfo := IconInfo{iconPath, size}
+		sizeToFileName[size] = &iconInfo
+		result = append(result, iconInfo)
 	}
 
 	if len(result) == 0 {
