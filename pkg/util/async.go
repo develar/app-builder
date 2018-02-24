@@ -64,7 +64,6 @@ func mapAsync(taskCount int, concurrency int, taskProducer func(taskIndex int) (
 		select {
 		case err := <-errorChannel:
 			close(quitChannel)
-			close(errorChannel)
 			return err
 
 		case <-doneChannel:

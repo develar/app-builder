@@ -246,11 +246,10 @@ func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) e
 	if !util.IsEnvTrue("USE_SYSTEM_MKSQUASHFS") {
 		mksquashfsPath = os.Getenv("MKSQUASHFS_PATH")
 		if mksquashfsPath == "" {
-			toolDir, err := appimage.GetAppImageToolDir()
+			mksquashfsPath, err = appimage.GetLinuxTool("mksquashfs")
 			if err != nil {
 				return errors.WithStack(err)
 			}
-			mksquashfsPath = filepath.Join(appimage.GetAppImageToolBin(toolDir), "mksquashfs")
 		}
 	}
 

@@ -8,9 +8,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/appimage"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 )
@@ -103,18 +105,26 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 		}
 	}
 
-	util.MapAsync(len(result), func(taskIndex int) (func() error, error) {
+	err = util.MapAsync(len(result), func(taskIndex int) (func() error, error) {
 		imageInfo := &result[taskIndex]
 		jpeg2File := imageInfo.File
 		if !strings.HasSuffix(jpeg2File, ".jp2") {
 			return nil, nil
 		}
 
+		opjDecompressPath := "opj_decompress"
+		if !util.IsEnvTrue("USE_SYSTEM_OPG") && runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
+			opjDecompressPath, err = appimage.GetLinuxTool("opj_decompress")
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+		}
+
 		pngFile := fmt.Sprintf("%s%d.png", outFileNamePrefix, imageInfo.Size)
 		imageInfo.File = pngFile
 
 		return func() error {
-			err = util.Execute(exec.Command("opj_decompress", "-quiet", "-i", jpeg2File, "-o", pngFile), "")
+			err = util.Execute(exec.Command(opjDecompressPath, "-quiet", "-i", jpeg2File, "-o", pngFile), "")
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -127,6 +137,9 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 			return nil
 		}, nil
 	})
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
 
 	return result, nil
 }
