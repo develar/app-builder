@@ -45,6 +45,12 @@ var electronTemplate = TemplateInfo {
 	Sha512: "521uTX/pzhEKaqAeGy8xUlfaeu8qhG9lyA2NUuQk4DeFL3DtoK9vcZpLKUsZ1VjzXbO0sveDf3ZdFcWwH2seuQ==",
 }
 
+//noinspection SpellCheckingInspection
+var electronTemplate2 = TemplateInfo {
+	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-2/electron-template-2.snap",
+	Sha512: "SxMNeIp7a6jei2nGOjhPWai0m/pIg2Q2QrGHBniP2Jt7uMmstV+LAqxJtWes0ioJqSkQmtTSCShSxTh7t6Nk3g==",
+}
+
 // --enable-geoip leads to very slow fetching - it seems local sources are more slow.
 
 type SnapOptions struct {
@@ -127,6 +133,8 @@ func resolveTemplateFile(templateFile string, templateUrl string, templateSha512
 	var templateInfo TemplateInfo
 	if templateUrl == "electron1" {
 		templateInfo = electronTemplate
+	} else if templateUrl == "electron2" {
+		templateInfo = electronTemplate2
 	} else {
 		templateInfo = TemplateInfo{
 			Url:    templateUrl,
