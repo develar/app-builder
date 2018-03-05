@@ -1,0 +1,68 @@
+package linuxTools
+
+import (
+	"os"
+	"path/filepath"
+	"runtime"
+
+	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/util"
+	"github.com/develar/errors"
+)
+
+//noinspection GoSnakeCaseUsage,SpellCheckingInspection
+const APPIMAGE_TOOL_SHA512 = "/9ipJexioCIFK+aQ/LktAHEieFFWxwkikxXZZlKXzm3fY5tFs+xUKv2m4OymD6ITRGiA4zzAKmlWyhVOjCxXuw=="
+
+func GetAppImageToolDir() (string, error) {
+	dirName := "appimage-9.1.0"
+	result, err := download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", APPIMAGE_TOOL_SHA512)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	return result, nil
+}
+
+func GetAppImageToolBin(toolDir string) string {
+	if runtime.GOOS == "darwin" {
+		return filepath.Join(toolDir, "darwin")
+
+	} else {
+		return filepath.Join(toolDir, "linux-"+goArchToNodeArch(runtime.GOARCH))
+	}
+}
+
+func GetLinuxTool(name string) (string, error) {
+	toolDir, err := GetAppImageToolDir()
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	return filepath.Join(GetAppImageToolBin(toolDir), name), nil
+}
+
+func GetMksquashfs() (string, error) {
+	var err error
+
+	result := "mksquashfs"
+	if !util.IsEnvTrue("USE_SYSTEM_MKSQUASHFS") {
+		result = os.Getenv("MKSQUASHFS_PATH")
+		if len(result) == 0 {
+			result, err = GetLinuxTool("mksquashfs")
+			if err != nil {
+				return "", errors.WithStack(err)
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func goArchToNodeArch(arch string) (string) {
+	switch arch {
+	case "amd64":
+		return "x64"
+	case "386":
+		return "ia32"
+	default:
+		return arch
+	}
+}

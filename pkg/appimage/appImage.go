@@ -1,22 +1,19 @@
 package appimage
 
 import (
-	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
+	"strconv"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/develar/app-builder/pkg/blockmap"
-	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 )
-
-//noinspection GoSnakeCaseUsage,SpellCheckingInspection
-const APPIMAGE_TOOL_SHA512 = "at5M33iNSAOzOGEvPpbeMsrULbRpEv8jfKYcRxK+uZ+f3+xT/AUbtuqlnZ+CFTSjUjOqjrJyJAILnVDP0tnpjg=="
 
 type AppImageOptions struct {
 	appDir   *string
@@ -58,32 +55,6 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
-func GetAppImageToolDir() (string, error) {
-	dirName := "appimage-9.0.9"
-	result, err := download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", APPIMAGE_TOOL_SHA512)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-	return result, nil
-}
-
-func GetAppImageToolBin(toolDir string) string {
-	if runtime.GOOS == "darwin" {
-		return filepath.Join(toolDir, "darwin")
-
-	} else {
-		return filepath.Join(toolDir, "linux-"+goArchToNodeArch(runtime.GOARCH))
-	}
-}
-
-func GetLinuxTool(name string) (string, error) {
-	toolDir, err := GetAppImageToolDir()
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-	return filepath.Join(GetAppImageToolBin(toolDir), name), nil
-}
-
 func AppImage(options AppImageOptions) error {
 	stageDir := *options.stageDir
 
@@ -92,7 +63,7 @@ func AppImage(options AppImageOptions) error {
 		return errors.WithStack(err)
 	}
 
-	appImageToolDir, err := GetAppImageToolDir()
+	appImageToolDir, err := linuxTools.GetAppImageToolDir()
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -105,37 +76,28 @@ func AppImage(options AppImageOptions) error {
 		}
 	}
 
-	var args []string
-	args = append(args, "--runtime-file", filepath.Join(appImageToolDir, "runtime-"+arch), "--no-appstream")
-	if *options.compression != "" {
-		// default gzip compression - 51.9, xz - 50.4 difference is negligible, start time - well, it seems, a little bit longer (but on Parallels VM on external SSD disk)
-		// so, to be decided later, is it worth to use xz by default
-		args = append(args, "--comp", *options.compression)
-	}
-	args = append(args, stageDir, *options.output)
-
-	vendorToolDir := GetAppImageToolBin(appImageToolDir)
-	command := exec.Command(filepath.Join(vendorToolDir, "appimagetool"), args...)
-
-	appImageArch, err := toAppImageArch(arch)
+	runtimeData, err := ioutil.ReadFile(filepath.Join(appImageToolDir, "runtime-"+arch))
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	env := os.Environ()
-	env = append(env,
-		fmt.Sprintf("PATH=%s", vendorToolDir+":"+os.Getenv("PATH")),
-		// to avoid detection by appimagetool (see extract_arch_from_text about expected arch names)
-		fmt.Sprintf("ARCH=%s", appImageArch),
-	)
-	command.Env = env
-
-	err = util.Execute(command, stageDir)
+	err = createSquashFs(options, len(runtimeData))
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	updateInfo, err := blockmap.BuildBlockMap(*options.output, blockmap.DefaultChunkerConfiguration, blockmap.DEFLATE, "")
+	outputFile := *options.output
+	err = writeRuntimeData(outputFile, runtimeData)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = os.Chmod(outputFile, 0755)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	updateInfo, err := blockmap.BuildBlockMap(outputFile, blockmap.DefaultChunkerConfiguration, blockmap.DEFLATE, "")
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -148,29 +110,39 @@ func AppImage(options AppImageOptions) error {
 	return nil
 }
 
-func toAppImageArch(arch string) (string, error) {
-	switch arch {
-	case "x64":
-		return "x86_64", nil
-	case "ia32":
-		return "i386", nil
-	case "armv7l":
-		return "arm", nil
-	case "arm64":
-		return "arm_aarch64", nil
-
-	default:
-		return "", errors.Errorf("unsupported arch %s", arch)
+func writeRuntimeData(filePath string, runtimeData []byte) error {
+	file, err := os.OpenFile(filePath, os.O_RDWR, 0)
+	if err != nil {
+		return errors.WithStack(err)
 	}
+
+	_, err = file.WriteAt(runtimeData, 0)
+	return util.CloseAndCheckError(err, file)
 }
 
-func goArchToNodeArch(arch string) (string) {
-	switch arch {
-	case "amd64":
-		return "x64"
-	case "386":
-		return "ia32"
-	default:
-		return arch
+func createSquashFs(options AppImageOptions, offset int) error {
+	mksquashfsPath, err := linuxTools.GetMksquashfs()
+	if err != nil {
+		return errors.WithStack(err)
 	}
+
+	var args []string
+	args = append(args, *options.stageDir, *options.output, "-offset", strconv.Itoa(offset), "-all-root", "-noappend", "-no-progress", "-quiet")
+	// "-mkfs-fixed-time", "0" not available for mac yet (since AppImage developers don't provide actual version of mksquashfs for macOS and no official mksquashfs build for macOS)
+	if *options.compression != "" {
+		// default gzip compression - 51.9, xz - 50.4 difference is negligible, start time - well, it seems, a little bit longer (but on Parallels VM on external SSD disk)
+		// so, to be decided later, is it worth to use xz by default
+		args = append(args, "--comp", *options.compression)
+		if *options.compression == "xz" {
+			//noinspection SpellCheckingInspection
+			args = append(args, "-Xdict-size", "100%", "-b", "16384")
+		}
+	}
+
+	err = util.Execute(exec.Command(mksquashfsPath, args...), *options.stageDir)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
 }

@@ -8,7 +8,9 @@
       <w>geoip</w>
       <w>goreleaser</w>
       <w>lintian</w>
+      <w>mkfs</w>
       <w>mksquashfs</w>
+      <w>noappend</w>
       <w>ostype</w>
       <w>snapcore</w>
       <w>umask</w>

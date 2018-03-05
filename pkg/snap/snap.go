@@ -11,9 +11,9 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
-	"github.com/develar/app-builder/pkg/appimage"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/mcuadros/go-version"
@@ -250,15 +250,9 @@ func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) e
 		return errors.WithStack(err)
 	}
 
-	mksquashfsPath := "mksquashfs"
-	if !util.IsEnvTrue("USE_SYSTEM_MKSQUASHFS") {
-		mksquashfsPath = os.Getenv("MKSQUASHFS_PATH")
-		if mksquashfsPath == "" {
-			mksquashfsPath, err = appimage.GetLinuxTool("mksquashfs")
-			if err != nil {
-				return errors.WithStack(err)
-			}
-		}
+	mksquashfsPath, err := linuxTools.GetMksquashfs()
+	if err != nil {
+		return errors.WithStack(err)
 	}
 
 	// will be not merged into root if pass several source dirs, so, call for each source dir

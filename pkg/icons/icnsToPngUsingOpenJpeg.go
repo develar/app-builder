@@ -12,7 +12,7 @@ import (
 	"strings"
 
 	"github.com/apex/log"
-	"github.com/develar/app-builder/pkg/appimage"
+	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 )
@@ -115,7 +115,7 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 		opjDecompressPath := "opj_decompress"
 		opjLibPath := ""
 		if !util.IsEnvTrue("USE_SYSTEM_OPG") && runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
-			opjDecompressPath, err = appimage.GetLinuxTool("opj_decompress")
+			opjDecompressPath, err = linuxTools.GetLinuxTool("opj_decompress")
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
