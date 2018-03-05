@@ -213,6 +213,10 @@ func isTemporary(err error) bool {
 }
 
 func proxyFromEnvironmentAndNpm(req *http.Request) (*url.URL, error) {
+	if os.Getenv("NO_PROXY") == "*" {
+		return nil, nil
+	}
+
 	result, err := http.ProxyFromEnvironment(req)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -222,41 +226,41 @@ func proxyFromEnvironmentAndNpm(req *http.Request) (*url.URL, error) {
 		return result, nil
 	}
 
-	urlString, err := proxyFromNpm()
+	result, err = proxyFromNpm()
 	if err != nil {
 		log.WithError(err).Error("cannot detect npm proxy")
 		return nil, nil
 	}
-
-	if len(urlString) == 0 {
-		return nil, nil
-	}
-
-	parsed, err := url.Parse(urlString)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	return parsed, nil
+	return result, nil
 }
 
-func proxyFromNpm() (string, error) {
+func proxyFromNpm() (*url.URL, error) {
 	userHomeDir, err := homedir.Dir()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return nil, errors.WithStack(err)
 	}
 
 	ini := goini.New()
 	err = ini.ParseFile(filepath.Join(userHomeDir, ".npmrc"))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return "", nil
+			return nil, nil
 		}
-		return "", errors.WithStack(err)
+		return nil, errors.WithStack(err)
 	}
 
 	v, ok := ini.Get("https-proxy")
 	if !ok {
 		v, _ = ini.Get("proxy")
 	}
-	return v, nil
+
+	if len(v) == 0 || v == "false" || v == "true" {
+		return nil, nil
+	}
+
+	parsed, err := url.Parse(v)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return parsed, nil
 }
