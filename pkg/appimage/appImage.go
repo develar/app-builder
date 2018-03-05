@@ -16,7 +16,7 @@ import (
 )
 
 //noinspection GoSnakeCaseUsage,SpellCheckingInspection
-const APPIMAGE_TOOL_SHA512 = "HoPbFchLZwbTGLl47bVoir+NDunpPp5yGbpKtbrET4gUY/SlRYW2GpCNgkaZetO+PExkIzk7X3NHpmM8HwKjiQ=="
+const APPIMAGE_TOOL_SHA512 = "at5M33iNSAOzOGEvPpbeMsrULbRpEv8jfKYcRxK+uZ+f3+xT/AUbtuqlnZ+CFTSjUjOqjrJyJAILnVDP0tnpjg=="
 
 type AppImageOptions struct {
 	appDir   *string
@@ -59,7 +59,7 @@ func ConfigureCommand(app *kingpin.Application) {
 }
 
 func GetAppImageToolDir() (string, error) {
-	dirName := "appimage-9.0.7"
+	dirName := "appimage-9.0.9"
 	result, err := download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", APPIMAGE_TOOL_SHA512)
 	if err != nil {
 		return "", errors.WithStack(err)

@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pkg/errors"
+	"github.com/develar/errors"
 )
 
 // Random number state.
@@ -19,21 +19,21 @@ import (
 // chance the file doesn't exist yet - keeps the number of tries in
 // TempFile to a minimum.
 var rand uint32
-var randmu sync.Mutex
+var randMutex sync.Mutex
 
 func reseed() uint32 {
 	return uint32(time.Now().UnixNano() + int64(os.Getpid()))
 }
 
 func nextPrefix() string {
-	randmu.Lock()
+	randMutex.Lock()
 	r := rand
 	if r == 0 {
 		r = reseed()
 	}
 	r = r*1664525 + 1013904223 // constants from Numerical Recipes
 	rand = r
-	randmu.Unlock()
+	randMutex.Unlock()
 	return strconv.Itoa(int(1e9 + r%1e9))[1:]
 }
 
@@ -60,9 +60,9 @@ func TempFile(dir, suffix string) (string, error) {
 		}
 
 		if nConflict++; nConflict > 10 {
-			randmu.Lock()
+			randMutex.Lock()
 			rand = reseed()
-			randmu.Unlock()
+			randMutex.Unlock()
 		}
 	}
 	return "", errors.Errorf("cannot find unique file name")
@@ -86,9 +86,9 @@ func TempDir(dir, suffix string) (name string, err error) {
 		err = os.Mkdir(try, 0700)
 		if os.IsExist(err) {
 			if nConflict++; nConflict > 10 {
-				randmu.Lock()
+				randMutex.Lock()
 				rand = reseed()
-				randmu.Unlock()
+				randMutex.Unlock()
 			}
 			continue
 		}

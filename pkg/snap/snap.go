@@ -297,6 +297,11 @@ func buildWithoutDockerAndWithoutTemplate(options SnapOptions) error {
 		return errors.WithStack(err)
 	}
 
+	err = fs.CopyUsingHardlink(filepath.Join(stageDir, "command.sh"), filepath.Join(primeDir, "command.sh"))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	err = util.Execute(exec.Command("snapcraft", "pack", primeDir, "--output", *options.output), stageDir)
 	if err != nil {
 		return errors.WithStack(err)

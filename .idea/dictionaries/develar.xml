@@ -6,11 +6,13 @@
       <w>blockmap</w>
       <w>chunking</w>
       <w>geoip</w>
+      <w>goreleaser</w>
       <w>lintian</w>
       <w>mksquashfs</w>
       <w>ostype</w>
       <w>snapcore</w>
       <w>umask</w>
+      <w>virtualgo</w>
     </words>
   </dictionary>
 </component>
