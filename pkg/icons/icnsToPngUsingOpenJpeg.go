@@ -113,18 +113,30 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 		}
 
 		opjDecompressPath := "opj_decompress"
+		opjLibPath := ""
 		if !util.IsEnvTrue("USE_SYSTEM_OPG") && runtime.GOOS == "linux" && runtime.GOARCH == "amd64" {
 			opjDecompressPath, err = appimage.GetLinuxTool("opj_decompress")
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
+
+			opjLibPath = filepath.Join(filepath.Dir(opjDecompressPath), "lib")
 		}
 
 		pngFile := fmt.Sprintf("%s%d.png", outFileNamePrefix, imageInfo.Size)
 		imageInfo.File = pngFile
 
 		return func() error {
-			err = util.Execute(exec.Command(opjDecompressPath, "-quiet", "-i", jpeg2File, "-o", pngFile), "")
+			command := exec.Command(opjDecompressPath, "-quiet", "-i", jpeg2File, "-o", pngFile)
+			if len(opjLibPath) != 0 {
+				env := os.Environ()
+				env = append(env,
+					fmt.Sprintf("LD_LIBRARY_PATH=%s", opjLibPath+":"+os.Getenv("LD_LIBRARY_PATH")),
+				)
+				command.Env = env
+			}
+
+			err = util.Execute(command, "")
 			if err != nil {
 				return errors.WithStack(err)
 			}
