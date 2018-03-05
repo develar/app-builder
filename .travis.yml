@@ -16,5 +16,7 @@ before_install:
 
 install:
   - dep ensure
+  - go install github.com/onsi/ginkgo/ginkgo
+  - export PATH=$PATH:$HOME/gopath/bin
 
-script: go test -v ./pkg/...
+script: ginkgo -r -v pkg

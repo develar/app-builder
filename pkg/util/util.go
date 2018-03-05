@@ -77,7 +77,7 @@ func Execute(command *exec.Cmd, currentWorkingDirectory string) error {
 
 	output, err := command.CombinedOutput()
 	if err != nil {
-		return errors.WithMessage(err, "output: "+string(output))
+		return errors.Errorf("error: %s\npath: %s\nargs: %s\noutput: %s", err, command.Path, command.Args, output)
 	} else if IsDebugEnabled() && len(output) != 0 {
 		log.Debug(string(output))
 	}

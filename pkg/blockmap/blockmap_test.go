@@ -1,42 +1,46 @@
-package blockmap
+package blockmap_test
 
 import (
-	"io/ioutil"
-	"log"
-	"strings"
-	"testing"
-	"encoding/json"
-	"github.com/stretchr/testify/assert"
 	"crypto/sha512"
 	"encoding/base64"
+	"encoding/json"
+	"io/ioutil"
+	"strings"
+	"testing"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	. "github.com/develar/app-builder/pkg/blockmap"
 )
 
-func TestAppend(t *testing.T) {
-	file, err := ioutil.TempFile("", "append")
-	if err != nil {
-		t.Error(err)
-	}
-
-	log.Print()
-
-	file.WriteString(strings.Repeat("hello world. ", 1024))
-	Close(file)
-
-	inputInfo, err := BuildBlockMap(file.Name(), DefaultChunkerConfiguration, DEFLATE, "")
-
-	fileData, err := ioutil.ReadFile(file.Name())
-	if err != nil {
-		t.Error(err)
-	}
-
-	hash := sha512.New()
-	hash.Write(fileData)
-	assert.Equal(t, base64.StdEncoding.EncodeToString(hash.Sum(nil)), inputInfo.Sha512)
-	assert.Equal(t, len(fileData), inputInfo.Size)
-
-	serializedInputInfo, err := json.Marshal(inputInfo)
-	if err != nil {
-		t.Error(err)
-	}
-	assert.Equal(t, "{\"size\":13423,\"sha512\":\"zPFW3WAFUKFvAfBdNXHDIuZekSW/qf33lf5OgKXBKg9oOobwVH9X/DRHExC9087Cxkp3nqFrwtreWZHLso3D6g==\",\"blockMapSize\":107}", string(serializedInputInfo))
+func TestBlockmap(t *testing.T) {
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Blockmap Suite")
 }
+
+var _ = Describe("Blockmap", func() {
+	It("append", func() {
+		file, err := ioutil.TempFile("", "append")
+		Expect(err).NotTo(HaveOccurred())
+
+		file.WriteString(strings.Repeat("hello world. ", 1024))
+		Close(file)
+
+		inputInfo, err := BuildBlockMap(file.Name(), DefaultChunkerConfiguration, DEFLATE, "")
+
+		fileData, err := ioutil.ReadFile(file.Name())
+		Expect(err).NotTo(HaveOccurred())
+
+		hash := sha512.New()
+		_, err = hash.Write(fileData)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(inputInfo.Sha512).To(Equal(base64.StdEncoding.EncodeToString(hash.Sum(nil))))
+		Expect(inputInfo.Size).To(Equal(len(fileData)))
+
+		serializedInputInfo, err := json.Marshal(inputInfo)
+		Expect(err).NotTo(HaveOccurred())
+		//noinspection SpellCheckingInspection
+		Expect(string(serializedInputInfo)).To(Equal("{\"size\":13423,\"sha512\":\"zPFW3WAFUKFvAfBdNXHDIuZekSW/qf33lf5OgKXBKg9oOobwVH9X/DRHExC9087Cxkp3nqFrwtreWZHLso3D6g==\",\"blockMapSize\":107}"))
+	})
+})

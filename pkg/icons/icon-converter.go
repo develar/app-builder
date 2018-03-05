@@ -12,6 +12,7 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/disintegration/imaging"
+	"github.com/phayes/permbits"
 )
 
 func ConfigureCommand(app *kingpin.Application) {
@@ -130,6 +131,11 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outD
 			if outputFormat == "set" {
 				return resizePngForLinux(&inputInfo, iconFileName, outDir)
 			}
+		} else {
+			err = checkAndFixIconPermissions(icons)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
 		}
 
 		if outputFormat == "set" {
@@ -159,6 +165,35 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outD
 	}
 
 	return convertSingleFile(&inputInfo, filepath.Join(outDir, "icon"+outExt), outputFormat)
+}
+
+// https://github.com/electron-userland/electron-builder/issues/2654#issuecomment-369972916
+func checkAndFixIconPermissions(icons []IconInfo) error {
+	return util.MapAsync(len(icons), func(taskIndex int) (func() error, error) {
+		filePath := icons[taskIndex].File
+		return func() error {
+			permissions, err := permbits.Stat(filePath)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			if permissions.GroupRead() && permissions.OtherRead() {
+				return nil
+			}
+
+			log.WithFields(log.Fields{
+				"file":   filePath,
+				"reason": "group or other cannot read",
+			}).Error("fix permissions")
+			permissions.SetGroupWrite(true)
+			permissions.SetOtherRead(true)
+			err = permbits.Chmod(filePath, permissions)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+			return nil
+		}, nil
+	})
 }
 
 func resizePngForLinux(inputInfo *InputFileInfo, iconFileName string, outDir string) ([]IconInfo, error) {

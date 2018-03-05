@@ -195,7 +195,6 @@ func onCancelSignal(cancel context.CancelFunc) {
 	signals := make(chan os.Signal, 2)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-signals
-	fmt.Println()
 	log.Infof("%v: canceling...\n", sig)
 }
 

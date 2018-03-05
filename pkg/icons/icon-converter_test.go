@@ -1,4 +1,4 @@
-package icons
+package icons_test
 
 import (
 	"io/ioutil"
@@ -7,86 +7,90 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Flaque/filet"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	. "github.com/develar/app-builder/pkg/icons"
+
 	"github.com/biessek/golang-ico"
 	"github.com/develar/app-builder/pkg/log-cli"
-	"github.com/stretchr/testify/assert"
 )
 
-func init() {
+func TestIcons(t *testing.T) {
 	log_cli.InitLogger()
+	RegisterFailHandler(Fail)
+	RunSpecs(t, "Icons Suite")
 }
 
-func getTestDataPath(t *testing.T) string {
+func getTestDataPath() string {
 	testDataPath, err := filepath.Abs(filepath.Join("..", "..", "testData"))
-	assert.NoError(t, err)
+	Expect(err).NotTo(HaveOccurred())
 	return testDataPath
 }
 
-func TestCheckIcoImageSize(t *testing.T) {
-	defer filet.CleanUp(t)
+var _ = Describe("Blockmap", func() {
+	var tmpDir string
 
-	_, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "icon.ico")}, nil, "ico", filet.TmpDir(t, ""))
-	assert.NoError(t, err)
-}
+	BeforeEach(func() {
+		var err error
+		tmpDir, err = ioutil.TempDir("", "")
+		Expect(err).NotTo(HaveOccurred())
+	})
 
-func TestIcnsToIco(t *testing.T) {
-	defer filet.CleanUp(t)
+	AfterEach(func() {
+		err := os.RemoveAll(tmpDir)
+		Expect(err).NotTo(HaveOccurred())
+	})
 
-	files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "icon.icns")}, nil, "ico", filet.TmpDir(t, ""))
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(files))
-	file := files[0].File
+	It("CheckIcoImageSize", func() {
+		_, err := ConvertIcon([]string{filepath.Join(getTestDataPath(), "icon.ico")}, nil, "ico", tmpDir)
+		Expect(err).NotTo(HaveOccurred())
+	})
 
-	assert.True(t, strings.HasSuffix(file, ".ico"))
+	It("IcnsToIco", func() {
+		files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(), "icon.icns")}, nil, "ico", tmpDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(files)).To(Equal(1))
+		file := files[0].File
 
-	data, err := ioutil.ReadFile(file)
-	assert.NoError(t, err)
+		Expect(strings.HasSuffix(file, ".ico")).To(BeTrue())
 
-	assert.Equal(t, GetIcoSizes(data), []Sizes([]Sizes{
-		{Width: 256, Height: 256},
-	}))
-}
+		data, err := ioutil.ReadFile(file)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(GetIcoSizes(data)).To(Equal([]Sizes([]Sizes{
+			{Width: 256, Height: 256},
+		})))
+	})
 
-func TestIcnsToPng(t *testing.T) {
-	defer filet.CleanUp(t)
+	It("IcnsToPng", func() {
+		result, err := ConvertIcnsToPngUsingOpenJpeg(filepath.Join(getTestDataPath(), "icon.icns"), tmpDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(result)).To(Equal(5))
+	})
 
-	tmpDir := filet.TmpDir(t, "/tmp")
+	It("ConvertIcnsToPngUsingOpenJpeg", func() {
+		result, err := ConvertIcnsToPngUsingOpenJpeg(filepath.Join(getTestDataPath(), "icon-jpeg2.icns"), tmpDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(result)).To(Equal(2))
+	})
 
-	result, err := ConvertIcnsToPngUsingOpenJpeg(filepath.Join(getTestDataPath(t), "icon.icns"), tmpDir)
-	assert.NoError(t, err)
-	assert.Equal(t, 5, len(result))
-}
+	It("LargePngTo256Ico", func() {
+		files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(), "512x512.png")}, nil, "ico", tmpDir)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(files)).To(Equal(1))
+		file := files[0].File
+		Expect(strings.HasSuffix(file, ".ico")).To(BeTrue())
 
-func TestConvertIcnsToPngUsingOpenJpeg(t *testing.T) {
-	defer filet.CleanUp(t)
+		reader, err := os.Open(file)
+		Expect(err).NotTo(HaveOccurred())
+		defer reader.Close()
+		images, err := ico.DecodeAll(reader)
+		Expect(err).NotTo(HaveOccurred())
 
-	tmpDir := filet.TmpDir(t, "/tmp")
+		Expect(len(images)).To(Equal(1))
 
-	result, err := ConvertIcnsToPngUsingOpenJpeg(filepath.Join(getTestDataPath(t), "icon-jpeg2.icns"), tmpDir)
-	assert.NoError(t, err)
-	assert.Equal(t, 2, len(result))
-}
-
-func TestLargePngTo256Ico(t *testing.T) {
-	defer filet.CleanUp(t)
-
-	files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(t), "512x512.png")}, nil, "ico", filet.TmpDir(t, ""))
-	assert.NoError(t, err)
-	assert.Equal(t, 1, len(files))
-	file := files[0].File
-
-	assert.True(t, strings.HasSuffix(file, ".ico"))
-
-	reader, err := os.Open(file)
-	assert.NoError(t, err)
-	defer reader.Close()
-	images, err := ico.DecodeAll(reader)
-	assert.NoError(t, err)
-
-	assert.Equal(t, len(images), 1)
-
-	imageSize := images[0].Bounds().Max
-	assert.Equal(t, 256, imageSize.X)
-	assert.Equal(t, 256, imageSize.Y)
-}
+		imageSize := images[0].Bounds().Max
+		Expect(imageSize.X).To(Equal(256))
+		Expect(imageSize.Y).To(Equal(256))
+	})
+})
