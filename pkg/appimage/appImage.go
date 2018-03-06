@@ -127,12 +127,12 @@ func createSquashFs(options AppImageOptions, offset int) error {
 	}
 
 	var args []string
-	args = append(args, *options.stageDir, *options.output, "-offset", strconv.Itoa(offset), "-all-root", "-noappend", "-no-progress", "-quiet")
+	args = append(args, *options.stageDir, *options.output, "-offset", strconv.Itoa(offset), "-all-root", "-noappend", "-no-progress", "-quiet", "-no-xattrs", "-no-fragments")
 	// "-mkfs-fixed-time", "0" not available for mac yet (since AppImage developers don't provide actual version of mksquashfs for macOS and no official mksquashfs build for macOS)
 	if *options.compression != "" {
 		// default gzip compression - 51.9, xz - 50.4 difference is negligible, start time - well, it seems, a little bit longer (but on Parallels VM on external SSD disk)
 		// so, to be decided later, is it worth to use xz by default
-		args = append(args, "--comp", *options.compression)
+		args = append(args, "-comp", *options.compression)
 		if *options.compression == "xz" {
 			//noinspection SpellCheckingInspection
 			args = append(args, "-Xdict-size", "100%", "-b", "16384")

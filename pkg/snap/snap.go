@@ -257,7 +257,7 @@ func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) e
 
 	// will be not merged into root if pass several source dirs, so, call for each source dir
 	for _, sourceDir := range []string{*options.stageDir, *options.appDir} {
-		err = util.Execute(exec.Command(mksquashfsPath, sourceDir, *options.output, "-no-progress", "-all-root", "-no-duplicates", "-no-recovery"), "")
+		err = util.Execute(exec.Command(mksquashfsPath, sourceDir, *options.output, "-no-progress", "-quiet", "-all-root", "-no-duplicates", "-no-recovery"), "")
 		if err != nil {
 			return errors.WithStack(err)
 		}

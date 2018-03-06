@@ -15,6 +15,7 @@
       <w>snapcore</w>
       <w>umask</w>
       <w>virtualgo</w>
+      <w>xattrs</w>
     </words>
   </dictionary>
 </component>
