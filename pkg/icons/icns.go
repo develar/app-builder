@@ -8,9 +8,9 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 	"github.com/disintegration/imaging"
 )
 
@@ -107,7 +107,7 @@ func ConvertToIcns(inputInfo InputFileInfo, outFilePath string) error {
 	lengthBytes := make([]byte, 4, 4)
 	binary.BigEndian.PutUint32(lengthBytes, uint32(icns.Len()+8))
 
-	outFile, err := fs.CreateFile(outFilePath)
+	outFile, err := fsutil.CreateFile(outFilePath)
 	if err != nil {
 		return errors.WithStack(err)
 	}

@@ -11,29 +11,6 @@ import (
 	"github.com/develar/errors"
 )
 
-func CreateFile(name string) (*os.File, error) {
-	file, err := os.Create(name)
-	if err == nil {
-		return file, nil
-	}
-
-	if !os.IsNotExist(err) {
-		return nil, errors.WithStack(err)
-	}
-
-	err = os.MkdirAll(filepath.Dir(name), 0777)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	file, err = os.Create(name)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	return file, nil
-}
-
 func ReadDirContent(dirPath string) ([]string, error) {
 	dir, err := os.Open(dirPath)
 	if err != nil {

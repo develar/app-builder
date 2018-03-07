@@ -8,9 +8,9 @@ import (
 	"os"
 
 	"github.com/biessek/golang-ico"
-	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 )
 
 const (
@@ -98,7 +98,7 @@ func DecodeImageAndClose(reader io.Reader, closer io.Closer) (image.Image, error
 }
 
 func SaveImage(image image.Image, outFileName string, format int) error {
-	outFile, err := fs.CreateFile(outFileName)
+	outFile, err := fsutil.CreateFile(outFileName)
 	if err != nil {
 		return errors.WithStack(err)
 	}

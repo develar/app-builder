@@ -1,13 +1,13 @@
 package fs
 
 import (
-	"io"
 	"os"
 	"path/filepath"
 	"runtime"
 
 	"github.com/apex/log"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 )
 
 type FileCopier struct {
@@ -97,7 +97,7 @@ func (fileCopier *FileCopier) copyDirOrFile(from string, to string, isCreatePare
 
 		perm := fromInfo.Mode().Perm()
 		if perm != 0755 {
-			err = os.Chmod(to, fromInfo.Mode())
+			err = os.Chmod(to, perm)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -128,7 +128,7 @@ func (fileCopier *FileCopier) copyDirOrFile(from string, to string, isCreatePare
 			return err
 		}
 	}
-	return copyFile(from, to, fromInfo)
+	return fsutil.CopyFile(from, to, fromInfo)
 }
 
 // symlink cannot be created during copy because symlink can point to not yet copied target file
@@ -149,43 +149,6 @@ func (fileCopier *FileCopier) copySymlink(from string, to string) error {
 		file: to,
 		link: link,
 	})
-
-	return nil
-}
-
-func copyFile(from string, to string, fromInfo os.FileInfo) error {
-	sourceFile, err := os.Open(from)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	defer sourceFile.Close()
-	// cannot use file mode as is because of *** *** *** umask
-	destinationFile, err := os.OpenFile(to, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
-
-	if err != nil {
-		sourceFile.Close()
-		return errors.WithStack(err)
-	}
-
-	_, err = io.Copy(destinationFile, sourceFile)
-	if err != nil {
-		destinationFile.Close()
-		return errors.WithStack(err)
-	}
-
-	perm := fromInfo.Mode().Perm()
-	if perm != 0644 {
-		err = os.Chmod(to, fromInfo.Mode())
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
-	err = destinationFile.Close()
-	if err != nil {
-		return errors.WithStack(err)
-	}
 
 	return nil
 }
