@@ -135,7 +135,7 @@ func createSquashFs(options AppImageOptions, offset int) error {
 		args = append(args, "-comp", *options.compression)
 		if *options.compression == "xz" {
 			//noinspection SpellCheckingInspection
-			args = append(args, "-Xdict-size", "100%", "-b", "16384")
+			args = append(args, "-Xdict-size", "100%", "-b", "1048576")
 		}
 	}
 
