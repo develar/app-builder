@@ -19,7 +19,7 @@ func mapAsync(taskCount int, concurrency int, taskProducer func(taskIndex int) (
 	log.WithField("taskCount", taskCount).Debug("map async")
 
 	errorChannel := make(chan error)
-	doneChannel := make(chan bool, concurrency)
+	doneChannel := make(chan bool, taskCount)
 	quitChannel := make(chan bool)
 
 	sem := make(chan bool, concurrency)
@@ -32,6 +32,7 @@ func mapAsync(taskCount int, concurrency int, taskProducer func(taskIndex int) (
 			close(quitChannel)
 			return errors.WithStack(err)
 		}
+
 		if task == nil {
 			<-sem
 			doneChannel <- true
