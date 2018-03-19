@@ -47,10 +47,16 @@
   version = "v0.8.1"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/develar/go-fs-util"
+  packages = ["."]
+  revision = "a3e79ac365a07b195486177e8b8399af878d4ade"
+
+[[projects]]
   name = "github.com/disintegration/imaging"
   packages = ["."]
-  revision = "1884593a19ddc6f2ea050403430d02c1d0fc1283"
-  version = "v1.3.0"
+  revision = "fd34ef7671b12cdf1b024d98c6b327b2770d32c4"
+  version = "v1.4.1"
 
 [[projects]]
   branch = "master"
@@ -135,8 +141,8 @@
 [[projects]]
   name = "github.com/pkg/xattr"
   packages = ["."]
-  revision = "23c75e3f6c1d8b13b3dd905b011a7f38a06044b7"
-  version = "v0.2.1"
+  revision = "1d7b7ffe7c46974a836eb583b7452f22de1c18cf"
+  version = "v0.2.3"
 
 [[projects]]
   name = "github.com/zieckey/goini"
@@ -152,7 +158,7 @@
     "tiff",
     "tiff/lzw"
   ]
-  revision = "12117c17ca67ffa1ce22e9409f3b0b0a93ac08c7"
+  revision = "f3a9b89b59def9194717c1d0bd4c0d08fa1afa7b"
 
 [[projects]]
   branch = "master"
@@ -162,13 +168,13 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "22ae77b79946ea320088417e4d50825671d82d57"
+  revision = "24dd3780ca4f75fed9f321890729414a4b5d3f13"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "dd2ff4accc098aceecb86b36eaa7829b2a17b1c9"
+  revision = "01acb38716e021ed1fc03a602bdb5838e1358c5e"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -203,6 +209,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "9d5fa0caad4eafd02dece2c574c9d7fe7f2e949f796f77bc8091a12a3954f028"
+  inputs-digest = "e442de020ad628b83b08bc3a9a81ce3a4f11b53b9a0e941401982b8177b35c2b"
   solver-name = "gps-cdcl"
   solver-version = 1

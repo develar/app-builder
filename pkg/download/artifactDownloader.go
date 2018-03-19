@@ -1,6 +1,7 @@
 package download
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -36,6 +37,14 @@ func ConfigureArtifactCommand(app *kingpin.Application) {
 // * don't pollute user project dir (important in case of 1-package.json project structure)
 // * simplify/speed-up tests (don't download fpm for each test project)
 func DownloadArtifact(dirName string, url string, checksum string) (string, error) {
+	isNodeJsArtifact := dirName == "node"
+	if isNodeJsArtifact {
+		versionAndArch := url
+		version := versionAndArch[0:strings.Index(versionAndArch, "-")]
+		url = "https://nodejs.org/dist/v" + version + "/node-v" + versionAndArch + ".tar.xz"
+		dirName = dirName + "-" + versionAndArch
+	}
+
 	if len(dirName) == 0 {
 		fileName := path.Base(url)
 		dirName = strings.TrimSuffix(fileName, path.Ext(fileName))
@@ -46,7 +55,12 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	cacheDir = filepath.Join(cacheDir, dirName[0:strings.Index(dirName, "-")])
+	hyphenIndex := strings.Index(dirName, "-")
+	if hyphenIndex > 0 {
+		cacheDir = filepath.Join(cacheDir, dirName[0:hyphenIndex])
+	} else {
+		cacheDir = filepath.Join(cacheDir, dirName)
+	}
 	dirPath := filepath.Join(cacheDir, dirName)
 
 	logFields := log.Fields{
@@ -76,20 +90,34 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	archiveName := tempUnpackDir + ".7z"
+	var archiveName string
+	if isNodeJsArtifact {
+		archiveName = tempUnpackDir + ".tar.xz"
+	} else {
+		archiveName = tempUnpackDir + ".7z"
+	}
+
 	err = Download(url, archiveName, checksum)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
 
-	command := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "x", "-bd", archiveName, "-o"+tempUnpackDir)
-	command.Dir = cacheDir
-	output, err := command.CombinedOutput()
-	if err != nil {
-		return "", errors.WithStack(err)
+	if isNodeJsArtifact {
+		err = unpackTarXz(archiveName, tempUnpackDir)
+		if err != nil {
+			return "", errors.WithStack(err)
+		}
+	} else {
+		command := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "x", "-bd", archiveName, "-o"+tempUnpackDir)
+		command.Dir = cacheDir
+		output, err := command.CombinedOutput()
+		if err != nil {
+			return "", errors.WithStack(err)
+		}
+
+		log.Debug(string(output))
 	}
 
-	log.Debug(string(output))
 	err = os.Remove(archiveName)
 	if err != nil {
 		return "", errors.WithStack(err)
@@ -106,6 +134,56 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	log.WithFields(logFields).Debug("downloaded")
 
 	return dirPath, nil
+}
+
+func unpackTarXz(archiveName string, unpackDir string) error {
+	xzDecompressCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-txz", archiveName, "-so")
+	xzDecompressCommand.Stderr = os.Stderr
+
+	xzStdout, err := xzDecompressCommand.StdoutPipe()
+	if nil != err {
+		return errors.WithStack(err)
+	}
+
+	err = xzDecompressCommand.Start()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	//noinspection SpellCheckingInspection
+	tarDecompressCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-ttar", "-o"+unpackDir, "*/bin/node", "-r", "-si")
+	tarDecompressCommand.Stderr = os.Stderr
+
+	tarStdin, err := tarDecompressCommand.StdinPipe()
+	if nil != err {
+		return errors.WithStack(err)
+	}
+
+	err = tarDecompressCommand.Start()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	go func() {
+		defer tarStdin.Close()
+		io.Copy(tarStdin, xzStdout)
+	}()
+
+	err = xzDecompressCommand.Wait()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = tarDecompressCommand.Wait()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = os.Chmod(filepath.Join(unpackDir, "node"), 0755)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+	return nil
 }
 
 func DownloadCompressedArtifact(subDir string, url string, checksum string) (string, error) {
