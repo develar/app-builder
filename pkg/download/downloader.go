@@ -8,11 +8,11 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"sync"
 	"syscall"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/mitchellh/go-homedir"
 	"github.com/zieckey/goini"
@@ -44,27 +44,12 @@ func Download(url string, output string, sha512 string) error {
 		return errors.WithStack(err)
 	}
 
-	var waitGroup sync.WaitGroup
-	recoverIfPanic := func(id int) {
-		if e := recover(); e != nil {
-			log.WithFields(log.Fields{
-				"id":    id,
-				"error": e,
-			}).Debug("part download error")
-		}
-		waitGroup.Done()
-	}
-
 	downloadContext, cancel := context.WithCancel(context.Background())
 	httpTransport := &http.Transport{Proxy: proxyFromEnvironmentAndNpm}
 
 	actualLocation, err := follow(url, userAgent, output, httpTransport)
 	if err != nil {
 		return errors.WithStack(err)
-	}
-
-	if actualLocation.ContentLength < 0 {
-		return errors.Errorf("Invalid content length: %d", actualLocation.ContentLength)
 	}
 
 	partDownloadClient := &http.Client{
@@ -74,20 +59,26 @@ func Download(url string, output string, sha512 string) error {
 		Transport: httpTransport,
 	}
 
-	if actualLocation.StatusCode == http.StatusOK {
-		actualLocation.computeParts(minPartSize)
-		waitGroup.Add(len(actualLocation.Parts))
-		for index, part := range actualLocation.Parts {
-			go func(index int, part *Part) {
-				defer recoverIfPanic(index)
-				part.download(downloadContext, actualLocation.Location, index, partDownloadClient)
-			}(index, part)
-		}
-	}
-
 	go onCancelSignal(cancel)
 
-	waitGroup.Wait()
+	if actualLocation.StatusCode == http.StatusOK {
+		actualLocation.computeParts(minPartSize)
+		util.MapAsyncConcurrency(len(actualLocation.Parts), maxPartCount, func(index int) (func() error, error) {
+			part := actualLocation.Parts[index]
+			return func() error {
+				err = part.download(downloadContext, actualLocation.Location, index, partDownloadClient)
+				if err != nil {
+					part.isFail = true
+					log.WithFields(log.Fields{
+						"id":    index,
+						"error": err,
+					}).Debug("part download error")
+				}
+				return err
+			}, nil
+		})
+	}
+
 	for _, part := range actualLocation.Parts {
 		if part.isFail {
 			cancel()
@@ -115,11 +106,14 @@ func follow(initialUrl, userAgent, outFileName string, transport *http.Transport
 	currentUrl := initialUrl
 	redirectsFollowed := 0
 	for {
-		log.WithFields(log.Fields{
-			"initialUrl": initialUrl,
-			"currentUrl": currentUrl,
-		}).Debug("computing effective URL")
-		req, err := http.NewRequest(http.MethodGet, currentUrl, nil)
+		if currentUrl != initialUrl {
+			log.WithFields(log.Fields{
+				"initialUrl": initialUrl,
+				"currentUrl": currentUrl,
+			}).Debug("computing effective URL")
+		}
+
+		req, err := http.NewRequest(http.MethodHead, currentUrl, nil)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
@@ -139,14 +133,14 @@ func follow(initialUrl, userAgent, outFileName string, transport *http.Transport
 				actualLocation := &ActualLocation{
 					Location:          currentUrl,
 					SuggestedFileName: outFileName,
-					AcceptRanges:      response.Header.Get("Accept-Ranges"),
+					isAcceptRanges:      response.Header.Get("Accept-Ranges") != "",
 					StatusCode:        response.StatusCode,
 					ContentLength:     response.ContentLength,
 				}
 
 				if response.StatusCode == http.StatusOK {
 					var length string
-					if totalWritten > 0 && actualLocation.AcceptRanges != "" {
+					if totalWritten > 0 && actualLocation.isAcceptRanges {
 						remaining := response.ContentLength - totalWritten
 						length = fmt.Sprintf("%d, %d remaining", response.ContentLength, remaining)
 					} else if response.ContentLength < 0 {
@@ -160,7 +154,7 @@ func follow(initialUrl, userAgent, outFileName string, transport *http.Transport
 						"url": initialUrl,
 					}).Debug("downloading")
 
-					if actualLocation.AcceptRanges == "" {
+					if !actualLocation.isAcceptRanges {
 						log.Warn("server doesn't support ranges")
 					}
 				}

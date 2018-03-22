@@ -8,10 +8,10 @@ import (
 )
 
 func MapAsync(taskCount int, taskProducer func(taskIndex int) (func() error, error)) error {
-	return mapAsync(taskCount, runtime.NumCPU(), taskProducer)
+	return MapAsyncConcurrency(taskCount, runtime.NumCPU(), taskProducer)
 }
 
-func mapAsync(taskCount int, concurrency int, taskProducer func(taskIndex int) (func() error, error)) error {
+func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskIndex int) (func() error, error)) error {
 	if taskCount == 0 {
 		return nil
 	}

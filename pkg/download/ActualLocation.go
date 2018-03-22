@@ -16,13 +16,24 @@ import (
 type ActualLocation struct {
 	Location          string
 	SuggestedFileName string
-	AcceptRanges      string
+	isAcceptRanges      bool
 	StatusCode        int
 	ContentLength     int64
 	Parts             []*Part
 }
 
 func (actualLocation *ActualLocation) computeParts(minPartSize int64) {
+	if actualLocation.ContentLength < 0 {
+		log.WithField("length", actualLocation.ContentLength).Warn("invalid content length, will be downloaded as one part")
+		actualLocation.Parts = make([]*Part, 1)
+		actualLocation.Parts[0] = &Part{
+			Name:  actualLocation.SuggestedFileName,
+			Start: 0,
+			End:   -1,
+		}
+		return
+	}
+
 	var partCount int
 	contentLength := actualLocation.ContentLength
 	if contentLength <= minPartSize {

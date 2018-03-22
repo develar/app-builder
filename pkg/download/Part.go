@@ -6,8 +6,9 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"time"
+
+	"github.com/apex/log"
 )
 
 type Part struct {
@@ -24,47 +25,38 @@ func (part *Part) getRange() string {
 	return fmt.Sprintf("bytes=%d-%d", part.Start, part.End-1)
 }
 
-func (part *Part) download(context context.Context, url string, index int, client *http.Client) {
+func (part *Part) download(context context.Context, url string, index int, client *http.Client) error {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	req = req.WithContext(context)
 	req.Header.Set("User-Agent", userAgent)
-	req.Header.Set("Range", part.getRange())
+	if part.End > 0 {
+		req.Header.Set("Range", part.getRange())
+	}
 
-	resp, err := client.Do(req)
+	response, err := client.Do(req)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	total := part.End - part.Start
-	if resp.StatusCode == http.StatusOK {
-		if index > 0 {
-			part.Skip = true
-			return
+	if response.StatusCode == http.StatusOK {
+		if part.End > 0 {
+			if index > 0 {
+				part.Skip = true
+				return nil
+			}
+			part.End = response.ContentLength
 		}
-		total = resp.ContentLength
-		part.End = total
-	} else if resp.StatusCode != http.StatusPartialContent {
-		return
-	}
-
-	messageCh := make(chan string, 1)
-	failureCh := make(chan struct{})
-
-	fail := func(err error) {
-		close(failureCh)
-		part.isFail = true
-		errs := strings.Split(err.Error(), ":")
-		messageCh <- errs[len(errs)-1]
+	} else if response.StatusCode != http.StatusPartialContent {
+		return nil
 	}
 
 	partFile, err := os.OpenFile(part.Name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
 	if err != nil {
-		fail(err)
-		return
+		return err
 	}
 
 	defer partFile.Close()
@@ -73,35 +65,36 @@ func (part *Part) download(context context.Context, url string, index int, clien
 	for i := 0; i <= 3; i++ {
 		if i > 0 {
 			time.Sleep(2 * time.Second)
-			messageCh <- fmt.Sprintf("Retrying (%d)", i)
-			req.Header.Set("Range", part.getRange())
-			resp, err = client.Do(req)
+			log.Infof("Retrying (%d)", i)
+			if part.End > 0 {
+				req.Header.Set("Range", part.getRange())
+			}
+			response, err = client.Do(req)
 			if err != nil {
-				if resp != nil {
-					resp.Body.Close()
+				if response != nil {
+					response.Body.Close()
 				}
 				if i == 3 {
-					fail(err)
+					return err
 				}
 				continue
 			}
 		}
 
-		err = part.writeToFile(partFile, resp, &buf)
-
+		err = part.writeToFile(partFile, response, &buf)
 		if err == nil || context.Err() != nil {
-			if total <= 0 {
-				//bar.Complete()
-			}
-			return
+			//if total <= 0 {
+			//	//bar.Complete()
+			//}
+			return nil
 		}
 
 		if i == 3 {
-			fail(err)
-		} else {
-			messageCh <- "Error..."
+			return err
 		}
 	}
+
+	return nil
 }
 
 func (part *Part) writeToFile(dst *os.File, resp *http.Response, buf *[]byte) (err error) {
