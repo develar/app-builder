@@ -113,7 +113,7 @@ func follow(initialUrl, userAgent, outFileName string, transport *http.Transport
 			}).Debug("computing effective URL")
 		}
 
-		req, err := http.NewRequest(http.MethodHead, currentUrl, nil)
+		req, err := http.NewRequest(http.MethodGet, currentUrl, nil)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
