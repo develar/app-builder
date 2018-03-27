@@ -274,7 +274,11 @@ func buildWithoutDockerAndWithoutTemplate(options SnapOptions) error {
 		return errors.WithStack(err)
 	}
 
-	util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("snapcraft", "prime", "--target-arch", *options.arch), stageDir)
+	err = util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("snapcraft", "prime", "--target-arch", *options.arch), stageDir)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	primeDir = filepath.Join(stageDir, "prime")
 	err = cleanUpSnap(primeDir)
 	if err != nil {

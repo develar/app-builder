@@ -45,7 +45,10 @@ func LoadImage(file string) (image.Image, error) {
 		for _, osType := range icnsTypesForIco {
 			subImage, ok := subImageInfoList[osType]
 			if ok {
-				reader.Seek(int64(subImage.Offset), 0)
+				_, err = reader.Seek(int64(subImage.Offset), 0)
+				if err != nil {
+					return nil, errors.WithStack(err)
+				}
 				bufferedReader.Reset(reader)
 				// golang doesn't support JPEG2000
 				return DecodeImageAndClose(bufferedReader, reader)

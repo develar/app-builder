@@ -71,7 +71,10 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 		}
 
 		imageOffset := int64(subImage.Offset)
-		reader.Seek(imageOffset, 0)
+		_, err = reader.Seek(imageOffset, 0)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
 		bufferedReader.Reset(reader)
 
 		var outFileName string
@@ -91,7 +94,10 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 			})
 		}
 
-		reader.Seek(imageOffset, 0)
+		_, err = reader.Seek(imageOffset, 0)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
 
 		outWriter, err := os.Create(outFileName)
 		if err != nil {

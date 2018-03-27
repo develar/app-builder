@@ -24,8 +24,10 @@ var _ = Describe("Blockmap", func() {
 		file, err := ioutil.TempFile("", "append")
 		Expect(err).NotTo(HaveOccurred())
 
-		file.WriteString(strings.Repeat("hello world. ", 1024))
-		Close(file)
+		_, err = file.WriteString(strings.Repeat("hello world. ", 1024))
+		Expect(err).NotTo(HaveOccurred())
+		err = file.Close()
+		Expect(err).NotTo(HaveOccurred())
 
 		inputInfo, err := BuildBlockMap(file.Name(), DefaultChunkerConfiguration, DEFLATE, "")
 

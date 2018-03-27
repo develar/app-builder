@@ -114,13 +114,11 @@ func ConvertToIcns(inputInfo InputFileInfo, outFilePath string) error {
 
 	_, err = outFile.Write(icnsHeader)
 	if err != nil {
-		outFile.Close()
-		return errors.WithStack(err)
+		return errors.WithStack(util.CloseAndCheckError(err, outFile))
 	}
 	_, err = outFile.Write(lengthBytes)
 	if err != nil {
-		outFile.Close()
-		return errors.WithStack(err)
+		return errors.WithStack(util.CloseAndCheckError(err, outFile))
 	}
 
 	_, err = io.Copy(outFile, icns)

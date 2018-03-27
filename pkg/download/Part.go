@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/util"
 )
 
 type Part struct {
@@ -72,7 +73,7 @@ func (part *Part) download(context context.Context, url string, index int, clien
 			response, err = client.Do(req)
 			if err != nil {
 				if response != nil {
-					response.Body.Close()
+					err = util.CloseAndCheckError(err, response.Body)
 				}
 				if i == 3 {
 					return err

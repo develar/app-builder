@@ -10,7 +10,6 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/appimage"
-	"github.com/develar/app-builder/pkg/asar"
 	"github.com/develar/app-builder/pkg/blockmap"
 	"github.com/develar/app-builder/pkg/dmg"
 	"github.com/develar/app-builder/pkg/download"
@@ -30,9 +29,6 @@ var (
 	buildBlockMapInFile      = buildBlockMap.Flag("input", "input file").Short('i').Required().String()
 	buildBlockMapOutFile     = buildBlockMap.Flag("output", "output file").Short('o').String()
 	buildBlockMapCompression = buildBlockMap.Flag("compression", "compression, one of: gzip, deflate").Short('c').Default("gzip").Enum("gzip", "deflate")
-
-	buildAsar        = app.Command("asar", "")
-	buildAsarOutFile = buildAsar.Flag("output", "").Required().String()
 )
 
 func main() {
@@ -61,12 +57,6 @@ func main() {
 	}
 
 	switch command {
-	case buildAsar.FullCommand():
-		err := asar.BuildAsar(*buildAsarOutFile)
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
-
 	case buildBlockMap.FullCommand():
 		err := doBuildBlockMap()
 		if err != nil {

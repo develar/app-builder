@@ -129,7 +129,10 @@ func (actualLocation *ActualLocation) concatenateParts(expectedSha512 string) er
 		}
 
 		_, err = io.CopyBuffer(totalFile, reader, buf)
-		util.CloseAndCheckError(err, partFile)
+		err = util.CloseAndCheckError(err, partFile)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 
 		removeError := os.Remove(partFileName)
 		if removeError != nil {

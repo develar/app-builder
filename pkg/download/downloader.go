@@ -63,7 +63,7 @@ func Download(url string, output string, sha512 string) error {
 
 	if actualLocation.StatusCode == http.StatusOK {
 		actualLocation.computeParts(minPartSize)
-		util.MapAsyncConcurrency(len(actualLocation.Parts), maxPartCount, func(index int) (func() error, error) {
+		err = util.MapAsyncConcurrency(len(actualLocation.Parts), maxPartCount, func(index int) (func() error, error) {
 			part := actualLocation.Parts[index]
 			return func() error {
 				err = part.download(downloadContext, actualLocation.Location, index, partDownloadClient)
@@ -77,6 +77,10 @@ func Download(url string, output string, sha512 string) error {
 				return err
 			}, nil
 		})
+
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 
 	for _, part := range actualLocation.Parts {

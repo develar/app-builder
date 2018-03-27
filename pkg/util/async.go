@@ -36,6 +36,7 @@ func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskI
 		if task == nil {
 			<-sem
 			doneChannel <- true
+			continue
 		}
 
 		go func(task func() error) {

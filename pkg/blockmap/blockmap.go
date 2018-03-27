@@ -8,7 +8,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -16,6 +15,7 @@ import (
 	"os"
 
 	"github.com/aclements/go-rabin/rabin"
+	"github.com/develar/errors"
 	"github.com/minio/blake2b-simd"
 )
 
@@ -106,10 +106,14 @@ func BuildBlockMap(inFile string, chunkerConfiguration ChunkerConfiguration, com
 
 func appendResult(data []byte, inFile string, compressionFormat CompressionFormat, hash *hash.Hash) (int, error) {
 	archiveBuffer := new(bytes.Buffer)
-	archiveData(data, compressionFormat, archiveBuffer)
+	err := archiveData(data, compressionFormat, archiveBuffer)
+	if err != nil {
+		return -1, errors.WithStack(err)
+	}
+
 	outFileDescriptor, err := os.OpenFile(inFile, os.O_APPEND|os.O_WRONLY, 0)
 	if err != nil {
-		return -1, err
+		return -1, errors.WithStack(err)
 	}
 
 	defer Close(outFileDescriptor)
@@ -117,19 +121,19 @@ func appendResult(data []byte, inFile string, compressionFormat CompressionForma
 	archiveSize := archiveBuffer.Len()
 	_, err = io.Copy(outFileDescriptor, io.TeeReader(archiveBuffer, *hash))
 	if err != nil {
-		return -1, err
+		return -1, errors.WithStack(err)
 	}
 
 	sizeBytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(sizeBytes, uint32(archiveSize))
 	_, err = outFileDescriptor.Write(sizeBytes)
 	if err != nil {
-		return -1, err
+		return -1, errors.WithStack(err)
 	}
 
 	_, err = (*hash).Write(sizeBytes)
 	if err != nil {
-		return -1, err
+		return -1, errors.WithStack(err)
 	}
 
 	return archiveSize, nil
