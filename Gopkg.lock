@@ -38,7 +38,7 @@
   branch = "master"
   name = "github.com/biessek/golang-ico"
   packages = ["."]
-  revision = "fd07bbc72370b251c84ed60f3811c0e3ad201bb0"
+  revision = "d348d9ea4670192799de9f429f8eb3d3862cced2"
 
 [[projects]]
   name = "github.com/develar/errors"

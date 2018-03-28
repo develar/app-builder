@@ -24,7 +24,7 @@ func ConfigureCommand(app *kingpin.Application) {
 	iconRoots := command.Flag("root", "base directory to resolve relative path").Short('r').Strings()
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		resultFile, err := ConvertIcon(*sources, *iconRoots, *iconOutFormat, *outDir)
+		icons, err := ConvertIcon(*sources, *iconRoots, *iconOutFormat, *outDir)
 		if err != nil {
 			switch t := errors.Cause(err).(type) {
 			case *ImageSizeError:
@@ -40,7 +40,7 @@ func ConfigureCommand(app *kingpin.Application) {
 			}
 		}
 
-		return util.WriteJsonToStdOut(IconConvertResult{Icons: resultFile})
+		return util.WriteJsonToStdOut(IconConvertResult{Icons: icons})
 	})
 }
 
@@ -87,6 +87,10 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outD
 	resolvedPath, fileInfo, err := resolveSourceFile(sourceFiles, roots, outExt)
 	if err != nil {
 		return nil, errors.WithStack(err)
+	}
+
+	if resolvedPath == "" {
+		return nil, nil
 	}
 
 	log.WithFields(log.Fields{

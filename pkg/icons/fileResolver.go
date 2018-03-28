@@ -1,12 +1,13 @@
 package icons
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+"os"
+"path/filepath"
 
-	"github.com/apex/log"
-	"github.com/develar/errors"
+
+
+"github.com/apex/log"
+"github.com/develar/errors"
 )
 
 // returns file if exists, null if file not exists, or error if unknown error
@@ -68,5 +69,5 @@ func resolveSourceFile(sourceFiles []string, roots []string, extraExtension stri
 		}
 	}
 
-	return "", nil, errors.Errorf("icon source \"%s\" not found", strings.Join(sourceFiles, ", "))
+	return "", nil, nil
 }
