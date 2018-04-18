@@ -158,7 +158,7 @@
     "tiff",
     "tiff/lzw"
   ]
-  revision = "f3a9b89b59def9194717c1d0bd4c0d08fa1afa7b"
+  revision = "f315e440302883054d0c2bd85486878cb4f8572c"
 
 [[projects]]
   branch = "master"
@@ -168,13 +168,13 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
+  revision = "d41e8174641f662c5a2d1c7a5f9e828788eb8706"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "13d03a9a82fba647c21a0ef8fba44a795d0f0835"
+  revision = "b126b21c05a91c856b027c16779c12e3bf236954"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -203,8 +203,8 @@
 [[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "86f5ed62f8a0ee96bd888d2efdfd6d4fb100a4eb"
-  version = "v2.2.0"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [solve-meta]
   analyzer-name = "dep"

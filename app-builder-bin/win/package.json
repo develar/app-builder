@@ -1,7 +1,7 @@
 {
   "name": "app-builder-bin-win",
   "description": "app-builder Windows binary",
-  "version": "1.8.4",
+  "version": "1.8.5",
   "license": "MIT",
   "repository": "develar/app-builder-bin",
   "files": [

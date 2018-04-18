@@ -41,14 +41,14 @@ type TemplateInfo struct {
 
 //noinspection SpellCheckingInspection
 var electronTemplate = TemplateInfo {
-	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-1.1/electron-template-1.1.snap",
-	Sha512: "Lk5jCYr+iNJBwhVMryie9WdZ6kwmd0XGL017DHW9AEKEpNQQpiW+CfKzDExRyfzxgmIGo944vqvnqD3Okn17jg==",
+	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-1.2/electron-template-1.2.snap",
+	Sha512: "DNLMH9Wjdih1XLgccYGtTmMvoNBrBJFaQuCFvj9T+50yL10LQqpzBWbshaw7rFo1RARMmMHXigBuVQdUUG5REA==",
 }
 
 //noinspection SpellCheckingInspection
 var electronTemplate2 = TemplateInfo {
-	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-2.1/electron-template-2.1.snap",
-	Sha512: "ITpJRtuy3QuJxGfcAD+ogCXHt3B9UsDeXqrC86elncEp5gCvfIxZ23deQFQRzkD0dWTp894z9PuiuYfProWSCA==",
+	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-2.2/electron-template-2.2.snap",
+	Sha512: "gBtn2pqvnhrDGhGCxY/vfY/fvd9P+qyRS1Z4Mp4uTXi3BGgTS5r7vJsNON95hydM1+LhfhdHBjeMQtFjhkFDDA==",
 }
 
 // --enable-geoip leads to very slow fetching - it seems local sources are more slow.
