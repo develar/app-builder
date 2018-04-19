@@ -41,8 +41,8 @@ type TemplateInfo struct {
 
 //noinspection SpellCheckingInspection
 var electronTemplate = TemplateInfo {
-	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-1.2/electron-template-1.2.snap",
-	Sha512: "DNLMH9Wjdih1XLgccYGtTmMvoNBrBJFaQuCFvj9T+50yL10LQqpzBWbshaw7rFo1RARMmMHXigBuVQdUUG5REA==",
+	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-1.2.1/electron-template-1.2.1.snap",
+	Sha512: "mQZLAKoh72LLofgTfBGHsZNu+EcsL2sqAUoPhQGMn9V5I9V4UvYJWq+LD5zWzTU5OcyK8aGnJ2UlX1/nPmigmw==",
 }
 
 //noinspection SpellCheckingInspection
