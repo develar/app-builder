@@ -47,16 +47,16 @@
   version = "v0.8.1"
 
 [[projects]]
-  branch = "master"
   name = "github.com/develar/go-fs-util"
   packages = ["."]
-  revision = "a3e79ac365a07b195486177e8b8399af878d4ade"
+  revision = "020401b03eba4247b08bcd3625ed0fe7b43f0e81"
+  version = "1.1"
 
 [[projects]]
   name = "github.com/disintegration/imaging"
   packages = ["."]
-  revision = "fd34ef7671b12cdf1b024d98c6b327b2770d32c4"
-  version = "v1.4.1"
+  revision = "bbcee2f5c9d5e94ca42c8b50ec847fec64a6c134"
+  version = "v1.4.2"
 
 [[projects]]
   branch = "master"
@@ -104,8 +104,8 @@
     "reporters/stenographer/support/go-isatty",
     "types"
   ]
-  revision = "9eda700730cba42af70d53180f9dcce9266bc2bc"
-  version = "v1.4.0"
+  revision = "fa5fabab2a1bfbd924faf4c067d07ae414e2aedf"
+  version = "v1.5.0"
 
 [[projects]]
   name = "github.com/onsi/gomega"
@@ -168,13 +168,13 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "d41e8174641f662c5a2d1c7a5f9e828788eb8706"
+  revision = "2491c5de3490fced2f6cff376127c667efeed857"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "b126b21c05a91c856b027c16779c12e3bf236954"
+  revision = "d0faeb539838e250bd0a9db4182d48d4a1915181"
 
 [[projects]]
   name = "golang.org/x/text"

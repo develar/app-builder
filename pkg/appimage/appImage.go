@@ -13,6 +13,7 @@ import (
 	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 )
 
 type AppImageOptions struct {
@@ -117,7 +118,7 @@ func writeRuntimeData(filePath string, runtimeData []byte) error {
 	}
 
 	_, err = file.WriteAt(runtimeData, 0)
-	return util.CloseAndCheckError(err, file)
+	return fsutil.CloseAndCheckError(err, file)
 }
 
 func createSquashFs(options AppImageOptions, offset int) error {

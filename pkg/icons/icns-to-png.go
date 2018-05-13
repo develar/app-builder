@@ -9,9 +9,9 @@ import (
 	"runtime"
 
 	"github.com/apex/log"
-	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 	"github.com/disintegration/imaging"
 )
 
@@ -31,7 +31,7 @@ var icnsTypeToSize = []Icns2PngMapping{
 }
 
 func ConvertIcnsToPng(inFile string, outDir string) ([]IconInfo, error) {
-	err := fs.EnsureEmptyDir(outDir)
+	err := fsutil.EnsureEmptyDir(outDir)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -81,7 +81,7 @@ func ConvertIcnsToPngUsingIconUtil(inFile string, outDir string, sizeList *[]int
 		return nil, errors.WithStack(err)
 	}
 
-	iconFileNames, err := fs.ReadDirContent(outDir)
+	iconFileNames, err := fsutil.ReadDirContent(outDir)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}

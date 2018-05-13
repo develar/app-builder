@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/apex/log"
-	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 )
 
 func CollectIcons(sourceDir string) ([]IconInfo, string, error) {
-	files, err := fs.ReadDirContent(sourceDir)
+	files, err := fsutil.ReadDirContent(sourceDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, "", errors.Errorf("icon directory %s doesn't exist", sourceDir)

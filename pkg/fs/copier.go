@@ -23,7 +23,7 @@ type LinkInfo struct {
 
 // go doesn't provide native copy operation (CoW)
 func (fileCopier *FileCopier) copyDir(from string, to string, fromInfo os.FileInfo) error {
-	fileNames, err := ReadDirContent(from)
+	fileNames, err := fsutil.ReadDirContent(from)
 	if err != nil {
 		return errors.WithStack(err)
 	}

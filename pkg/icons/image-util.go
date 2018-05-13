@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/biessek/golang-ico"
-	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 )
@@ -124,5 +123,5 @@ func SaveImage2(image image.Image, outFile *os.File, format int) error {
 		return err
 	}
 
-	return util.CloseAndCheckError(writer.Flush(), outFile)
+	return fsutil.CloseAndCheckError(writer.Flush(), outFile)
 }

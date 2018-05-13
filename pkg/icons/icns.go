@@ -8,7 +8,6 @@ import (
 	"io"
 	"io/ioutil"
 
-	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 	"github.com/disintegration/imaging"
@@ -114,15 +113,15 @@ func ConvertToIcns(inputInfo InputFileInfo, outFilePath string) error {
 
 	_, err = outFile.Write(icnsHeader)
 	if err != nil {
-		return errors.WithStack(util.CloseAndCheckError(err, outFile))
+		return errors.WithStack(fsutil.CloseAndCheckError(err, outFile))
 	}
 	_, err = outFile.Write(lengthBytes)
 	if err != nil {
-		return errors.WithStack(util.CloseAndCheckError(err, outFile))
+		return errors.WithStack(fsutil.CloseAndCheckError(err, outFile))
 	}
 
 	_, err = io.Copy(outFile, icns)
-	err = util.CloseAndCheckError(err, outFile)
+	err = fsutil.CloseAndCheckError(err, outFile)
 	if err != nil {
 		return errors.WithStack(err)
 	}

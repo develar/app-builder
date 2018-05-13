@@ -8,8 +8,8 @@ import (
 	"os"
 
 	"github.com/apex/log"
-	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 )
 
 // ActualLocation represents server's status 200 or 206 response meta data. It never holds redirect responses
@@ -129,7 +129,7 @@ func (actualLocation *ActualLocation) concatenateParts(expectedSha512 string) er
 		}
 
 		_, err = io.CopyBuffer(totalFile, reader, buf)
-		err = util.CloseAndCheckError(err, partFile)
+		err = fsutil.CloseAndCheckError(err, partFile)
 		if err != nil {
 			return errors.WithStack(err)
 		}

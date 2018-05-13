@@ -2,8 +2,7 @@ package util
 
 import (
 	"encoding/json"
-	"io"
-	"os"
+		"os"
 	"os/exec"
 
 	"github.com/alecthomas/kingpin"
@@ -20,17 +19,6 @@ func ConfigureIsRemoveStageParam(command *kingpin.CmdClause) *bool {
 	}
 
 	return command.Flag("remove-stage", "Whether to remove stage after build.").Default(isRemoveStageDefaultValue).Bool()
-}
-
-func CloseAndCheckError(err error, closable io.Closer) error {
-	closeErr := closable.Close()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	if closeErr != nil {
-		return errors.WithStack(closeErr)
-	}
-	return nil
 }
 
 func IsDebugEnabled() bool {

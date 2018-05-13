@@ -7,45 +7,9 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 )
-
-func ReadDirContent(dirPath string) ([]string, error) {
-	dir, err := os.Open(dirPath)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	files, err := dir.Readdirnames(0)
-	return files, util.CloseAndCheckError(err, dir)
-}
-
-func EnsureEmptyDir(dirPath string) error {
-	dir, err := os.Open(dirPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return errors.WithStack(os.MkdirAll(dirPath, 0777))
-		} else {
-			return errors.WithStack(err)
-		}
-	}
-
-	defer dir.Close()
-
-	files, err := dir.Readdirnames(0)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	for _, name := range files {
-		err = os.RemoveAll(filepath.Join(dirPath, name))
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
-}
 
 func ReadFile(file string, size int) ([]byte, error) {
 	reader, err := os.Open(file)
@@ -55,7 +19,7 @@ func ReadFile(file string, size int) ([]byte, error) {
 
 	result := make([]byte, size)
 	_, err = reader.Read(result)
-	return result, util.CloseAndCheckError(err, reader)
+	return result, fsutil.CloseAndCheckError(err, reader)
 }
 
 func RemoveByGlob(fileGlob string) error {

@@ -15,6 +15,7 @@ import (
 	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 )
 
 var sameSize = map[string]string{
@@ -105,7 +106,7 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 		}
 
 		_, err = io.Copy(outWriter, io.LimitReader(reader, int64(subImage.Length)))
-		err = util.CloseAndCheckError(err, outWriter)
+		err = fsutil.CloseAndCheckError(err, outWriter)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
