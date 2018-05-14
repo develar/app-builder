@@ -8,6 +8,7 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 )
 
@@ -32,7 +33,7 @@ func ClearExecStack(fileName string) error {
 		return errors.WithStack(err)
 	}
 
-	defer file.Close()
+	defer util.Close(file)
 
 	data, err := ioutil.ReadAll(io.LimitReader(file, 2048))
 	if err != nil {

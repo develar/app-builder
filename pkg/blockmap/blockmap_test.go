@@ -30,6 +30,7 @@ var _ = Describe("Blockmap", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		inputInfo, err := BuildBlockMap(file.Name(), DefaultChunkerConfiguration, DEFLATE, "")
+		Expect(err).NotTo(HaveOccurred())
 
 		fileData, err := ioutil.ReadFile(file.Name())
 		Expect(err).NotTo(HaveOccurred())

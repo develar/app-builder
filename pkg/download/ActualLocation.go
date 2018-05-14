@@ -8,18 +8,28 @@ import (
 	"os"
 
 	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 )
 
 // ActualLocation represents server's status 200 or 206 response meta data. It never holds redirect responses
 type ActualLocation struct {
-	Location          string
-	SuggestedFileName string
-	isAcceptRanges      bool
-	StatusCode        int
-	ContentLength     int64
-	Parts             []*Part
+	Url            string
+	OutFileName    string
+	isAcceptRanges bool
+	StatusCode     int
+	ContentLength  int64
+	Parts          []*Part
+}
+
+func NewResolvedLocation(url string, contentLength int64, outFileName string, isAcceptRanges bool) ActualLocation {
+	return ActualLocation{
+		Url:            url,
+		OutFileName:    outFileName,
+		isAcceptRanges: isAcceptRanges,
+		ContentLength:  contentLength,
+	}
 }
 
 func (actualLocation *ActualLocation) computeParts(minPartSize int64) {
@@ -27,7 +37,7 @@ func (actualLocation *ActualLocation) computeParts(minPartSize int64) {
 		log.WithField("length", actualLocation.ContentLength).Warn("invalid content length, will be downloaded as one part")
 		actualLocation.Parts = make([]*Part, 1)
 		actualLocation.Parts[0] = &Part{
-			Name:  actualLocation.SuggestedFileName,
+			Name:  actualLocation.OutFileName,
 			Start: 0,
 			End:   -1,
 		}
@@ -40,6 +50,7 @@ func (actualLocation *ActualLocation) computeParts(minPartSize int64) {
 		partCount = 1
 	} else {
 		partCount = int(contentLength / minPartSize)
+		maxPartCount := getMaxPartCount()
 		if partCount > maxPartCount {
 			partCount = maxPartCount
 		}
@@ -49,19 +60,18 @@ func (actualLocation *ActualLocation) computeParts(minPartSize int64) {
 
 	actualLocation.Parts = make([]*Part, partCount)
 
-	end := contentLength
 	start := int64(0)
 	for i := 0; i < partCount; i++ {
-		end = start + partSize
+		end := start + partSize
 		if end > contentLength || i == (partCount - 1) {
 			end = contentLength
 		}
 
 		var name string
 		if i == 0 {
-			name = actualLocation.SuggestedFileName
+			name = actualLocation.OutFileName
 		} else {
-			name = fmt.Sprintf("%s.part%d", actualLocation.SuggestedFileName, i)
+			name = fmt.Sprintf("%s.part%d", actualLocation.OutFileName, i)
 		}
 
 		actualLocation.Parts[i] = &Part{
@@ -104,6 +114,8 @@ func (actualLocation *ActualLocation) concatenateParts(expectedSha512 string) er
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
+	defer util.Close(totalFile)
 
 	buf := make([]byte, 32*1024)
 	inputHash := sha512.New()

@@ -14,7 +14,6 @@ type IconInfo struct {
 
 func sortBySize(list []IconInfo) {
 	sort.Slice(list, func(i, j int) bool { return list[i].Size < list[j].Size })
-	return
 }
 
 type IconConvertResult struct {

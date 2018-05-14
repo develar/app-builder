@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/develar/app-builder/pkg/download"
-	"github.com/develar/app-builder/pkg/util"
+		"github.com/develar/app-builder/pkg/download"
+		"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 )
 
@@ -25,7 +25,6 @@ func GetAppImageToolDir() (string, error) {
 func GetAppImageToolBin(toolDir string) string {
 	if runtime.GOOS == "darwin" {
 		return filepath.Join(toolDir, "darwin")
-
 	} else {
 		return filepath.Join(toolDir, "linux-"+goArchToNodeArch(runtime.GOARCH))
 	}

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"sync"
 
 	"github.com/alecthomas/kingpin"
@@ -16,6 +17,7 @@ import (
 	"github.com/develar/app-builder/pkg/elfExecStack"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/icons"
+	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/log-cli"
 	"github.com/develar/app-builder/pkg/snap"
 	"github.com/develar/app-builder/pkg/util"
@@ -23,7 +25,7 @@ import (
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("1.8.6")
+	app = kingpin.New("app-builder", "app-builder").Version("1.8.7")
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
 	buildBlockMapInFile      = buildBlockMap.Flag("input", "input file").Short('i').Required().String()
@@ -43,6 +45,8 @@ func main() {
 	}
 
 	download.ConfigureCommand(app)
+	download.ConfigureDownloadResolvedFilesCommand(app)
+	configurePrefetchToolsCommand(app)
 	download.ConfigureArtifactCommand(app)
 	ConfigureCopyCommand(app)
 	appimage.ConfigureCommand(app)
@@ -110,7 +114,7 @@ func compress() error {
 	waitGroup.Add(2)
 	go func() {
 		defer waitGroup.Done()
-		defer stdin.Close()
+		defer util.Close(stdin)
 		io.Copy(stdin, os.Stdin)
 	}()
 
@@ -145,4 +149,42 @@ func doBuildBlockMap() error {
 	}
 
 	return util.WriteJsonToStdOut(inputInfo)
+}
+
+func configurePrefetchToolsCommand(app *kingpin.Application) {
+	command := app.Command("prefetch-tools", "Prefetch all required tools")
+	command.Action(func(context *kingpin.ParseContext) error {
+		_, err := linuxTools.GetAppImageToolDir()
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		_, err = snap.ResolveTemplateFile("", "electron2", "")
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		if runtime.GOOS == "linux" {
+			//noinspection SpellCheckingInspection
+			_, err = download.DownloadArtifact(
+				"fpm-1.9.3-2.3.1-linux-x86_64",
+				"https://github.com/electron-userland/electron-builder-binaries/releases/download/fpm-1.9.3-2.3.1-linux-x86_64/fpm-1.9.3-2.3.1-linux-x86_64.7z",
+				"fcKdXPJSso3xFs5JyIJHG1TfHIRTGDP0xhSBGZl7pPZlz4/TJ4rD/q3wtO/uaBBYeX0qFFQAFjgu1uJ6HLHghA==",
+			)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		} else {
+			//noinspection SpellCheckingInspection
+			_, err = download.DownloadArtifact(
+				"fpm-1.9.3-20150715-2.2.2-mac",
+				"https://github.com/electron-userland/electron-builder-binaries/releases/download/fpm-1.9.3-20150715-2.2.2-mac/fpm-1.9.3-20150715-2.2.2-mac.7z",
+				"oXfq+0H2SbdrbMik07mYloAZ8uHrmf6IJk+Q3P1kwywuZnKTXSaaeZUJNlWoVpRDWNu537YxxpBQWuTcF+6xfw==",
+			)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+		}
+		return nil
+	})
 }

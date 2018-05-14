@@ -75,7 +75,5 @@ func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskI
 			}
 		}
 	}
-
-	return nil
 }
 

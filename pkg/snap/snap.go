@@ -97,12 +97,12 @@ func ConfigureCommand(app *kingpin.Application) {
 	isRemoveStage := util.ConfigureIsRemoveStageParam(command)
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		resolvedTemplateFile, err := resolveTemplateFile(*templateFile, *templateUrl, *templateSha512)
+		resolvedTemplateFile, err := ResolveTemplateFile(*templateFile, *templateUrl, *templateSha512)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
-		isUseDocker, err := DetectIsUseDocker(*isUseDockerCommandArg, len(resolvedTemplateFile) != 0)
+		isUseDocker := DetectIsUseDocker(*isUseDockerCommandArg, len(resolvedTemplateFile) != 0)
 		err = Snap(resolvedTemplateFile, isUseDocker, options)
 		if err != nil {
 			switch e := errors.Cause(err).(type) {
@@ -125,7 +125,7 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
-func resolveTemplateFile(templateFile string, templateUrl string, templateSha512 string) (string, error) {
+func ResolveTemplateFile(templateFile string, templateUrl string, templateSha512 string) (string, error) {
 	if len(templateFile) != 0 || len(templateUrl) == 0 {
 		return templateFile, nil
 	}
@@ -176,16 +176,16 @@ func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {
 	}
 }
 
-func DetectIsUseDocker(isUseDocker bool, isUseTemplateApp bool) (bool, error) {
+func DetectIsUseDocker(isUseDocker bool, isUseTemplateApp bool) bool {
 	if isUseDocker {
-		return true, nil
+		return true
 	}
 
 	if runtime.GOOS != "darwin" {
-		return isUseDocker, nil
+		return isUseDocker
 	}
 
-	return !isUseTemplateApp, nil
+	return !isUseTemplateApp
 }
 
 func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {

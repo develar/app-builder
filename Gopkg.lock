@@ -60,6 +60,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/dustin/go-humanize"
+  packages = ["."]
+  revision = "02af3965c54e8cacf948b97fef38925c4120652c"
+
+[[projects]]
+  branch = "master"
   name = "github.com/jsummers/gobmp"
   packages = ["."]
   revision = "e2ba15ffa76e4db3c90ae9e7c4b1c32a411207a4"
@@ -209,6 +215,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e442de020ad628b83b08bc3a9a81ce3a4f11b53b9a0e941401982b8177b35c2b"
+  inputs-digest = "f133c1f6d63c2a80ecbdb615ef48c764f262a1a03f2649da5e4e87c41c7e3234"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -9,10 +9,9 @@ if [ -z "$GITHUB_TOKEN" ] ; then
 fi
 
 NAME=app-builder
-VERSION=1.0.3
+VERSION=1.8.7
 
-OUT_DIR="$BASEDIR/dist/out"
-rm -rf "$OUT_DIR"
+OUT_DIR="$BASEDIR/../dist"
 
 publish()
 {
@@ -20,19 +19,18 @@ publish()
   archiveName="$NAME-v$VERSION-$2"
   archiveFile="$OUT_DIR/$archiveName.7z"
 
-  cd "$BASEDIR/dist/$outDir"
+  cd "$OUT_DIR/$outDir"
   7za a -mx=9 -mfb=64 "$archiveFile" .
 }
 
-publish "darwinamd64" mac
+publish "darwin_amd64" mac
 
-publish "linux386" linux-ia32
-publish "linuxamd64" linux-x64
+publish "linux_386" linux-ia32
+publish "linux_amd64" linux-x64
+publish "linux_arm_7" linux-armv7
+publish "linux_arm64" linux-armv8
 
-publish "windows386" win-ia32
-publish "windowsamd64" win-x64
-
-publish "linuxarm7" linux-armv7
-publish "linuxarm64" linux-armv8
+publish "windows_386" win-ia32
+publish "windows_amd64" win-x64
 
 tool-releaser develar/app-builder "v$VERSION" master "" "$OUT_DIR/*.7z"

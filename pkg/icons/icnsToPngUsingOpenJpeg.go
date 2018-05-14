@@ -41,7 +41,7 @@ var typeToSize = map[string]int{
 
 func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, error) {
 	reader, err := os.Open(icnsPath)
-	defer reader.Close()
+	defer util.Close(reader)
 
 	if err != nil {
 		return nil, errors.WithStack(err)

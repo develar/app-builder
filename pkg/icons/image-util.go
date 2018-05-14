@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/biessek/golang-ico"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 )
@@ -26,7 +27,7 @@ func LoadImage(file string) (image.Image, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	defer reader.Close()
+	defer util.Close(reader)
 
 	bufferedReader := bufio.NewReader(reader)
 
@@ -68,7 +69,7 @@ func DecodeImageConfig(file string) (*image.Config, error) {
 
 	result, _, err := image.DecodeConfig(reader)
 	if err != nil {
-		reader.Close()
+		util.Close(reader)
 
 		if err == image.ErrFormat {
 			err = &ImageFormatError{file, "ERR_ICON_UNKNOWN_FORMAT"}
@@ -86,17 +87,7 @@ func DecodeImageConfig(file string) (*image.Config, error) {
 
 func DecodeImageAndClose(reader io.Reader, closer io.Closer) (image.Image, error) {
 	result, _, err := image.Decode(reader)
-	if err != nil {
-		closer.Close()
-		return nil, errors.WithStack(err)
-	}
-
-	err = closer.Close()
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-
-	return result, nil
+	return result, errors.WithStack(fsutil.CloseAndCheckError(err, closer))
 }
 
 func SaveImage(image image.Image, outFileName string, format int) error {
@@ -108,7 +99,7 @@ func SaveImage(image image.Image, outFileName string, format int) error {
 	return SaveImage2(image, outFile, format)
 }
 
-func SaveImage2(image image.Image, outFile *os.File, format int) error {
+func SaveImage2(image image.Image, outFile io.WriteCloser, format int) error {
 	writer := bufio.NewWriter(outFile)
 
 	var err error
@@ -119,9 +110,7 @@ func SaveImage2(image image.Image, outFile *os.File, format int) error {
 	}
 
 	if err != nil {
-		outFile.Close()
-		return err
+		return fsutil.CloseAndCheckError(err, outFile)
 	}
-
 	return fsutil.CloseAndCheckError(writer.Flush(), outFile)
 }

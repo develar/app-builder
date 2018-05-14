@@ -11,10 +11,10 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"log"
-	"os"
+		"os"
 
 	"github.com/aclements/go-rabin/rabin"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/minio/blake2b-simd"
 )
@@ -116,7 +116,7 @@ func appendResult(data []byte, inFile string, compressionFormat CompressionForma
 		return -1, errors.WithStack(err)
 	}
 
-	defer Close(outFileDescriptor)
+	defer util.Close(outFileDescriptor)
 
 	archiveSize := archiveBuffer.Len()
 	_, err = io.Copy(outFileDescriptor, io.TeeReader(archiveBuffer, *hash))
@@ -149,7 +149,7 @@ func writeResult(data []byte, outFile string, compressionFormat CompressionForma
 	if err != nil {
 		return err
 	}
-	defer Close(outFileDescriptor)
+	defer util.Close(outFileDescriptor)
 
 	return archiveData(data, compressionFormat, outFileDescriptor)
 }
@@ -166,11 +166,11 @@ func archiveData(data []byte, compressionFormat CompressionFormat, destinationWr
 		return err
 	}
 
-	defer Close(archiveWriter)
+	defer util.Close(archiveWriter)
 
 	_, err = archiveWriter.Write(data)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	return nil
@@ -181,7 +181,7 @@ func computeBlocks(inFile string, configuration ChunkerConfiguration) (*[]string
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	defer Close(inputFileDescriptor)
+	defer util.Close(inputFileDescriptor)
 
 	var checksums []string
 	var sizes []int
@@ -234,12 +234,4 @@ func computeBlocks(inFile string, configuration ChunkerConfiguration) (*[]string
 		Size: fileSize,
 		hash: &inputHash,
 	}, nil
-}
-
-// http://www.blevesearch.com/news/Deferred-Cleanup,-Checking-Errors,-and-Potential-Problems/
-func Close(c io.Closer) {
-	err := c.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
 }

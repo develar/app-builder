@@ -2,7 +2,8 @@ package util
 
 import (
 	"encoding/json"
-		"os"
+	"io"
+	"os"
 	"os/exec"
 
 	"github.com/alecthomas/kingpin"
@@ -38,11 +39,7 @@ func WriteJsonToStdOut(v interface{}) error {
 		return err
 	}
 	_, err = os.Stdout.Write(serializedInputInfo)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 // useful for snap, where prime command took a lot of time and we need to read progress messages
@@ -86,4 +83,12 @@ func preCommandExecute(command *exec.Cmd, currentWorkingDirectory string) {
 
 func LogErrorAndExit(err error) {
 	log.Fatalf("%+v\n", err)
+}
+
+// http://www.blevesearch.com/news/Deferred-Cleanup,-Checking-Errors,-and-Potential-Problems/
+func Close(c io.Closer) {
+	err := c.Close()
+	if err != nil {
+		log.Errorf("%v", err)
+	}
 }

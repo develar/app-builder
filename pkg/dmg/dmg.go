@@ -73,7 +73,7 @@ func GetEffectiveBackgroundPath(path string) (string, error) {
 		return path, nil
 	}
 
-	re, err := regexp.Compile("\\.([a-z]+)$")
+	re, err := regexp.Compile(`\.([a-z]+)$`)
 	if err != nil {
 		return "", err
 	}

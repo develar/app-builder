@@ -82,7 +82,7 @@ func ConvertToIcns(inputInfo InputFileInfo, outFilePath string) error {
 
 		// each icon type is prefixed with a 4-byte OSType marker and a 4-byte size header (which includes the ostype/size header).
 		// add the size of the total icon to lengthBytes in big-endian format.
-		lengthBytes := make([]byte, 4, 4)
+		lengthBytes := make([]byte, 4)
 		binary.BigEndian.PutUint32(lengthBytes, uint32(len(imageData)+8))
 
 		// iterate through every OSType and append the icon to icns
@@ -103,7 +103,7 @@ func ConvertToIcns(inputInfo InputFileInfo, outFilePath string) error {
 	}
 
 	// each ICNS file is prefixed with a 4 byte header and 4 bytes marking the length of the file, MSB first
-	lengthBytes := make([]byte, 4, 4)
+	lengthBytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(lengthBytes, uint32(icns.Len()+8))
 
 	outFile, err := fsutil.CreateFile(outFilePath)

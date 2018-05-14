@@ -97,7 +97,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		archiveName = tempUnpackDir + ".7z"
 	}
 
-	err = Download(url, archiveName, checksum)
+	err = NewDownloader().Download(url, archiveName, checksum)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -222,7 +222,7 @@ func DownloadCompressedArtifact(subDir string, url string, checksum string) (str
 	}
 
 	log.WithFields(logFields).WithField("url", url).Info("downloading")
-	err = Download(url, tempFile, checksum)
+	err = NewDownloader().Download(url, tempFile, checksum)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}

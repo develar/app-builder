@@ -8,7 +8,9 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"runtime"
 	"syscall"
+	"time"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
@@ -22,9 +24,18 @@ import (
 const (
 	maxRedirects = 10
 	minPartSize  = 5 * 1024 * 1024
-	maxPartCount = 8
 	userAgent    = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/604.5.6 (KHTML, like Gecko) Version/11.0.3 Safari/604.5.6"
 )
+
+func getMaxPartCount() int {
+	const maxPartCount = 8
+	result := runtime.NumCPU() * 2
+	if result > maxPartCount {
+		return maxPartCount
+	} else {
+		return result
+	}
+}
 
 func ConfigureCommand(app *kingpin.Application) {
 	command := app.Command("download", "Download file.")
@@ -33,80 +44,92 @@ func ConfigureCommand(app *kingpin.Application) {
 	sha512 := command.Flag("sha512", "The expected sha512 of file.").String()
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		return errors.WithStack(Download(*fileUrl, *output, *sha512))
+		return errors.WithStack(NewDownloader().Download(*fileUrl, *output, *sha512))
 	})
 }
 
-func Download(url string, output string, sha512 string) error {
+type Downloader struct {
+	client    *http.Client
+	transport *http.Transport
+}
+
+func NewDownloader() Downloader {
+	transport := &http.Transport{
+		Proxy:               proxyFromEnvironmentAndNpm,
+		MaxIdleConns:        64,
+		MaxIdleConnsPerHost: 64,
+		IdleConnTimeout:     30 * time.Second,
+	}
+	return Downloader{
+		transport: transport,
+		client: &http.Client{
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+			Transport: transport,
+		},
+	}
+}
+
+func (t Downloader) Download(url string, output string, sha512 string) error {
 	dir := filepath.Dir(output)
 	err := os.MkdirAll(dir, 0777)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	downloadContext, cancel := context.WithCancel(context.Background())
-	httpTransport := &http.Transport{Proxy: proxyFromEnvironmentAndNpm}
-
-	actualLocation, err := follow(url, userAgent, output, httpTransport)
+	actualLocation, err := t.follow(url, userAgent, output)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	partDownloadClient := &http.Client{
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-		Transport: httpTransport,
-	}
+	return t.DownloadResolved(actualLocation, sha512)
+}
 
+func (t Downloader) DownloadResolved(location *ActualLocation, sha512 string) error {
+	downloadContext, cancel := context.WithCancel(context.Background())
 	go onCancelSignal(cancel)
 
-	if actualLocation.StatusCode == http.StatusOK {
-		actualLocation.computeParts(minPartSize)
-		err = util.MapAsyncConcurrency(len(actualLocation.Parts), maxPartCount, func(index int) (func() error, error) {
-			part := actualLocation.Parts[index]
-			return func() error {
-				err = part.download(downloadContext, actualLocation.Location, index, partDownloadClient)
-				if err != nil {
-					part.isFail = true
-					log.WithFields(log.Fields{
-						"id":    index,
-						"error": err,
-					}).Debug("part download error")
-				}
-				return err
-			}, nil
-		})
+	location.computeParts(minPartSize)
+	log.WithFields(&log.Fields{
+		"url": location.Url,
+		"parts": len(location.Parts),
+	}).Debug("download")
+	err := util.MapAsyncConcurrency(len(location.Parts), getMaxPartCount(), func(index int) (func() error, error) {
+		part := location.Parts[index]
+		return func() error {
+			err := part.download(downloadContext, location.Url, index, t.client)
+			if err != nil {
+				part.isFail = true
+				log.WithFields(log.Fields{
+					"id":    index,
+					"error": err,
+				}).Debug("part download error")
+			}
+			return err
+		}, nil
+	})
 
-		if err != nil {
-			return errors.WithStack(err)
-		}
+	if err != nil {
+		return errors.WithStack(err)
 	}
 
-	for _, part := range actualLocation.Parts {
+	for _, part := range location.Parts {
 		if part.isFail {
 			cancel()
 			break
 		}
 	}
 
-	actualLocation.deleteUnnecessaryParts()
-	err = actualLocation.concatenateParts(sha512)
+	location.deleteUnnecessaryParts()
+	err = location.concatenateParts(sha512)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 	return nil
 }
 
-func follow(initialUrl, userAgent, outFileName string, transport *http.Transport) (*ActualLocation, error) {
-	totalWritten := int64(0)
-
-	client := &http.Client{
-		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
-			return http.ErrUseLastResponse
-		},
-		Transport: transport,
-	}
+func (t Downloader) follow(initialUrl, userAgent, outFileName string) (*ActualLocation, error) {
 	currentUrl := initialUrl
 	redirectsFollowed := 0
 	for {
@@ -117,6 +140,8 @@ func follow(initialUrl, userAgent, outFileName string, transport *http.Transport
 			}).Debug("computing effective URL")
 		}
 
+		// should use GET instead of HEAD because ContentLength maybe omitted for HEAD requests
+		// https://stackoverflow.com/questions/3854842/content-length-header-with-head-requests
 		req, err := http.NewRequest(http.MethodGet, currentUrl, nil)
 		if err != nil {
 			return nil, errors.WithStack(err)
@@ -124,58 +149,51 @@ func follow(initialUrl, userAgent, outFileName string, transport *http.Transport
 
 		req.Header.Set("User-Agent", userAgent)
 		actualLocation, err := func() (*ActualLocation, error) {
-			response, err := client.Do(req)
+			response, err := t.client.Do(req)
 			if response != nil {
-				defer response.Body.Close()
+				util.Close(response.Body)
 			}
 
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
 
-			if !isRedirect(response.StatusCode) {
-				actualLocation := &ActualLocation{
-					Location:          currentUrl,
-					SuggestedFileName: outFileName,
-					isAcceptRanges:      response.Header.Get("Accept-Ranges") != "",
-					StatusCode:        response.StatusCode,
-					ContentLength:     response.ContentLength,
+			if isRedirect(response.StatusCode) {
+				loc, err := response.Location()
+				if err != nil {
+					return nil, errors.WithStack(err)
 				}
 
-				if response.StatusCode == http.StatusOK {
-					var length string
-					if totalWritten > 0 && actualLocation.isAcceptRanges {
-						remaining := response.ContentLength - totalWritten
-						length = fmt.Sprintf("%d, %d remaining", response.ContentLength, remaining)
-					} else if response.ContentLength < 0 {
-						length = "unknown"
-					} else {
-						length = fmt.Sprintf("%d", response.ContentLength)
-					}
-					log.WithFields(log.Fields{
-						"length": length,
-						"content-type":    response.Header.Get("Content-Type"),
-						"url": initialUrl,
-					}).Debug("downloading")
-
-					if !actualLocation.isAcceptRanges {
-						log.Warn("server doesn't support ranges")
-					}
-				}
-				return actualLocation, nil
+				currentUrl = loc.String()
+				return nil, nil
+			} else if response.StatusCode != http.StatusOK {
+				return nil, fmt.Errorf("resolve request failed with status code %d", response.StatusCode)
 			}
 
-			loc, err := response.Location()
-			if err != nil {
-				return nil, errors.WithStack(err)
+			actualLocation := NewResolvedLocation(currentUrl, response.ContentLength, outFileName, response.Header.Get("Accept-Ranges") != "")
+			var length string
+			if response.ContentLength < 0 {
+				length = "unknown"
+			} else {
+				length = fmt.Sprintf("%d", response.ContentLength)
 			}
-			currentUrl = loc.String()
-			return nil, nil
+
+			log.WithFields(log.Fields{
+				"length":       length,
+				"content-type": response.Header.Get("Content-Type"),
+				"url":          initialUrl,
+			}).Debug("downloading")
+
+			if !actualLocation.isAcceptRanges {
+				log.Warn("server doesn't support ranges")
+			}
+			return &actualLocation, nil
 		}()
 
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
+
 		if actualLocation != nil {
 			return actualLocation, nil
 		}
@@ -185,7 +203,6 @@ func follow(initialUrl, userAgent, outFileName string, transport *http.Transport
 			return nil, errors.Errorf("maximum number of redirects (%d) followed", maxRedirects)
 		}
 	}
-	return nil, nil
 }
 
 func onCancelSignal(cancel context.CancelFunc) {
@@ -198,15 +215,6 @@ func onCancelSignal(cancel context.CancelFunc) {
 
 func isRedirect(status int) bool {
 	return status > 299 && status < 400
-}
-
-type temporary interface {
-	Temporary() bool
-}
-
-func isTemporary(err error) bool {
-	te, ok := err.(temporary)
-	return ok && te.Temporary()
 }
 
 func proxyFromEnvironmentAndNpm(req *http.Request) (*url.URL, error) {
