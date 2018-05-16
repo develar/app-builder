@@ -88,7 +88,7 @@ func LogErrorAndExit(err error) {
 // http://www.blevesearch.com/news/Deferred-Cleanup,-Checking-Errors,-and-Potential-Problems/
 func Close(c io.Closer) {
 	err := c.Close()
-	if err != nil {
+	if err != nil && err != os.ErrClosed {
 		log.Errorf("%v", err)
 	}
 }

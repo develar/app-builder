@@ -29,16 +29,7 @@ l/NT6REwZA64/lNy
 `
 
 //noinspection SpellCheckingInspection
-const producitonCert = `-----BEGIN CERTIFICATE-----
-MIIBfDCCASKgAwIBAgIRALPgq5u/CdmbIQpZHwbem+EwCgYIKoZIzj0EAwIwHjEc
-MBoGA1UEAxMTZWxlY3Ryb24uYnVpbGQgcm9vdDAeFw0xNzExMTMxNzI4NDFaFw0x
-ODA1MTUwNTI4NDFaMBkxFzAVBgNVBAMTDmVsZWN0cm9uLmJ1aWxkMFkwEwYHKoZI
-zj0CAQYIKoZIzj0DAQcDQgAE/OpHedt85s+Hc3l2XYLq7HcIEjgFGyOkEnzOgC6s
-c3g7rEQA8Mwu+95dvyBnF1pUl64xMwIis+yI0GhmwqsI9qNGMEQwEwYDVR0lBAww
-CgYIKwYBBQUHAwEwDAYDVR0TAQH/BAIwADAfBgNVHSMEGDAWgBToOryQru1CWu3O
-QhitiJNkakcSnTAKBggqhkjOPQQDAgNIADBFAiBTd9EjhmHWOSSZmHkZUKpZbi+/
-RD/JjoycWkzXSsz0qQIhAI0VoY/BSrTOlPaZVROB5v8g4b+pcQcKhI2h5F27xN2j
------END CERTIFICATE-----
+const productionCert = `
 -----BEGIN CERTIFICATE-----
 MIIBfTCCASOgAwIBAgIRAIdieK1+3C4abgOvQ7pVVqAwCgYIKoZIzj0EAwIwHjEc
 MBoGA1UEAxMTZWxlY3Ryb24uYnVpbGQgcm9vdDAeFw0xNzExMTMxNzI4NDFaFw0x
@@ -63,10 +54,11 @@ func ConfigureDownloadResolvedFilesCommand(app *kingpin.Application) {
 		downloader := NewDownloader()
 
 		caCertPool := x509.NewCertPool()
-		caCertPool.AppendCertsFromPEM(getCaCerts())
+		pemCerts, serverName := getCaCerts()
+		caCertPool.AppendCertsFromPEM(pemCerts)
 
 		downloader.transport.TLSClientConfig = &tls.Config{
-			ServerName: "electron.build.local",
+			ServerName: serverName,
 			RootCAs:    caCertPool,
 		}
 
@@ -89,10 +81,11 @@ func ConfigureDownloadResolvedFilesCommand(app *kingpin.Application) {
 	})
 }
 
-func getCaCerts() []byte {
-	if util.IsEnvTrue("USE_ELECTRON_BUILD_SERVICE_LOCAL_CA") {
-		return []byte(localCert)
+func getCaCerts() ([]byte, string) {
+	isUseLocalCert := util.IsEnvTrue("USE_ELECTRON_BUILD_SERVICE_LOCAL_CA")
+	if isUseLocalCert {
+		return []byte(localCert), "electron.build.local"
 	} else {
-		return []byte(producitonCert)
+		return []byte(productionCert), "electron.build"
 	}
 }

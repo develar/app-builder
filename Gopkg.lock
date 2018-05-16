@@ -49,8 +49,8 @@
 [[projects]]
   name = "github.com/develar/go-fs-util"
   packages = ["."]
-  revision = "020401b03eba4247b08bcd3625ed0fe7b43f0e81"
-  version = "1.1"
+  revision = "27bcfafd2be58824aea5acdf426166c8b85b15d9"
+  version = "v1.1.1"
 
 [[projects]]
   name = "github.com/disintegration/imaging"
@@ -129,8 +129,8 @@
     "matchers/support/goraph/util",
     "types"
   ]
-  revision = "003f63b7f4cff3fc95357005358af2de0f5fe152"
-  version = "v1.3.0"
+  revision = "62bff4df71bdbc266561a0caee19f0594b17c240"
+  version = "v1.4.0"
 
 [[projects]]
   branch = "master"
@@ -180,7 +180,7 @@
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "d0faeb539838e250bd0a9db4182d48d4a1915181"
+  revision = "7c87d13f8e835d2fb3a70a2912c811ed0c1d241b"
 
 [[projects]]
   name = "golang.org/x/text"

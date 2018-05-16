@@ -162,5 +162,5 @@ func (actualLocation *ActualLocation) concatenateParts(expectedSha512 string) er
 		}
 	}
 
-	return errors.WithStack(totalFile.Close())
+	return nil
 }
