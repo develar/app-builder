@@ -1,16 +1,20 @@
 "use strict"
 
-const path = require("path")
+function getPath() {
+  if (process.env.USE_SYSTEM_APP_BUILDER === "true") {
+    return "app-builder"
+  }
 
-const nameMap = {
-  "darwin": "mac",
-  "win32": "win",
-  "linux": "linux",
+  const path = require("path")
+  if (process.platform === "darwin") {
+    return path.join(__dirname, "mac", "app-builder")
+  }
+  else if (process.platform === "win32") {
+    return path.join(__dirname, "win", process.arch, "app-builder.exe")
+  }
+  else {
+    return path.join(__dirname, "linux", process.arch, "app-builder")
+  }
 }
 
-const suffix = nameMap[process.platform]
-if (suffix == null) {
-  throw new Error("Unsupported platform " + process.platform)
-}
-
-exports.appBuilderPath = process.env.USE_SYSTEM_APP_BUILDER === "true" ? "app-builder" : require(`app-builder-bin-${suffix}`).appBuilderPath
+exports.appBuilderPath = getPath()

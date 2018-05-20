@@ -12,7 +12,4 @@ cp dist/windows_amd64/app-builder.exe app-builder-bin/win/x64/app-builder.exe
 
 ln -f readme.md app-builder-bin/readme.md
 
-npm publish app-builder-bin/linux
-npm publish app-builder-bin/mac
-npm publish app-builder-bin/win
 npm publish app-builder-bin

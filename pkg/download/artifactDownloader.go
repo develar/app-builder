@@ -37,6 +37,10 @@ func ConfigureArtifactCommand(app *kingpin.Application) {
 // * don't pollute user project dir (important in case of 1-package.json project structure)
 // * simplify/speed-up tests (don't download fpm for each test project)
 func DownloadArtifact(dirName string, url string, checksum string) (string, error) {
+	if dirName == "fpm" {
+		return DownloadFpm()
+	}
+
 	isNodeJsArtifact := dirName == "node"
 	if isNodeJsArtifact {
 		versionAndArch := url
@@ -50,7 +54,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		dirName = strings.TrimSuffix(fileName, path.Ext(fileName))
 	}
 
-	cacheDir, err := getCacheDirectory("electron-builder")
+	cacheDir, err := GetCacheDirectory("electron-builder")
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -187,7 +191,7 @@ func unpackTarXz(archiveName string, unpackDir string) error {
 }
 
 func DownloadCompressedArtifact(subDir string, url string, checksum string) (string, error) {
-	cacheDir, err := getCacheDirectory("electron-builder")
+	cacheDir, err := GetCacheDirectory("electron-builder")
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -236,7 +240,7 @@ func DownloadCompressedArtifact(subDir string, url string, checksum string) (str
 	return filePath, nil
 }
 
-func getCacheDirectory(dirName string) (string, error) {
+func GetCacheDirectory(dirName string) (string, error) {
 	env := os.Getenv("ELECTRON_BUILDER_CACHE")
 	if len(env) != 0 {
 		return env, nil
@@ -264,4 +268,115 @@ func getCacheDirectory(dirName string) (string, error) {
 		return "", errors.WithStack(err)
 	}
 	return filepath.Join(userHomeDir, ".cache", "electron-builder"), nil
+}
+
+func DownloadFpm() (string, error) {
+	if runtime.GOOS == "linux" {
+		var checksum string
+		var archSuffix string
+		if runtime.GOARCH == "amd64" {
+			checksum = "fcKdXPJSso3xFs5JyIJHG1TfHIRTGDP0xhSBGZl7pPZlz4/TJ4rD/q3wtO/uaBBYeX0qFFQAFjgu1uJ6HLHghA=="
+			archSuffix = "-x86_64"
+		} else {
+			//noinspection SpellCheckingInspection
+			checksum = "OnzvBdsHE5djcXcAT87rwbnZwS789ZAd2ehuIO42JWtBAHNzXKxV4o/24XFX5No4DJWGO2YSGQttW+zn7d/4rQ=="
+			archSuffix = "-x86"
+		}
+
+		//noinspection SpellCheckingInspection
+		name := "fpm-1.9.3-2.3.1-linux" + archSuffix
+		return DownloadArtifact(
+			name,
+			"https://github.com/electron-userland/electron-builder-binaries/releases/download/" + name + "/" + name + ".7z",
+			checksum,
+		)
+	} else {
+		//noinspection SpellCheckingInspection
+		return DownloadArtifact(
+			"fpm-1.9.3-20150715-2.2.2-mac",
+			"https://github.com/electron-userland/electron-builder-binaries/releases/download/fpm-1.9.3-20150715-2.2.2-mac/fpm-1.9.3-20150715-2.2.2-mac.7z",
+			"oXfq+0H2SbdrbMik07mYloAZ8uHrmf6IJk+Q3P1kwywuZnKTXSaaeZUJNlWoVpRDWNu537YxxpBQWuTcF+6xfw==",
+		)
+	}
+
+	return "", nil
+}
+
+func DownloadZstd(osName string) (string, error) {
+	//noinspection SpellCheckingInspection
+	return DownloadTool(ToolDescriptor{
+		name: "zstd",
+		version: "1.3.4",
+		mac: "pLrLk2FAkop3C2drZ7+oxyGPQJjNMzUmVf0m3ZCc1a3WIEjYJNpq9UYvfBU/dl2CsRAchlKvoIOWRxRIdX0ugA==",
+		linux: map[string]string{
+			"x64": "C1TcuuN/0nNvHMwfkKmE8rgsDxkeSbGoV4DMSf4kIJIO4mNp+PUayYeBf4h3usScsWfvX70Jvg5v3yt1FySTDg==",
+		},
+		win: map[string]string{
+			"ia32": "URJhIibWZUEy9USYlHBjc6bgEp7KP+hMJl/YWsssMTt6umxgk+niyc5meKs2XwOwBsvK6KsP+Qr/BawK7CdWVQ==",
+			"x64": "S4RtWJwccUQfr/UQeZuWTJyJvU5uaYaP3rGT6e55epuAJx+fuljbJTBw+n8da0oRLIw0essEjGHkNafWgmKt1w==",
+		},
+	}, osName)
+}
+
+func DownloadTool(descriptor ToolDescriptor, osName string) (string, error) {
+	arch := runtime.GOARCH
+	if arch == "arm" {
+		arch = "armv7"
+	} else if arch == "arm64" {
+		arch = "armv8"
+	} else if arch == "amd64" {
+		arch = "x64"
+	}
+
+	var checksum string
+	var archQualifier string
+	var osQualifier string
+	if osName == "darwin" {
+		checksum = descriptor.mac
+		archQualifier = ""
+		osQualifier = "mac"
+	} else {
+		archQualifier = "-" + arch
+		if osName == "win32" {
+			osQualifier = "win"
+			checksum = descriptor.win[arch]
+		} else {
+			osQualifier = "linux"
+			checksum = descriptor.linux[arch]
+		}
+	}
+
+	if checksum == "" {
+		return "", errors.Errorf("Checksum not specified for %s:%s", osName, arch)
+	}
+
+	repository := descriptor.repository
+	if repository == "" {
+		repository = "electron-userland/electron-builder-binaries"
+	}
+
+	var tagPrefix string
+	if descriptor.repository == "" {
+		tagPrefix = descriptor.name + "-"
+	} else {
+		tagPrefix = "v"
+	}
+
+	osAndArch := osQualifier + archQualifier
+	return DownloadArtifact(
+		descriptor.name+"-"+descriptor.version+"-"+osAndArch /* ability to use cache dir on any platform (e.g. keep cache under project) */,
+		"https://github.com/"+repository+"/releases/download/"+tagPrefix+descriptor.version+"/"+descriptor.name+"-v"+descriptor.version+"-"+osAndArch+".7z",
+		checksum,
+	)
+}
+
+type ToolDescriptor struct {
+	name string
+	version string
+
+	repository string
+
+	mac string
+	linux map[string]string
+	win map[string]string
 }
