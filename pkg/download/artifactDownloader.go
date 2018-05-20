@@ -39,6 +39,8 @@ func ConfigureArtifactCommand(app *kingpin.Application) {
 func DownloadArtifact(dirName string, url string, checksum string) (string, error) {
 	if dirName == "fpm" {
 		return DownloadFpm()
+	} else if dirName == "zstd" {
+		return DownloadZstd(runtime.GOOS)
 	}
 
 	isNodeJsArtifact := dirName == "node"
