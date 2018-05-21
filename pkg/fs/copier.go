@@ -76,6 +76,7 @@ func (fileCopier *FileCopier) CopyDirOrFile(from string, to string) error {
 				return errors.WithStack(err)
 			}
 		}
+		fileCopier.links = nil
 	}
 
 	return nil

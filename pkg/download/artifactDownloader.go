@@ -67,20 +67,20 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	} else {
 		cacheDir = filepath.Join(cacheDir, dirName)
 	}
-	dirPath := filepath.Join(cacheDir, dirName)
+	filePath := filepath.Join(cacheDir, dirName)
 
 	logFields := log.Fields{
-		"path": dirPath,
+		"path": filePath,
 	}
 
-	dirStat, err := os.Stat(dirPath)
-	if err == nil && dirStat.IsDir() {
+	dirStat, err := os.Stat(filePath)
+	if err == nil && (dirStat.IsDir() || strings.HasSuffix(filePath, ".tar")) {
 		log.WithFields(logFields).Debug("found existing")
-		return dirPath, nil
+		return filePath, nil
 	}
 
 	if err != nil && !os.IsNotExist(err) {
-		return "", errors.WithMessage(err, "error during cache check for path "+dirPath)
+		return "", errors.WithMessage(err, "error during cache check for path "+filePath)
 	}
 
 	err = os.MkdirAll(cacheDir, 0777)
@@ -129,7 +129,13 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	err = os.Rename(tempUnpackDir, dirPath)
+	if strings.HasSuffix(url, ".tar.7z") {
+		err = os.Rename(filepath.Join(tempUnpackDir, filepath.Base(tempUnpackDir)), filePath)
+		os.RemoveAll(tempUnpackDir)
+	} else {
+		err = os.Rename(tempUnpackDir, filePath)
+	}
+
 	if err != nil {
 		log.WithFields(logFields).WithFields(log.Fields{
 			"tempUnpackDir": tempUnpackDir,
@@ -139,7 +145,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 
 	log.WithFields(logFields).Debug("downloaded")
 
-	return dirPath, nil
+	return filePath, nil
 }
 
 func unpackTarXz(archiveName string, unpackDir string) error {

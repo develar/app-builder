@@ -40,15 +40,9 @@ type TemplateInfo struct {
 }
 
 //noinspection SpellCheckingInspection
-var electronTemplate = TemplateInfo {
-	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-1.2.1/electron-template-1.2.1.snap",
-	Sha512: "mQZLAKoh72LLofgTfBGHsZNu+EcsL2sqAUoPhQGMn9V5I9V4UvYJWq+LD5zWzTU5OcyK8aGnJ2UlX1/nPmigmw==",
-}
-
-//noinspection SpellCheckingInspection
 var electronTemplate2 = TemplateInfo {
-	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-2.2/electron-template-2.2.snap",
-	Sha512: "gBtn2pqvnhrDGhGCxY/vfY/fvd9P+qyRS1Z4Mp4uTXi3BGgTS5r7vJsNON95hydM1+LhfhdHBjeMQtFjhkFDDA==",
+	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-2.3/snap-template-electron-2.3.tar.7z",
+	Sha512: "XJmVZWUlK+lkmJ82aRS7qKqSlq5rMrJv3p/5Oov9CL0FdoqQ2M6xHXCcuSxQHaqzg21j+SXb2Nff67CqkSG+BQ==",
 }
 
 // --enable-geoip leads to very slow fetching - it seems local sources are more slow.
@@ -131,9 +125,7 @@ func ResolveTemplateFile(templateFile string, templateUrl string, templateSha512
 	}
 
 	var templateInfo TemplateInfo
-	if templateUrl == "electron1" {
-		templateInfo = electronTemplate
-	} else if templateUrl == "electron2" {
+	if templateUrl == "electron2" {
 		templateInfo = electronTemplate2
 	} else {
 		templateInfo = TemplateInfo{
@@ -142,7 +134,7 @@ func ResolveTemplateFile(templateFile string, templateUrl string, templateSha512
 		}
 	}
 
-	result, err := download.DownloadCompressedArtifact("snap-templates", templateInfo.Url, templateInfo.Sha512)
+	result, err := download.DownloadArtifact("", templateInfo.Url, templateInfo.Sha512)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -245,7 +237,21 @@ func RemoveAdapter(snapFilePath string) error {
 }
 
 func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) error {
-	err := fs.CopyDirOrFile(templateFile, *options.output)
+	var fileCopier fs.FileCopier
+	fileCopier.IsUseHardLinks = true
+	if runtime.GOOS != "windows" || !util.IsEnvTrue("SNAP_USE_HARD_LINKS_IF_POSSIBLE") {
+		// do not use hard links if from terminal
+		fileCopier.IsUseHardLinks = false
+	}
+
+	stageDir := *options.stageDir
+
+	err := util.Execute(exec.Command("tar", "-xf", templateFile), stageDir)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = fileCopier.CopyDirOrFile(*options.appDir, stageDir)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -256,11 +262,9 @@ func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) e
 	}
 
 	// will be not merged into root if pass several source dirs, so, call for each source dir
-	for _, sourceDir := range []string{*options.stageDir, *options.appDir} {
-		err = util.Execute(exec.Command(mksquashfsPath, sourceDir, *options.output, "-no-progress", "-quiet", "-all-root", "-no-duplicates", "-no-recovery"), "")
-		if err != nil {
-			return errors.WithStack(err)
-		}
+	err = util.Execute(exec.Command(mksquashfsPath, stageDir, *options.output, "-no-progress", "-quiet", "-noappend", "-comp", "xz", "-no-xattrs", "-no-fragments", "-all-root"), "")
+	if err != nil {
+		return errors.WithStack(err)
 	}
 	return nil
 }
