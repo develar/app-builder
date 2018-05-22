@@ -152,8 +152,8 @@ func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {
 	}
 
 	if err == nil {
-		if version.CompareSimple(strings.TrimSpace(string(out)), "2.39.0") == 1 {
-			return util.NewMessageError("at least snapcraft 2.39.0 is required, please: "+install, "ERR_SNAPCRAFT_OUTDATED")
+		if version.CompareSimple(strings.TrimSpace(string(out)), "2.40.0") == 1 {
+			return util.NewMessageError("at least snapcraft 2.40.0 is required, please: "+install, "ERR_SNAPCRAFT_OUTDATED")
 		} else {
 			return nil
 		}
@@ -237,21 +237,22 @@ func RemoveAdapter(snapFilePath string) error {
 }
 
 func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) error {
-	var fileCopier fs.FileCopier
-	fileCopier.IsUseHardLinks = true
-	if runtime.GOOS != "windows" || !util.IsEnvTrue("SNAP_USE_HARD_LINKS_IF_POSSIBLE") {
-		// do not use hard links if from terminal
-		fileCopier.IsUseHardLinks = false
-	}
-
 	stageDir := *options.stageDir
 
-	err := util.Execute(exec.Command("tar", "-xf", templateFile), stageDir)
+	args := []string{"-x"}
+	if runtime.GOOS == "darwin" {
+		// otherwise snap error review "unusual mode 'rwxr-xr-x' for symlink"
+		args = append(args, "-p")
+	}
+	args = append(args, "-f", templateFile)
+
+	err := util.Execute(exec.Command("tar", args...), stageDir)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	err = fileCopier.CopyDirOrFile(*options.appDir, stageDir)
+	// copy using hard links because app here it is unpacked app, not user files
+	err = fs.CopyUsingHardlink(*options.appDir, filepath.Join(stageDir, "app"))
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -261,7 +262,6 @@ func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) e
 		return errors.WithStack(err)
 	}
 
-	// will be not merged into root if pass several source dirs, so, call for each source dir
 	err = util.Execute(exec.Command(mksquashfsPath, stageDir, *options.output, "-no-progress", "-quiet", "-noappend", "-comp", "xz", "-no-xattrs", "-no-fragments", "-all-root"), "")
 	if err != nil {
 		return errors.WithStack(err)
