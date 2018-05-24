@@ -16,7 +16,7 @@ import (
 	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	"github.com/mcuadros/go-version"
+		"github.com/mcuadros/go-version"
 )
 
 // usr/share/fonts is required, cannot run otherwise
@@ -48,10 +48,11 @@ var electronTemplate2 = TemplateInfo {
 // --enable-geoip leads to very slow fetching - it seems local sources are more slow.
 
 type SnapOptions struct {
-	appDir   *string
-	stageDir *string
-	icon     *string
-	hooksDir *string
+	appDir         *string
+	stageDir       *string
+	icon           *string
+	hooksDir       *string
+	executableName *string
 
 	dockerImage *string
 
@@ -75,10 +76,11 @@ func ConfigureCommand(app *kingpin.Application) {
 	}
 
 	options := SnapOptions{
-		appDir:   command.Flag("app", "The app dir.").Short('a').Required().String(),
-		stageDir: command.Flag("stage", "The stage dir.").Short('s').Required().String(),
-		icon:     command.Flag("icon", "The path to the icon.").String(),
-		hooksDir: command.Flag("hooks", "The hooks dir.").String(),
+		appDir:         command.Flag("app", "The app dir.").Short('a').Required().String(),
+		stageDir:       command.Flag("stage", "The stage dir.").Short('s').Required().String(),
+		icon:           command.Flag("icon", "The path to the icon.").String(),
+		hooksDir:       command.Flag("hooks", "The hooks dir.").String(),
+		executableName: command.Flag("executable", "The executable file name to create command wrapper.").String(),
 
 		arch: command.Flag("arch", "The arch.").Default("amd64").Enum("amd64", "i386", "armv7l", "arm64"),
 
@@ -205,13 +207,42 @@ func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
 		}
 	}
 
-	if len(templateFile) != 0 {
+	if len(*options.executableName) != 0 {
+		err := writeCommandWrapper(options, isUseTemplateApp)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	if isUseTemplateApp {
 		return buildWithoutDockerUsingTemplate(templateFile, options)
 	} else if isUseDocker {
 		return buildUsingDocker(options)
 	} else {
 		return buildWithoutDockerAndWithoutTemplate(options)
 	}
+}
+
+func writeCommandWrapper(options SnapOptions, isUseTemplateApp bool) error {
+	var appPrefix string
+	if isUseTemplateApp {
+		appPrefix = ""
+	} else {
+		appPrefix = "app/"
+	}
+
+	commandWrapperFile := filepath.Join(*options.stageDir, "command.sh")
+	err := ioutil.WriteFile(commandWrapperFile, []byte("#!/bin/bash\nexec $SNAP/bin/desktop-launch \"$SNAP/" + appPrefix + *options.executableName+`"`), 0755)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = os.Chmod(commandWrapperFile, 0755)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
 }
 
 func RemoveAdapter(snapFilePath string) error {
@@ -239,30 +270,31 @@ func RemoveAdapter(snapFilePath string) error {
 func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) error {
 	stageDir := *options.stageDir
 
-	args := []string{"-x"}
-	if runtime.GOOS == "darwin" {
-		// otherwise snap error review "unusual mode 'rwxr-xr-x' for symlink"
-		args = append(args, "-p")
-	}
-	args = append(args, "-f", templateFile)
-
-	err := util.Execute(exec.Command("tar", args...), stageDir)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	// copy using hard links because app here it is unpacked app, not user files
-	err = fs.CopyUsingHardlink(*options.appDir, filepath.Join(stageDir, "app"))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
 	mksquashfsPath, err := linuxTools.GetMksquashfs()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	err = util.Execute(exec.Command(mksquashfsPath, stageDir, *options.output, "-no-progress", "-quiet", "-noappend", "-comp", "xz", "-no-xattrs", "-no-fragments", "-all-root"), "")
+	var args []string
+
+	args, err = linuxTools.ReadDirContentTo(templateFile, args)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	args, err = linuxTools.ReadDirContentTo(stageDir, args)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	args, err = linuxTools.ReadDirContentTo(*options.appDir, args)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	args = append(args, *options.output, "-no-progress", "-quiet", "-noappend", "-comp", "xz", "-no-xattrs", "-no-fragments", "-all-root")
+
+	err = util.Execute(exec.Command(mksquashfsPath, args...), "")
 	if err != nil {
 		return errors.WithStack(err)
 	}

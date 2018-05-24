@@ -59,11 +59,6 @@ func ConfigureCommand(app *kingpin.Application) {
 func AppImage(options AppImageOptions) error {
 	stageDir := *options.stageDir
 
-	err := fs.CopyUsingHardlink(*options.appDir, filepath.Join(stageDir, "app"))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
 	appImageToolDir, err := linuxTools.GetAppImageToolDir()
 	if err != nil {
 		return errors.WithStack(err)
@@ -128,7 +123,18 @@ func createSquashFs(options AppImageOptions, offset int) error {
 	}
 
 	var args []string
-	args = append(args, *options.stageDir, *options.output, "-offset", strconv.Itoa(offset), "-all-root", "-noappend", "-no-progress", "-quiet", "-no-xattrs", "-no-fragments")
+
+	args, err = linuxTools.ReadDirContentTo(*options.stageDir, args)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	args, err = linuxTools.ReadDirContentTo(*options.appDir, args)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	args = append(args, *options.output, "-offset", strconv.Itoa(offset), "-all-root", "-noappend", "-no-progress", "-quiet", "-no-xattrs", "-no-fragments")
 	// "-mkfs-fixed-time", "0" not available for mac yet (since AppImage developers don't provide actual version of mksquashfs for macOS and no official mksquashfs build for macOS)
 	if *options.compression != "" {
 		// default gzip compression - 51.9, xz - 50.4 difference is negligible, start time - well, it seems, a little bit longer (but on Parallels VM on external SSD disk)

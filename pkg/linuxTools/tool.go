@@ -8,6 +8,7 @@ import (
 		"github.com/develar/app-builder/pkg/download"
 		"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 )
 
 //noinspection GoSnakeCaseUsage,SpellCheckingInspection
@@ -64,4 +65,16 @@ func goArchToNodeArch(arch string) (string) {
 	default:
 		return arch
 	}
+}
+
+func ReadDirContentTo(dir string, paths []string) ([]string, error) {
+	content, err := fsutil.ReadDirContent(dir)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	for _, value := range content {
+		paths = append(paths, filepath.Join(dir, value))
+	}
+	return paths, nil
 }

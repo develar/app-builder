@@ -1,8 +1,7 @@
 package download
 
 import (
-	"io"
-	"os"
+		"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -32,6 +31,21 @@ func ConfigureArtifactCommand(app *kingpin.Application) {
 	})
 }
 
+func getCacheDirectoryForArtifact(dirName string) (string, error) {
+	result, err := GetCacheDirectory("electron-builder")
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	hyphenIndex := strings.IndexRune(dirName, '-')
+	if hyphenIndex > 0 {
+		result = filepath.Join(result, dirName[0:hyphenIndex])
+	} else {
+		result = filepath.Join(result, dirName)
+	}
+	return result, nil
+}
+
 // we cache in the global location - in the home dir, not in the node_modules/.cache (https://www.npmjs.com/package/find-cache-dir) because
 // * don't need to find node_modules
 // * don't pollute user project dir (important in case of 1-package.json project structure)
@@ -49,24 +63,18 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		version := versionAndArch[0:strings.Index(versionAndArch, "-")]
 		url = "https://nodejs.org/dist/v" + version + "/node-v" + versionAndArch + ".tar.xz"
 		dirName = dirName + "-" + versionAndArch
+	} else if len(dirName) == 0 {
+		dirName = path.Base(url)
+		// cannot simply find fist dot because file name can contains version like 9.1.0
+		dirName = strings.TrimSuffix(dirName, ".7z")
+		dirName = strings.TrimSuffix(dirName, ".tar")
 	}
 
-	if len(dirName) == 0 {
-		fileName := path.Base(url)
-		dirName = strings.TrimSuffix(fileName, path.Ext(fileName))
-	}
-
-	cacheDir, err := GetCacheDirectory("electron-builder")
+	cacheDir, err := getCacheDirectoryForArtifact(dirName)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
 
-	hyphenIndex := strings.Index(dirName, "-")
-	if hyphenIndex > 0 {
-		cacheDir = filepath.Join(cacheDir, dirName[0:hyphenIndex])
-	} else {
-		cacheDir = filepath.Join(cacheDir, dirName)
-	}
 	filePath := filepath.Join(cacheDir, dirName)
 
 	logFields := log.Fields{
@@ -74,7 +82,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	}
 
 	dirStat, err := os.Stat(filePath)
-	if err == nil && (dirStat.IsDir() || strings.HasSuffix(filePath, ".tar")) {
+	if err == nil && dirStat.IsDir() {
 		log.WithFields(logFields).Debug("found existing")
 		return filePath, nil
 	}
@@ -109,7 +117,12 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	}
 
 	if isNodeJsArtifact {
-		err = unpackTarXz(archiveName, tempUnpackDir)
+		err = unpackTarXzNodeJs(archiveName, tempUnpackDir)
+		if err != nil {
+			return "", errors.WithStack(err)
+		}
+	} else if strings.HasSuffix(url, ".tar.7z") {
+		err = unpackTar7z(archiveName, tempUnpackDir)
 		if err != nil {
 			return "", errors.WithStack(err)
 		}
@@ -129,13 +142,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	if strings.HasSuffix(url, ".tar.7z") {
-		err = os.Rename(filepath.Join(tempUnpackDir, filepath.Base(tempUnpackDir)), filePath)
-		os.RemoveAll(tempUnpackDir)
-	} else {
-		err = os.Rename(tempUnpackDir, filePath)
-	}
-
+	err = os.Rename(tempUnpackDir, filePath)
 	if err != nil {
 		log.WithFields(logFields).WithFields(log.Fields{
 			"tempUnpackDir": tempUnpackDir,
@@ -148,45 +155,12 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	return filePath, nil
 }
 
-func unpackTarXz(archiveName string, unpackDir string) error {
-	xzDecompressCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-txz", archiveName, "-so")
-	xzDecompressCommand.Stderr = os.Stderr
-
-	xzStdout, err := xzDecompressCommand.StdoutPipe()
-	if nil != err {
-		return errors.WithStack(err)
-	}
-
-	err = xzDecompressCommand.Start()
-	if err != nil {
-		return errors.WithStack(err)
-	}
+func unpackTarXzNodeJs(archiveName string, unpackDir string) error {
+	decompressCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-txz", archiveName, "-so")
 
 	//noinspection SpellCheckingInspection
-	tarDecompressCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-ttar", "-o"+unpackDir, "*/bin/node", "-r", "-si")
-	tarDecompressCommand.Stderr = os.Stderr
-
-	tarStdin, err := tarDecompressCommand.StdinPipe()
-	if nil != err {
-		return errors.WithStack(err)
-	}
-
-	err = tarDecompressCommand.Start()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	go func() {
-		defer tarStdin.Close()
-		io.Copy(tarStdin, xzStdout)
-	}()
-
-	err = xzDecompressCommand.Wait()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	err = tarDecompressCommand.Wait()
+	unTarCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-ttar", "-o"+unpackDir, "*/bin/node", "-r", "-si")
+	err := runExtractCommands(decompressCommand, unTarCommand)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -195,57 +169,57 @@ func unpackTarXz(archiveName string, unpackDir string) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
+
 	return nil
 }
 
-func DownloadCompressedArtifact(subDir string, url string, checksum string) (string, error) {
-	cacheDir, err := GetCacheDirectory("electron-builder")
+func unpackTar7z(archiveName string, unpackDir string) error {
+	decompressCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-t7z", archiveName, "-so")
+
+	args := []string{"-x"}
+	if runtime.GOOS == "darwin" {
+		// otherwise snap error review "unusual mode 'rwxr-xr-x' for symlink"
+		args = append(args, "-p")
+	}
+	args = append(args, "-f", "-")
+
+	//noinspection SpellCheckingInspection
+	unTarCommand := exec.Command("tar", args...)
+	unTarCommand.Dir = unpackDir
+	return runExtractCommands(decompressCommand, unTarCommand)
+}
+
+func runExtractCommands(decompressCommand *exec.Cmd, unTarCommand *exec.Cmd) error {
+	decompressCommand.Stderr = os.Stderr
+	decompressStdout, err := decompressCommand.StdoutPipe()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	if len(subDir) != 0 {
-		cacheDir = filepath.Join(cacheDir, subDir)
-	}
+	unTarCommand.Stderr = os.Stderr
+	unTarCommand.Stdin = decompressStdout
 
-	filePath := filepath.Join(cacheDir, path.Base(url))
-	logFields := log.Fields{
-		"file": filePath,
-	}
-
-	_, err = os.Stat(filePath)
-	if err == nil {
-		log.WithFields(logFields).Debug("found existing")
-		return filePath, nil
-	}
-
-	if err != nil && !os.IsNotExist(err) {
-		return "", errors.WithMessage(err, "error during cache check for path "+filePath)
-	}
-
-	err = os.MkdirAll(cacheDir, 0777)
+	err = decompressCommand.Start()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	tempFile, err := util.TempFile(cacheDir, ".snap")
+	err = unTarCommand.Start()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	log.WithFields(logFields).WithField("url", url).Info("downloading")
-	err = NewDownloader().Download(url, tempFile, checksum)
+	err = decompressCommand.Wait()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return errors.WithStack(err)
 	}
-	log.WithFields(logFields).Debug("downloaded")
 
-	err = os.Rename(tempFile, filePath)
+	err = unTarCommand.Wait()
 	if err != nil {
-		return "", errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	return filePath, nil
+	return nil
 }
 
 func GetCacheDirectory(dirName string) (string, error) {
