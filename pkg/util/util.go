@@ -89,6 +89,9 @@ func LogErrorAndExit(err error) {
 func Close(c io.Closer) {
 	err := c.Close()
 	if err != nil && err != os.ErrClosed {
+		if e, ok := err.(*os.PathError); ok && e.Err == os.ErrClosed {
+			return
+		}
 		log.Errorf("%v", err)
 	}
 }
