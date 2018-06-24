@@ -33,35 +33,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		}
 
 		jsonWriter := jsoniter.NewStream(jsoniter.ConfigDefault, os.Stdout, 32*1024)
-		jsonWriter.WriteObjectStart()
-
-		moduleDirs := make([]string, len(collector.NodeModuleDirToDependencyMap))
-		index := 0
-		for k := range collector.NodeModuleDirToDependencyMap {
-			moduleDirs[index] = k
-			index++
-		}
-
-		if len(moduleDirs) > 1 {
-			sort.Slice(moduleDirs, func(i, j int) bool {
-				return pathSorter(strings.Split(moduleDirs[i], string(filepath.Separator)), strings.Split(moduleDirs[j], string(filepath.Separator)))
-			})
-		}
-
-		isComma := false
-		for _, nodeModulesDir := range moduleDirs {
-			if isComma {
-				jsonWriter.WriteMore()
-			} else {
-				isComma = true
-			}
-			jsonWriter.WriteObjectField(nodeModulesDir)
-
-			writeArray(jsonWriter, collector.NodeModuleDirToDependencyMap[nodeModulesDir])
-		}
-
-		jsonWriter.WriteObjectEnd()
-
+		writeResult(jsonWriter, collector)
 		err = jsonWriter.Flush()
 		if err != nil {
 			return errors.WithStack(err)
@@ -69,6 +41,41 @@ func ConfigureCommand(app *kingpin.Application) {
 
 		return nil
 	})
+}
+
+func writeResult(jsonWriter *jsoniter.Stream, collector *Collector) {
+	moduleDirs := make([]string, len(collector.NodeModuleDirToDependencyMap))
+	index := 0
+	for k := range collector.NodeModuleDirToDependencyMap {
+		moduleDirs[index] = k
+		index++
+	}
+
+	if len(moduleDirs) > 1 {
+		sort.Slice(moduleDirs, func(i, j int) bool {
+			return pathSorter(strings.Split(moduleDirs[i], string(filepath.Separator)), strings.Split(moduleDirs[j], string(filepath.Separator)))
+		})
+	}
+
+	jsonWriter.WriteArrayStart()
+	isFirst := true
+	for _, nodeModulesDir := range moduleDirs {
+		if isFirst {
+			isFirst = false
+		} else {
+			jsonWriter.WriteMore()
+		}
+
+		jsonWriter.WriteObjectStart()
+		jsonWriter.WriteObjectField("dir")
+		jsonWriter.WriteString(nodeModulesDir)
+
+		jsonWriter.WriteMore()
+		jsonWriter.WriteObjectField("deps")
+		writeArray(jsonWriter, collector.NodeModuleDirToDependencyMap[nodeModulesDir])
+		jsonWriter.WriteObjectEnd()
+	}
+	jsonWriter.WriteArrayEnd()
 }
 
 func pathSorter(a []string, b []string) bool {
@@ -111,7 +118,9 @@ func writeArray(jsonWriter *jsoniter.Stream, v *map[string]*Dependency) {
 		index++
 	}
 
-	sort.Strings(names)
+	if len(names) > 1 {
+		sort.Strings(names)
+	}
 
 	isComma := false
 	jsonWriter.WriteArrayStart()

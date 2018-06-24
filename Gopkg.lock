@@ -80,7 +80,7 @@
   branch = "master"
   name = "github.com/mcuadros/go-version"
   packages = ["."]
-  revision = "88e56e02bea1c203c99222c365fa52a69996ccac"
+  revision = "6d5863ca60fa6fe914b5fd43ed8533d7567c5b0b"
 
 [[projects]]
   branch = "master"
@@ -165,8 +165,8 @@
 [[projects]]
   name = "github.com/pkg/xattr"
   packages = ["."]
-  revision = "1d7b7ffe7c46974a836eb583b7452f22de1c18cf"
-  version = "v0.2.3"
+  revision = "d15dbc2bb0b5da267362b5e066e2c44c1fcff6c7"
+  version = "v0.3.0"
 
 [[projects]]
   name = "github.com/zieckey/goini"
@@ -182,7 +182,7 @@
     "tiff",
     "tiff/lzw"
   ]
-  revision = "f315e440302883054d0c2bd85486878cb4f8572c"
+  revision = "af66defab954cb421ca110193eed9477c8541e2a"
 
 [[projects]]
   branch = "master"
@@ -192,13 +192,13 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "dfa909b99c79129e1100513e5cd36307665e5723"
+  revision = "afe8f62b1d6bbd81f31868121a50b06d8188e1f9"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "c11f84a56e43e20a78cee75a7c034031ecf57d1f"
+  revision = "63fc586f45fe72d95d5240a5d5eb95e6503907d3"
 
 [[projects]]
   name = "golang.org/x/text"
