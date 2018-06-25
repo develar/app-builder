@@ -266,10 +266,13 @@ func findNearestNodeModuleDir(dir string) (string, error) {
 			return nodeModuleDir, nil
 		}
 
-		dir = filepath.Dir(dir)
-		if isRootDir(dir) {
+		upperDir := filepath.Dir(dir)
+		
+		if isRootDir(upperDir) || upperDir == dir {
 			return "", nil
 		}
+		
+		dir = upperDir
 	}
 }
 
