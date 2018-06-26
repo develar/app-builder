@@ -162,7 +162,7 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		return errors.WithStack(err)
 	}
 
-	if nodeModuleDir == "" {
+	if len(nodeModuleDir) == 0 {
 		for name := range dependency.Dependencies {
 			t.unresolvedDependencies[name] = true
 		}
@@ -214,13 +214,6 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 
 // nill if already handled
 func (t *Collector) resolveDependency(dir string, name string, isOptional bool) (*Dependency, error) {
-	if isRootDir(dir) {
-		if !isOptional {
-			t.unresolvedDependencies[name] = true
-		}
-		return nil, nil
-	}
-
 	dependencyNameToDependency := t.NodeModuleDirToDependencyMap[dir]
 	if dependencyNameToDependency != nil {
 		dependency := (*dependencyNameToDependency)[name]
@@ -237,7 +230,15 @@ func (t *Collector) resolveDependency(dir string, name string, isOptional bool) 
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
-			return t.resolveDependency(nodeModuleDir, name, isOptional)
+
+			if len(dir) == 0 {
+				if !isOptional {
+					t.unresolvedDependencies[name] = true
+				}
+				return nil, nil
+			} else {
+				return t.resolveDependency(nodeModuleDir, name, isOptional)
+			}
 		} else {
 			return nil, errors.WithStack(err)
 		}
@@ -266,15 +267,21 @@ func findNearestNodeModuleDir(dir string) (string, error) {
 			return nodeModuleDir, nil
 		}
 
-		dir = filepath.Dir(dir)
-		if isRootDir(dir) {
+		dir := getParentDir(dir)
+		if len(dir) == 0 {
 			return "", nil
 		}
 	}
 }
 
-func isRootDir(dir string) bool {
-	return dir == "." || dir == "/" || dir == ""
+func getParentDir(file string) string {
+	dir := filepath.Dir(file)
+	// https://github.com/develar/app-builder/pull/3
+	if len(dir) > 1 /* . or / or empty */ && dir != file {
+		return dir
+	} else {
+		return ""
+	}
 }
 
 func readPackageJson(dir string) (*Dependency, error) {
