@@ -139,7 +139,10 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 
 	err = os.Remove(archiveName)
 	if err != nil {
-		return "", errors.WithStack(err)
+		log.WithFields(logFields).WithFields(log.Fields{
+			"tempUnpackDir": tempUnpackDir,
+			"error":         err,
+		}).Warn("cannot remove downloaded archive (another process downloaded faster?)")
 	}
 
 	err = os.Rename(tempUnpackDir, filePath)

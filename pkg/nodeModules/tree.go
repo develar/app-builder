@@ -256,6 +256,7 @@ func (t *Collector) resolveDependency(dir string, name string, isOptional bool) 
 }
 
 func findNearestNodeModuleDir(dir string) (string, error) {
+	guardCount := 0
 	for {
 		nodeModuleDir := filepath.Join(dir, "node_modules")
 		fileInfo, err := os.Stat(nodeModuleDir)
@@ -267,9 +268,14 @@ func findNearestNodeModuleDir(dir string) (string, error) {
 			return nodeModuleDir, nil
 		}
 
-		dir := getParentDir(dir)
+		dir = getParentDir(dir)
 		if len(dir) == 0 {
 			return "", nil
+		}
+
+		guardCount++
+		if guardCount > 999 {
+			return "", errors.New("Infinite loop: " + dir)
 		}
 	}
 }
