@@ -82,7 +82,10 @@ func (h *Handler) HandleLog(e *log.Entry) error {
 		fmt.Fprintf(h.Writer, " \033[%dm%s\033[0m=%v", color, name, e.Fields.Get(name))
 	}
 
-	fmt.Fprintln(h.Writer)
+	_, err := fmt.Fprintln(h.Writer)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

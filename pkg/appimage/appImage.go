@@ -72,6 +72,12 @@ func AppImage(options AppImageOptions) error {
 		}
 	}
 
+	// mksquashfs doesn't support merging, our stage contains resources dir and mksquashfs will use resources_1 name for app resources dir
+	err = fs.CopyUsingHardlink(*options.appDir, stageDir)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	runtimeData, err := ioutil.ReadFile(filepath.Join(appImageToolDir, "runtime-"+arch))
 	if err != nil {
 		return errors.WithStack(err)
@@ -123,18 +129,7 @@ func createSquashFs(options AppImageOptions, offset int) error {
 	}
 
 	var args []string
-
-	args, err = linuxTools.ReadDirContentTo(*options.stageDir, args)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	args, err = linuxTools.ReadDirContentTo(*options.appDir, args)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	args = append(args, *options.output, "-offset", strconv.Itoa(offset), "-all-root", "-noappend", "-no-progress", "-quiet", "-no-xattrs", "-no-fragments")
+	args = append(args, *options.stageDir, *options.output, "-offset", strconv.Itoa(offset), "-all-root", "-noappend", "-no-progress", "-quiet", "-no-xattrs", "-no-fragments")
 	// "-mkfs-fixed-time", "0" not available for mac yet (since AppImage developers don't provide actual version of mksquashfs for macOS and no official mksquashfs build for macOS)
 	if *options.compression != "" {
 		// default gzip compression - 51.9, xz - 50.4 difference is negligible, start time - well, it seems, a little bit longer (but on Parallels VM on external SSD disk)

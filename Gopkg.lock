@@ -35,6 +35,45 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/aws/aws-sdk-go"
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/stscreds",
+    "aws/csm",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/sdkio",
+    "internal/sdkrand",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/eventstream",
+    "private/protocol/eventstream/eventstreamapi",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/restxml",
+    "private/protocol/xml/xmlutil",
+    "service/s3",
+    "service/s3/s3iface",
+    "service/s3/s3manager",
+    "service/sts"
+  ]
+  revision = "5e98666858b97db54a61044bb1150d3b81436860"
+  version = "v1.14.16"
+
+[[projects]]
   branch = "master"
   name = "github.com/biessek/golang-ico"
   packages = ["."]
@@ -63,6 +102,17 @@
   name = "github.com/dustin/go-humanize"
   packages = ["."]
   revision = "02af3965c54e8cacf948b97fef38925c4120652c"
+
+[[projects]]
+  name = "github.com/go-ini/ini"
+  packages = ["."]
+  revision = "06f5f3d67269ccec1fe5fe4134ba6e982984f7f5"
+  version = "v1.37.0"
+
+[[projects]]
+  name = "github.com/jmespath/go-jmespath"
+  packages = ["."]
+  revision = "0b12d6b5"
 
 [[projects]]
   name = "github.com/json-iterator/go"
@@ -182,7 +232,7 @@
     "tiff",
     "tiff/lzw"
   ]
-  revision = "af66defab954cb421ca110193eed9477c8541e2a"
+  revision = "cc896f830cedae125428bc9fe1b0362aa91b3fb1"
 
 [[projects]]
   branch = "master"
@@ -192,13 +242,13 @@
     "html/atom",
     "html/charset"
   ]
-  revision = "afe8f62b1d6bbd81f31868121a50b06d8188e1f9"
+  revision = "4cb1c02c05b0e749b0365f61ae859a8e0cfceed9"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "63fc586f45fe72d95d5240a5d5eb95e6503907d3"
+  revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -233,6 +283,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "21b6b3ca28a4bd367a59f4130f1a524b104301a15b6681e9694ede564ff7b658"
+  inputs-digest = "9a1ed9c250da57388175d3825cdc9d7bae74ec70f24a90a45168f728fd506a2a"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -1,7 +1,7 @@
 package util
 
 import (
-	"encoding/json"
+	"github.com/json-iterator/go"
 	"io"
 	"os"
 	"os/exec"
@@ -34,7 +34,7 @@ func getLevel() log.Level {
 }
 
 func WriteJsonToStdOut(v interface{}) error {
-	serializedInputInfo, err := json.Marshal(v)
+	serializedInputInfo, err := jsoniter.ConfigFastest.Marshal(v)
 	if err != nil {
 		return err
 	}

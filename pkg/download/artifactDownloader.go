@@ -283,8 +283,6 @@ func DownloadFpm() (string, error) {
 			"oXfq+0H2SbdrbMik07mYloAZ8uHrmf6IJk+Q3P1kwywuZnKTXSaaeZUJNlWoVpRDWNu537YxxpBQWuTcF+6xfw==",
 		)
 	}
-
-	return "", nil
 }
 
 func DownloadZstd(osName string) (string, error) {

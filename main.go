@@ -20,13 +20,14 @@ import (
 	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/log-cli"
 	"github.com/develar/app-builder/pkg/nodeModules"
+	"github.com/develar/app-builder/pkg/publisher"
 	"github.com/develar/app-builder/pkg/snap"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("1.9.14")
+	app = kingpin.New("app-builder", "app-builder").Version("1.9.16")
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
 	buildBlockMapInFile      = buildBlockMap.Flag("input", "input file").Short('i').Required().String()
@@ -47,6 +48,7 @@ func main() {
 
 	nodeModules.ConfigureCommand(app)
 	download.ConfigureCommand(app)
+	publisher.ConfigurePublishToS3Command(app)
 	download.ConfigureDownloadResolvedFilesCommand(app)
 	configurePrefetchToolsCommand(app)
 	download.ConfigureArtifactCommand(app)

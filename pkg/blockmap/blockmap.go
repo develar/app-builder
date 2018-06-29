@@ -7,15 +7,15 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"hash"
 	"io"
-		"os"
+	"os"
 
 	"github.com/aclements/go-rabin/rabin"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/json-iterator/go"
 	"github.com/minio/blake2b-simd"
 )
 
@@ -80,7 +80,7 @@ func BuildBlockMap(inFile string, chunkerConfiguration ChunkerConfiguration, com
 		},
 	}
 
-	serializedBlockMap, err := json.Marshal(&blockMap)
+	serializedBlockMap, err := jsoniter.ConfigFastest.Marshal(&blockMap)
 	if err != nil {
 		return nil, err
 	}

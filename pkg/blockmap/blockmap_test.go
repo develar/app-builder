@@ -3,11 +3,11 @@ package blockmap_test
 import (
 	"crypto/sha512"
 	"encoding/base64"
-	"encoding/json"
 	"io/ioutil"
 	"strings"
 	"testing"
 
+	"github.com/json-iterator/go"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -41,7 +41,7 @@ var _ = Describe("Blockmap", func() {
 		Expect(inputInfo.Sha512).To(Equal(base64.StdEncoding.EncodeToString(hash.Sum(nil))))
 		Expect(inputInfo.Size).To(Equal(len(fileData)))
 
-		serializedInputInfo, err := json.Marshal(inputInfo)
+		serializedInputInfo, err := jsoniter.ConfigFastest.Marshal(inputInfo)
 		Expect(err).NotTo(HaveOccurred())
 		//noinspection SpellCheckingInspection
 		Expect(string(serializedInputInfo)).To(Equal("{\"size\":13423,\"sha512\":\"zPFW3WAFUKFvAfBdNXHDIuZekSW/qf33lf5OgKXBKg9oOobwVH9X/DRHExC9087Cxkp3nqFrwtreWZHLso3D6g==\",\"blockMapSize\":107}"))
