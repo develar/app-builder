@@ -98,6 +98,9 @@ func getBucketRegion(awsConfig *aws.Config, bucket *string, context context.Cont
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
+	if result == nil || result.LocationConstraint == nil || len(*result.LocationConstraint) == 0 {
+		return "us-east-1", nil
+	}
 	return *result.LocationConstraint, nil
 }
 
@@ -118,12 +121,12 @@ func upload(options *ObjectOptions) error {
 
 	if *options.accessKey != "" {
 		awsConfig.Credentials = credentials.NewStaticCredentials(*options.accessKey, *options.secretKey, "")
-	} else {
-		awsConfig.Credentials = credentials.NewEnvCredentials()
 	}
 
 	if *options.region != "" {
 		awsConfig.Region = options.region
+	} else if *options.endpoint != "" {
+		awsConfig.Region = aws.String("us-east-1")
 	} else {
 		// AWS SDK for Go requires region
 		region, err := getBucketRegion(awsConfig, options.bucket, publishContext, httpclient)

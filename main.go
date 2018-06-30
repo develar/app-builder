@@ -27,7 +27,7 @@ import (
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("1.9.16")
+	app = kingpin.New("app-builder", "app-builder").Version("1.10.3")
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
 	buildBlockMapInFile      = buildBlockMap.Flag("input", "input file").Short('i').Required().String()
@@ -173,7 +173,7 @@ func configurePrefetchToolsCommand(app *kingpin.Application) {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		_, err = download.DownloadZstd(*osName)
+		_, err = download.DownloadZstd(download.ToOsName(*osName))
 		if err != nil {
 			return errors.WithStack(err)
 		}

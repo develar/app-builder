@@ -1,7 +1,7 @@
 package download
 
 import (
-		"os"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -14,6 +14,30 @@ import (
 	"github.com/develar/errors"
 	"github.com/mitchellh/go-homedir"
 )
+
+type osName int
+
+const (
+	MAC osName = iota
+	LINUX
+	WINDOWS
+)
+
+//noinspection GoExportedFuncWithUnexportedType
+func GetCurrentOs() osName {
+	return ToOsName(runtime.GOOS)
+}
+
+//noinspection GoExportedFuncWithUnexportedType
+func ToOsName(name string) osName {
+	if name == "windows" || name == "win32" {
+		return WINDOWS
+	} else if name == "darwin" {
+		return MAC
+	} else {
+		return LINUX
+	}
+}
 
 func ConfigureArtifactCommand(app *kingpin.Application) {
 	command := app.Command("download-artifact", "Download, unpack and cache artifact from GitHub.")
@@ -54,7 +78,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	if dirName == "fpm" {
 		return DownloadFpm()
 	} else if dirName == "zstd" {
-		return DownloadZstd(runtime.GOOS)
+		return DownloadZstd(GetCurrentOs())
 	}
 
 	isNodeJsArtifact := dirName == "node"
@@ -231,7 +255,8 @@ func GetCacheDirectory(dirName string) (string, error) {
 		return env, nil
 	}
 
-	if runtime.GOOS == "darwin" {
+	currentOs := GetCurrentOs()
+	if currentOs == MAC {
 		userHomeDir, err := homedir.Dir()
 		if err != nil {
 			return "", errors.WithStack(err)
@@ -240,7 +265,7 @@ func GetCacheDirectory(dirName string) (string, error) {
 	}
 
 	localAppData := os.Getenv("LOCALAPPDATA")
-	if runtime.GOOS == "windows" && len(localAppData) != 0 {
+	if currentOs == WINDOWS && len(localAppData) != 0 {
 		// https://github.com/electron-userland/electron-builder/issues/1164
 		if strings.Contains(strings.ToLower(localAppData), "\\windows\\system32\\") || strings.ToLower(os.Getenv("USERNAME")) == "system" {
 			return filepath.Join(os.TempDir(), dirName+"-cache"), nil
@@ -256,10 +281,12 @@ func GetCacheDirectory(dirName string) (string, error) {
 }
 
 func DownloadFpm() (string, error) {
-	if runtime.GOOS == "linux" {
+	currentOs := GetCurrentOs()
+	if currentOs == LINUX {
 		var checksum string
 		var archSuffix string
 		if runtime.GOARCH == "amd64" {
+			//noinspection SpellCheckingInspection
 			checksum = "fcKdXPJSso3xFs5JyIJHG1TfHIRTGDP0xhSBGZl7pPZlz4/TJ4rD/q3wtO/uaBBYeX0qFFQAFjgu1uJ6HLHghA=="
 			archSuffix = "-x86_64"
 		} else {
@@ -285,23 +312,23 @@ func DownloadFpm() (string, error) {
 	}
 }
 
-func DownloadZstd(osName string) (string, error) {
+func DownloadZstd(osName osName) (string, error) {
 	//noinspection SpellCheckingInspection
 	return DownloadTool(ToolDescriptor{
 		name: "zstd",
-		version: "1.3.4",
-		mac: "pLrLk2FAkop3C2drZ7+oxyGPQJjNMzUmVf0m3ZCc1a3WIEjYJNpq9UYvfBU/dl2CsRAchlKvoIOWRxRIdX0ugA==",
+		version: "1.3.5",
+		mac: "f1c0ZQZ21HKqe1ZNgTTl6G+poJQUMOF8dC4OrlN/JILIJxUwg0Vidv40F0esYmPZwwfsOq73Fr6j5F0WjUw52Q==",
 		linux: map[string]string{
-			"x64": "C1TcuuN/0nNvHMwfkKmE8rgsDxkeSbGoV4DMSf4kIJIO4mNp+PUayYeBf4h3usScsWfvX70Jvg5v3yt1FySTDg==",
+			"x64": "kX5w8L/r5xqu6J0IXmPpAhcrJId5je0nZ010XdL3Dw9uvC3fw7lKOAvW0JhtytS1+qSz8jiTKnWuDxy7dn2rlQ==",
 		},
 		win: map[string]string{
-			"ia32": "URJhIibWZUEy9USYlHBjc6bgEp7KP+hMJl/YWsssMTt6umxgk+niyc5meKs2XwOwBsvK6KsP+Qr/BawK7CdWVQ==",
-			"x64": "S4RtWJwccUQfr/UQeZuWTJyJvU5uaYaP3rGT6e55epuAJx+fuljbJTBw+n8da0oRLIw0essEjGHkNafWgmKt1w==",
+			"ia32": "xWdk89iro0PmQIzKSpWVXJzYH3WJUqcrkCtBvzDoOdEWmyu2I65ssKK2vTuZFgauuFwdRf352aNaqHdp6DmBlw==",
+			"x64": "9klvZIJyPMWI3eJiu76U42d+TC/BnxoUKAPoLln9oz62BjLDCHf28wBCoOHsplCZXvAioFw/BxFwOvm8/pMpcw==",
 		},
 	}, osName)
 }
 
-func DownloadTool(descriptor ToolDescriptor, osName string) (string, error) {
+func DownloadTool(descriptor ToolDescriptor, osName osName) (string, error) {
 	arch := runtime.GOARCH
 	if arch == "arm" {
 		arch = "armv7"
@@ -314,13 +341,13 @@ func DownloadTool(descriptor ToolDescriptor, osName string) (string, error) {
 	var checksum string
 	var archQualifier string
 	var osQualifier string
-	if osName == "darwin" {
+	if osName == MAC {
 		checksum = descriptor.mac
 		archQualifier = ""
 		osQualifier = "mac"
 	} else {
 		archQualifier = "-" + arch
-		if osName == "win32" {
+		if osName == WINDOWS {
 			osQualifier = "win"
 			checksum = descriptor.win[arch]
 		} else {

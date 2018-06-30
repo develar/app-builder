@@ -1,15 +1,17 @@
 "use strict"
 
+const path = require("path")
+
 function getPath() {
   if (process.env.USE_SYSTEM_APP_BUILDER === "true") {
     return "app-builder"
   }
 
-  const path = require("path")
-  if (process.platform === "darwin") {
+  const platform = process.platform;
+  if (platform === "darwin") {
     return path.join(__dirname, "mac", "app-builder")
   }
-  else if (process.platform === "win32") {
+  else if (platform === "win32") {
     return path.join(__dirname, "win", process.arch, "app-builder.exe")
   }
   else {
