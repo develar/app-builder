@@ -57,7 +57,6 @@ func (actualLocation *ActualLocation) computeParts(minPartSize int64) {
 	}
 
 	partSize := contentLength / int64(partCount)
-
 	actualLocation.Parts = make([]*Part, partCount)
 
 	start := int64(0)

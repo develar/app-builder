@@ -101,6 +101,10 @@ func (part *Part) download(context context.Context, url string, index int, clien
 }
 
 func (part *Part) doRequest(request *http.Request, client *http.Client, index int) (*http.Response, error) {
+	log.WithFields(&log.Fields{
+		"range": request.Header.Get("Range"),
+		"index": index,
+	}).Debug("download part")
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, errors.WithStack(err)

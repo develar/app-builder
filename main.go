@@ -12,7 +12,7 @@ import (
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/appimage"
 	"github.com/develar/app-builder/pkg/blockmap"
-	"github.com/develar/app-builder/pkg/dmg"
+		"github.com/develar/app-builder/pkg/dmg"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/elfExecStack"
 	"github.com/develar/app-builder/pkg/fs"
@@ -21,13 +21,14 @@ import (
 	"github.com/develar/app-builder/pkg/log-cli"
 	"github.com/develar/app-builder/pkg/nodeModules"
 	"github.com/develar/app-builder/pkg/publisher"
+	"github.com/develar/app-builder/pkg/remoteBuild"
 	"github.com/develar/app-builder/pkg/snap"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("1.10.3")
+	app = kingpin.New("app-builder", "app-builder").Version("1.11.1")
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
 	buildBlockMapInFile      = buildBlockMap.Flag("input", "input file").Short('i').Required().String()
@@ -47,9 +48,10 @@ func main() {
 	}
 
 	nodeModules.ConfigureCommand(app)
+	//codesign.ConfigureCommand(app)
 	download.ConfigureCommand(app)
 	publisher.ConfigurePublishToS3Command(app)
-	download.ConfigureDownloadResolvedFilesCommand(app)
+	remoteBuild.ConfigureBuildCommand(app)
 	configurePrefetchToolsCommand(app)
 	download.ConfigureArtifactCommand(app)
 	ConfigureCopyCommand(app)

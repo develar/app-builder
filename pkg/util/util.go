@@ -70,6 +70,48 @@ func Execute(command *exec.Cmd, currentWorkingDirectory string) error {
 	return nil
 }
 
+func StartPipedCommands(producer *exec.Cmd, consumer *exec.Cmd) error {
+	err := producer.Start()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = consumer.Start()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+func RunPipedCommands(producer *exec.Cmd, consumer *exec.Cmd) error {
+	err := StartPipedCommands(producer, consumer)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = WaitPipedCommand(producer, consumer)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
+func WaitPipedCommand(producer *exec.Cmd, consumer *exec.Cmd) error {
+	err := producer.Wait()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	err = consumer.Wait()
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	return nil
+}
+
 func preCommandExecute(command *exec.Cmd, currentWorkingDirectory string) {
 	if currentWorkingDirectory != "" {
 		command.Dir = currentWorkingDirectory

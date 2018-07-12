@@ -3,8 +3,8 @@ package download
 import (
 		"fmt"
 	"net/http"
-		"os"
-		"path/filepath"
+	"os"
+	"path/filepath"
 	"runtime"
 		"time"
 
@@ -44,18 +44,21 @@ func ConfigureCommand(app *kingpin.Application) {
 
 type Downloader struct {
 	client    *http.Client
-	transport *http.Transport
+	Transport *http.Transport
 }
 
-func NewDownloader() Downloader {
-	transport := &http.Transport{
+func NewDownloader() *Downloader {
+	return NewDownloaderWithTransport(&http.Transport{
 		Proxy:               util.ProxyFromEnvironmentAndNpm,
 		MaxIdleConns:        64,
 		MaxIdleConnsPerHost: 64,
 		IdleConnTimeout:     30 * time.Second,
-	}
-	return Downloader{
-		transport: transport,
+	})
+}
+
+func NewDownloaderWithTransport(transport *http.Transport) *Downloader {
+	return &Downloader{
+		Transport: transport,
 		client: &http.Client{
 			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
 				return http.ErrUseLastResponse
@@ -65,13 +68,7 @@ func NewDownloader() Downloader {
 	}
 }
 
-func (t Downloader) Download(url string, output string, sha512 string) error {
-	dir := filepath.Dir(output)
-	err := os.MkdirAll(dir, 0777)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
+func (t *Downloader) Download(url string, output string, sha512 string) error {
 	actualLocation, err := t.follow(url, userAgent, output)
 	if err != nil {
 		return errors.WithStack(err)
@@ -80,15 +77,20 @@ func (t Downloader) Download(url string, output string, sha512 string) error {
 	return t.DownloadResolved(actualLocation, sha512)
 }
 
-func (t Downloader) DownloadResolved(location *ActualLocation, sha512 string) error {
+func (t *Downloader) DownloadResolved(location *ActualLocation, sha512 string) error {
+	err := os.MkdirAll(filepath.Dir(location.OutFileName), 0777)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	downloadContext, cancel := util.CreateContext()
 
 	location.computeParts(minPartSize)
 	log.WithFields(&log.Fields{
-		"url": location.Url,
+		"url":   location.Url,
 		"parts": len(location.Parts),
 	}).Debug("download")
-	err := util.MapAsyncConcurrency(len(location.Parts), getMaxPartCount(), func(index int) (func() error, error) {
+	err = util.MapAsyncConcurrency(len(location.Parts), getMaxPartCount(), func(index int) (func() error, error) {
 		part := location.Parts[index]
 		return func() error {
 			err := part.download(downloadContext, location.Url, index, t.client)
@@ -122,7 +124,7 @@ func (t Downloader) DownloadResolved(location *ActualLocation, sha512 string) er
 	return nil
 }
 
-func (t Downloader) follow(initialUrl, userAgent, outFileName string) (*ActualLocation, error) {
+func (t *Downloader) follow(initialUrl, userAgent, outFileName string) (*ActualLocation, error) {
 	currentUrl := initialUrl
 	redirectsFollowed := 0
 	for {

@@ -35,7 +35,7 @@ type InputFileInfo struct {
 	recommendedMinSize int
 }
 
-func (t InputFileInfo) GetMaxImage() (image.Image, error) {
+func (t *InputFileInfo) GetMaxImage() (image.Image, error) {
 	if t.maxImage == nil {
 		var err error
 		t.maxImage, err = loadImage(t.MaxIconPath, t.recommendedMinSize)
