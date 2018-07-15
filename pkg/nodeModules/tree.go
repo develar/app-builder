@@ -213,8 +213,8 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 }
 
 // nill if already handled
-func (t *Collector) resolveDependency(dir string, name string, isOptional bool) (*Dependency, error) {
-	dependencyNameToDependency := t.NodeModuleDirToDependencyMap[dir]
+func (t *Collector) resolveDependency(parentNodeModuleDir string, name string, isOptional bool) (*Dependency, error) {
+	dependencyNameToDependency := t.NodeModuleDirToDependencyMap[parentNodeModuleDir]
 	if dependencyNameToDependency != nil {
 		dependency := (*dependencyNameToDependency)[name]
 		if dependency != nil {
@@ -222,16 +222,16 @@ func (t *Collector) resolveDependency(dir string, name string, isOptional bool) 
 		}
 	}
 
-	depDir := filepath.Join(dir, name)
-	dependency, err := readPackageJson(depDir)
+	dependencyDir := filepath.Join(parentNodeModuleDir, name)
+	dependency, err := readPackageJson(dependencyDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			nodeModuleDir, err := findNearestNodeModuleDir(filepath.Dir(filepath.Dir(dir)))
+			nodeModuleDir, err := findNearestNodeModuleDir(filepath.Dir(filepath.Dir(parentNodeModuleDir)))
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
 
-			if len(dir) == 0 {
+			if len(nodeModuleDir) == 0 {
 				if !isOptional {
 					t.unresolvedDependencies[name] = true
 				}
@@ -246,12 +246,12 @@ func (t *Collector) resolveDependency(dir string, name string, isOptional bool) 
 
 	if dependencyNameToDependency == nil {
 		m := make(map[string]*Dependency)
-		t.NodeModuleDirToDependencyMap[dir] = &m
+		t.NodeModuleDirToDependencyMap[parentNodeModuleDir] = &m
 		dependencyNameToDependency = &m
 	}
 
 	(*dependencyNameToDependency)[name] = dependency
-	dependency.dir = depDir
+	dependency.dir = dependencyDir
 	return dependency, nil
 }
 
