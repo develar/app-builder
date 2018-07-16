@@ -173,28 +173,14 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 	queue := make([]*Dependency, maxQueueSize)
 	queueIndex := 0
 
-	for name := range dependency.Dependencies {
-		childDependency, err := t.resolveDependency(nodeModuleDir, name, false)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		if childDependency != nil {
-			queue[queueIndex] = childDependency
-			queueIndex++
-		}
+	queueIndex, err = t.processDependencies(&dependency.Dependencies, nodeModuleDir, false, &queue, queueIndex)
+	if err != nil {
+		return err
 	}
 
-	for name := range dependency.OptionalDependencies {
-		childDependency, err := t.resolveDependency(nodeModuleDir, name, true)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-
-		if childDependency != nil {
-			queue[queueIndex] = childDependency
-			queueIndex++
-		}
+	queueIndex, err = t.processDependencies(&dependency.OptionalDependencies, nodeModuleDir, true, &queue, queueIndex)
+	if err != nil {
+		return err
 	}
 
 	if queueIndex == 0 {
@@ -210,6 +196,21 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 	}
 
 	return nil
+}
+
+func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir string, isOptional bool, queue *[]*Dependency, queueIndex int) (int, error) {
+	for name := range *list {
+		childDependency, err := t.resolveDependency(nodeModuleDir, name, isOptional)
+		if err != nil {
+			return queueIndex, errors.WithStack(err)
+		}
+
+		if childDependency != nil {
+			(*queue)[queueIndex] = childDependency
+			queueIndex++
+		}
+	}
+	return queueIndex, nil
 }
 
 // nill if already handled
