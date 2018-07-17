@@ -90,6 +90,8 @@ func (t *RemoteBuilder) build(buildRequest string, filesToPack []string, outDir 
 	}
 
 	os.Stdout.Write(rawResult)
+
+	log.Info("found build service useful? Please donate (https://donorbox.org/electron-build-service)")
 	return nil
 }
 
@@ -115,7 +117,7 @@ func readEvents(response *http.Response) (*Event, []byte, error) {
 		}
 
 		if event.Status != "" {
-			log.WithField("status", event.Status).Info("remote building")
+			log.WithField("status", strings.TrimSuffix(event.Status, "\n")).Info("remote building")
 		} else if event.Error != "" {
 			return nil, encodedEvent, nil
 		} else if event.Files != nil {
@@ -139,7 +141,7 @@ func (t *RemoteBuilder) downloadArtifacts(resultEvent *Event, outDir string) err
 		}
 
 		log.WithFields(&log.Fields{
-			"file":     file,
+			"file":     file.File,
 			"size":     humanize.Bytes(uint64(size)),
 			"duration": fmt.Sprintf("%v", time.Since(start).Round(time.Millisecond)),
 		}).Info("file downloaded")

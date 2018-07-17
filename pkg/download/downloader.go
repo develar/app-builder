@@ -12,7 +12,8 @@ import (
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-		)
+	"github.com/dustin/go-humanize"
+)
 
 //noinspection SpellCheckingInspection
 const (
@@ -88,8 +89,9 @@ func (t *Downloader) DownloadResolved(location *ActualLocation, sha512 string) e
 	location.computeParts(minPartSize)
 	log.WithFields(&log.Fields{
 		"url":   location.Url,
+		"size":  humanize.Bytes(uint64(location.ContentLength)),
 		"parts": len(location.Parts),
-	}).Debug("download")
+	}).Info("downloading")
 	err = util.MapAsyncConcurrency(len(location.Parts), getMaxPartCount(), func(index int) (func() error, error) {
 		part := location.Parts[index]
 		return func() error {

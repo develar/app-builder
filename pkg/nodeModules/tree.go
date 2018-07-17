@@ -199,6 +199,7 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 }
 
 func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir string, isOptional bool, queue *[]*Dependency, queueIndex int) (int, error) {
+	unresolved := make([]string, 0)
 	for name := range *list {
 		childDependency, err := t.resolveDependency(nodeModuleDir, name, isOptional)
 		if err != nil {
@@ -208,8 +209,54 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 		if childDependency != nil {
 			(*queue)[queueIndex] = childDependency
 			queueIndex++
+		} else {
+			unresolved = append(unresolved, name)
 		}
 	}
+
+	var err error
+	for len(unresolved) > 0 {
+		nodeModuleDir, err = findNearestNodeModuleDir(filepath.Dir(filepath.Dir(nodeModuleDir)))
+		if err != nil {
+			return queueIndex, errors.WithStack(err)
+		}
+
+		if len(nodeModuleDir) == 0 {
+			if !isOptional {
+				for _, name := range unresolved {
+					if len(name) != 0 {
+						t.unresolvedDependencies[name] = true
+					}
+				}
+			}
+			return queueIndex, nil
+		}
+
+		hasUnresolved := false
+		for index, name := range unresolved {
+			if len(name) == 0 {
+				continue
+			}
+
+			childDependency, err := t.resolveDependency(nodeModuleDir, name, isOptional)
+			if err != nil {
+				return queueIndex, errors.WithStack(err)
+			}
+
+			if childDependency != nil {
+				(*queue)[queueIndex] = childDependency
+				queueIndex++
+				unresolved[index] = ""
+			} else {
+				hasUnresolved = true
+			}
+		}
+
+		if !hasUnresolved {
+			break
+		}
+	}
+
 	return queueIndex, nil
 }
 
@@ -227,19 +274,7 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string, i
 	dependency, err := readPackageJson(dependencyDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			nodeModuleDir, err := findNearestNodeModuleDir(filepath.Dir(filepath.Dir(parentNodeModuleDir)))
-			if err != nil {
-				return nil, errors.WithStack(err)
-			}
-
-			if len(nodeModuleDir) == 0 {
-				if !isOptional {
-					t.unresolvedDependencies[name] = true
-				}
-				return nil, nil
-			} else {
-				return t.resolveDependency(nodeModuleDir, name, isOptional)
-			}
+			return nil, nil
 		} else {
 			return nil, errors.WithStack(err)
 		}
