@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/json-iterator/go"
 )
@@ -215,6 +217,7 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 	}
 
 	var err error
+	guardCount := 0
 	for len(unresolved) > 0 {
 		nodeModuleDir, err = findNearestNodeModuleDir(filepath.Dir(filepath.Dir(nodeModuleDir)))
 		if err != nil {
@@ -230,6 +233,10 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 				}
 			}
 			return queueIndex, nil
+		}
+
+		if util.IsDebugEnabled() {
+			log.WithField("unresolved", strings.Join(unresolved, ", ")).WithField("nodeModuleDir", nodeModuleDir).WithField("round", guardCount).Debug("unresolved deps")
 		}
 
 		hasUnresolved := false
@@ -254,6 +261,11 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 
 		if !hasUnresolved {
 			break
+		}
+
+		guardCount++
+		if guardCount > 999 {
+			return queueIndex, errors.New("Infinite loop: " + nodeModuleDir)
 		}
 	}
 
