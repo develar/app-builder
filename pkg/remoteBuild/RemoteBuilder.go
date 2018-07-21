@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"encoding/base64"
 	"fmt"
-		"net/http"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +24,7 @@ import (
 func ConfigureBuildCommand(app *kingpin.Application) {
 	command := app.Command("remote-build", "")
 	filesToPack := command.Flag("file", "").Required().Strings()
+	buildResourcesDir := command.Flag("build-resource-dir", "").String()
 	request := command.Flag("request", "").Required().String()
 	output := command.Flag("output", "").Required().String()
 	command.Action(func(context *kingpin.ParseContext) error {
@@ -31,7 +33,7 @@ func ConfigureBuildCommand(app *kingpin.Application) {
 			return err
 		}
 
-		err = newRemoteBuilder().build(string(decodedRequest), *filesToPack, *output)
+		err = newRemoteBuilder().build(string(decodedRequest), *filesToPack, *output, *buildResourcesDir)
 		if err != nil {
 			return err
 		}
@@ -55,7 +57,7 @@ func newRemoteBuilder() *RemoteBuilder {
 	}
 }
 
-func (t *RemoteBuilder) build(buildRequest string, filesToPack []string, outDir string) error {
+func (t *RemoteBuilder) build(buildRequest string, filesToPack []string, outDir string, buildResourceDir string) error {
 	var err error
 	t.endpoint, err = findBuildAgent(t.transport)
 	if err != nil {
@@ -67,7 +69,7 @@ func (t *RemoteBuilder) build(buildRequest string, filesToPack []string, outDir 
 		Timeout:   30 * time.Minute,
 	}
 
-	response, err := t.upload(buildRequest, filesToPack, client)
+	response, err := t.upload(buildRequest, filesToPack, buildResourceDir, client)
 	if err != nil {
 		return err
 	}
@@ -100,7 +102,11 @@ func readEvents(response *http.Response) (*Event, []byte, error) {
 	for {
 		encodedEvent, err := reader.ReadBytes('\n')
 		if err != nil {
-			return nil, nil, err
+			if err == io.EOF {
+				return nil, []byte("{\"error\": \"remote build unexpectedly exited\"}"), nil
+			} else {
+				return nil, nil, err
+			}
 		}
 
 		// exclude last \n
@@ -135,7 +141,7 @@ func (t *RemoteBuilder) downloadArtifacts(resultEvent *Event, outDir string) err
 		start := time.Now()
 		size := (resultEvent.FileSizes)[index]
 		location := download.NewResolvedLocation(baseUrl+"/"+file.File, int64(size), filepath.Join(outDir, file.File), true)
-		err := downloader.DownloadResolved(&location, "")
+		err := downloader.DownloadResolved(&location, "", file.File)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -162,7 +168,7 @@ type File struct {
 }
 
 // compress and upload in the same time, directly to remote without intermediate local file
-func (t *RemoteBuilder) upload(buildRequest string, filesToPack []string, client *http.Client) (*http.Response, error) {
+func (t *RemoteBuilder) upload(buildRequest string, filesToPack []string, buildResourceDir string, client *http.Client) (*http.Response, error) {
 	zstd, err := download.GetZstd()
 	if err != nil {
 		return nil, err
@@ -184,6 +190,13 @@ func (t *RemoteBuilder) upload(buildRequest string, filesToPack []string, client
 		}
 	} else {
 		tarArgs = append(tarArgs, filesToPack...)
+	}
+
+	if buildResourceDir != "" {
+		fileInfo, err := os.Stat(buildResourceDir)
+		if err == nil && fileInfo.IsDir() {
+			tarArgs = append(tarArgs, buildResourceDir)
+		}
 	}
 
 	tarCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), tarArgs...)

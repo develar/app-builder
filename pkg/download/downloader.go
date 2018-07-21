@@ -75,10 +75,10 @@ func (t *Downloader) Download(url string, output string, sha512 string) error {
 		return errors.WithStack(err)
 	}
 
-	return t.DownloadResolved(actualLocation, sha512)
+	return t.DownloadResolved(actualLocation, sha512, url)
 }
 
-func (t *Downloader) DownloadResolved(location *ActualLocation, sha512 string) error {
+func (t *Downloader) DownloadResolved(location *ActualLocation, sha512 string, urlToLog string) error {
 	err := os.MkdirAll(filepath.Dir(location.OutFileName), 0777)
 	if err != nil {
 		return errors.WithStack(err)
@@ -88,7 +88,7 @@ func (t *Downloader) DownloadResolved(location *ActualLocation, sha512 string) e
 
 	location.computeParts(minPartSize)
 	log.WithFields(&log.Fields{
-		"url":   location.Url,
+		"url":   urlToLog,
 		"size":  humanize.Bytes(uint64(location.ContentLength)),
 		"parts": len(location.Parts),
 	}).Info("downloading")
