@@ -39,6 +39,7 @@ func WriteJsonToStdOut(v interface{}) error {
 		return err
 	}
 	_, err = os.Stdout.Write(serializedInputInfo)
+	os.Stdout.Close()
 	return err
 }
 

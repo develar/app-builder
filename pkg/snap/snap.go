@@ -258,7 +258,7 @@ func RemoveAdapter(snapFilePath string) error {
 
 	fixedData := re.ReplaceAll(data, []byte{})
 	if len(fixedData) != len(data) {
-		err = ioutil.WriteFile(snapFilePath, fixedData, 0)
+		err = ioutil.WriteFile(snapFilePath, fixedData, 0666)
 		if err != nil {
 			return errors.WithStack(err)
 		}

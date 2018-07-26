@@ -1,0 +1,234 @@
+package appimage
+
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"strings"
+	"text/template"
+	"time"
+
+	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/util"
+	"github.com/develar/errors"
+	"github.com/segmentio/ksuid"
+)
+
+const iconDirRelativePath = "usr/share/icons/hicolor"
+const mimeTypeDirRelativePath = "usr/share/mime"
+
+type TemplateConfiguration struct {
+	EulaFile          string
+	SystemIntegration string
+	ExecutableName    string
+	ProductName       string
+	ResourceName      string
+	DesktopFileName   string
+
+	MimeTypeFile string
+	Icons        []IconTemplateInfo
+}
+
+func (t *TemplateConfiguration) IsHtmlEula() bool {
+	return strings.HasSuffix(t.EulaFile, ".html")
+}
+
+type IconTemplateInfo struct {
+	File string
+	Size int
+}
+
+// https://github.com/AppImage/AppImageKit/issues/438#issuecomment-319094239
+// expects icons in the /usr/share/icons/hicolor
+func copyIcons(options *AppImageOptions) ([]IconTemplateInfo, error) {
+	stageDir := *options.stageDir
+
+	iconCommonDir := filepath.Join(stageDir, iconDirRelativePath)
+	err := os.MkdirAll(iconCommonDir, 0777)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	iconFileName := options.configuration.ExecutableName + ".png"
+	icons := options.configuration.Icons
+	templateIcons := make([]IconTemplateInfo, len(icons))
+	maxIconIndex := len(icons) - 1
+	var fileCopier fs.FileCopier
+	fileCopier.IsUseHardLinks = true
+	err = util.MapAsync(len(icons), func(taskIndex int) (func() error, error) {
+		icon := icons[taskIndex]
+		iconSizeDir := fmt.Sprintf("%dx%d/apps", icon.Size, icon.Size)
+		iconRelativeToStageFile := iconDirRelativePath + "/" + iconSizeDir + "/" + iconFileName
+		templateInfo := IconTemplateInfo{
+			Size: icon.Size,
+			File: iconRelativeToStageFile,
+		}
+		templateIcons[taskIndex] = templateInfo
+
+		return func() error {
+			iconDir := filepath.Join(iconCommonDir, iconSizeDir)
+			err := os.MkdirAll(iconDir, 0777)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			fakeFileInfo := &fakeFileInfo{}
+			iconFile := filepath.Join(iconDir, iconFileName)
+			err = fileCopier.CopyFile(icon.File, iconFile, false, fakeFileInfo)
+			if err != nil {
+				return errors.WithStack(err)
+			}
+
+			if taskIndex == maxIconIndex {
+				err = os.Symlink(iconRelativeToStageFile, filepath.Join(stageDir, iconFileName))
+				if err != nil {
+					return errors.WithStack(err)
+				}
+			}
+
+			return nil
+		}, nil
+	})
+
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	return templateIcons, nil
+}
+
+type fakeFileInfo struct {
+	dir      bool
+	basename string
+	ents     []*fakeFileInfo
+	contents string
+	err      error
+}
+
+func (f *fakeFileInfo) Name() string       { return f.basename }
+func (f *fakeFileInfo) Sys() interface{}   { return nil }
+func (f *fakeFileInfo) ModTime() time.Time { return time.Now() }
+func (f *fakeFileInfo) IsDir() bool        { return f.dir }
+func (f *fakeFileInfo) Size() int64        { return int64(len(f.contents)) }
+func (f *fakeFileInfo) Mode() os.FileMode {
+	return 0644
+}
+
+func copyMimeTypes(options *AppImageOptions) (string, error) {
+	var mimeTypes strings.Builder
+	for _, fileAssociation := range options.configuration.FileAssociations {
+		if fileAssociation.MimeType != "" {
+			mimeTypes.WriteString("<mime-type type=\"")
+			mimeTypes.WriteString(fileAssociation.MimeType)
+			mimeTypes.WriteString("\">\n")
+
+			mimeTypes.WriteString("  <comment>")
+			mimeTypes.WriteString(options.configuration.ProductName)
+			mimeTypes.WriteString(" document</comment>\n")
+
+			mimeTypes.WriteString("  <glob pattern=\"*.")
+			mimeTypes.WriteString(fileAssociation.Ext)
+			mimeTypes.WriteString("\"/>\n")
+
+			mimeTypes.WriteString("  <generic-icon name=\"x-office-document\"/>\n")
+
+			mimeTypes.WriteString("</mime-type>\n")
+		}
+	}
+
+	// if no mime-types specified, return
+	if mimeTypes.Len() == 0 {
+		return "", nil
+	}
+
+	mimeTypeDir := filepath.Join(*options.stageDir, mimeTypeDirRelativePath)
+	fileName := options.configuration.ExecutableName + ".xml"
+	mimeTypeFile := filepath.Join(mimeTypeDir, fileName)
+	err := os.MkdirAll(mimeTypeDir, 0777)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	err = ioutil.WriteFile(mimeTypeFile, []byte("<?xml version=\"1.0\"?>\n<mime-info xmlns=\"http://www.freedesktop.org/standards/shared-mime-info\">\n"+mimeTypes.String()+"\n</mime-info>"), 0666)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+
+	return mimeTypeDirRelativePath + "/" + fileName, nil
+}
+
+func writeDesktopFile(options *AppImageOptions) (string, error) {
+	fileName := options.configuration.ExecutableName + ".desktop"
+	err := ioutil.WriteFile(filepath.Join(*options.stageDir, fileName), []byte(options.configuration.DesktopEntry+"X-AppImage-BuildId="+ksuid.New().String()+"\n"), 0666)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	return fileName, nil
+}
+
+func writeAppLauncherAndRelatedFiles(options *AppImageOptions) error {
+	t, err := template.ParseFiles(*options.template)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	desktopFileName, err := writeDesktopFile(options)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	configuration := options.configuration
+	executableName := configuration.ExecutableName
+	templateConfiguration := &TemplateConfiguration{
+		DesktopFileName:   desktopFileName,
+		ExecutableName:    executableName,
+		ProductName:       configuration.ProductName,
+		ResourceName:      "appimagekit-" + executableName,
+		SystemIntegration: configuration.SystemIntegration,
+	}
+
+	licenseFile := *options.license
+	if licenseFile != "" {
+		templateConfiguration.EulaFile = filepath.Base(licenseFile)
+		err := fs.CopyUsingHardlink(licenseFile, filepath.Join(*options.stageDir, templateConfiguration.EulaFile))
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+
+	icons, err := copyIcons(options)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	templateConfiguration.Icons = icons
+
+	mimeTypeFile, err := copyMimeTypes(options)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	templateConfiguration.MimeTypeFile = mimeTypeFile
+
+	templateFilename := filepath.Join(*options.stageDir, "AppRun")
+	f, err := os.Create(templateFilename)
+	defer util.Close(f)
+	if err != nil {
+		return err
+	}
+
+	err = t.Execute(f, templateConfiguration)
+	if err != nil {
+		return err
+	}
+
+	util.Close(f)
+
+	err = os.Chmod(templateFilename, 0755)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

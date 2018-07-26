@@ -1,11 +1,14 @@
 package appimage
 
 import (
+	"encoding/base64"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
+	"syscall"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/develar/app-builder/pkg/blockmap"
@@ -14,6 +17,7 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
+	"github.com/json-iterator/go"
 )
 
 type AppImageOptions struct {
@@ -22,25 +26,50 @@ type AppImageOptions struct {
 	arch     *string
 	output   *string
 
+	template      *string
+	license       *string
+	configuration *AppImageConfiguration
+
 	compression *string
 }
 
 func ConfigureCommand(app *kingpin.Application) {
 	command := app.Command("appimage", "Build AppImage.")
 
-	options := AppImageOptions{
+	options := &AppImageOptions{
 		appDir:   command.Flag("app", "The app dir.").Short('a').Required().String(),
 		stageDir: command.Flag("stage", "The stage dir.").Short('s').Required().String(),
 		output:   command.Flag("output", "The output file.").Short('o').Required().String(),
 		arch:     command.Flag("arch", "The arch.").Default("x64").Enum("x64", "ia32", "armv7l", "arm64"),
 
+		template: command.Flag("template", "The template file.").Required().String(),
+		license:  command.Flag("license", "The license file.").String(),
+
 		compression: command.Flag("compression", "The compression.").Enum("xz", "gzip"),
 	}
+
+	configuration := command.Flag("configuration", "").Required().String()
 
 	isRemoveStage := util.ConfigureIsRemoveStageParam(command)
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		err := AppImage(options)
+		var err error
+		if strings.HasPrefix(*configuration, "{") {
+			err = jsoniter.UnmarshalFromString(*configuration, &options.configuration)
+		} else {
+			data, err := base64.StdEncoding.DecodeString(*configuration)
+			if err != nil {
+				return err
+			}
+
+			err = jsoniter.Unmarshal(data, &options.configuration)
+		}
+
+		if err != nil {
+			return err
+		}
+
+		err = AppImage(options)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -56,8 +85,19 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
-func AppImage(options AppImageOptions) error {
+func AppImage(options *AppImageOptions) error {
 	stageDir := *options.stageDir
+
+	err := writeAppLauncherAndRelatedFiles(options)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	outputFile := *options.output
+	err = syscall.Unlink(outputFile)
+	if err != nil && !os.IsNotExist(err) {
+		return errors.WithStack(err)
+	}
 
 	appImageToolDir, err := linuxTools.GetAppImageToolDir()
 	if err != nil {
@@ -88,7 +128,6 @@ func AppImage(options AppImageOptions) error {
 		return errors.WithStack(err)
 	}
 
-	outputFile := *options.output
 	err = writeRuntimeData(outputFile, runtimeData)
 	if err != nil {
 		return errors.WithStack(err)
@@ -113,7 +152,7 @@ func AppImage(options AppImageOptions) error {
 }
 
 func writeRuntimeData(filePath string, runtimeData []byte) error {
-	file, err := os.OpenFile(filePath, os.O_RDWR, 0)
+	file, err := os.OpenFile(filePath, os.O_RDWR, 0755)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -122,7 +161,7 @@ func writeRuntimeData(filePath string, runtimeData []byte) error {
 	return fsutil.CloseAndCheckError(err, file)
 }
 
-func createSquashFs(options AppImageOptions, offset int) error {
+func createSquashFs(options *AppImageOptions, offset int) error {
 	mksquashfsPath, err := linuxTools.GetMksquashfs()
 	if err != nil {
 		return errors.WithStack(err)

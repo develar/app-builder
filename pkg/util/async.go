@@ -18,11 +18,17 @@ func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskI
 
 	log.WithField("taskCount", taskCount).Debug("map async")
 
-	errorChannel := make(chan error)
+	errorChannel := make(chan error, concurrency)
 	doneChannel := make(chan bool, taskCount)
-	quitChannel := make(chan bool)
-
+	quitChannel := make(chan struct{})
 	sem := make(chan bool, concurrency)
+
+	markDone := func() {
+		// release semaphore, notify done
+		doneChannel <- true
+		<-sem
+	}
+
 	for i := 0; i < taskCount; i++ {
 		// wait semaphore
 		sem <- true
@@ -34,17 +40,15 @@ func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskI
 		}
 
 		if task == nil {
-			<-sem
 			doneChannel <- true
+			go func() {
+				<-sem
+			}()
 			continue
 		}
 
 		go func(task func() error) {
-			defer func() {
-				// release semaphore, notify done
-				<-sem
-				doneChannel <- true
-			}()
+			defer markDone()
 
 			// select waits on multiple channels, if quitChannel is closed, read will succeed without blocking
 			// the default case in a select is run if no other case is ready

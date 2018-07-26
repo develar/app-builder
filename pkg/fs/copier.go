@@ -22,7 +22,7 @@ type LinkInfo struct {
 }
 
 // go doesn't provide native copy operation (CoW)
-func (fileCopier *FileCopier) copyDir(from string, to string) error {
+func (t *FileCopier) copyDir(from string, to string) error {
 	fileNames, err := fsutil.ReadDirContent(from)
 	if err != nil {
 		return errors.WithStack(err)
@@ -33,7 +33,7 @@ func (fileCopier *FileCopier) copyDir(from string, to string) error {
 			continue
 		}
 
-		err = fileCopier.copyDirOrFile(filepath.Join(from, name), filepath.Join(to, name), false)
+		err = t.copyDirOrFile(filepath.Join(from, name), filepath.Join(to, name), false)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -53,36 +53,36 @@ func CopyDirOrFile(from string, to string) error {
 	return fileCopier.CopyDirOrFile(from, to)
 }
 
-func (fileCopier *FileCopier) CopyDirOrFile(from string, to string) error {
+func (t *FileCopier) CopyDirOrFile(from string, to string) error {
 	if runtime.GOOS == "windows" {
-		fileCopier.IsUseHardLinks = false
+		t.IsUseHardLinks = false
 	}
 
 	log.WithFields(log.Fields{
-		"from": from,
-		"to": to,
-		"isUseHardLinks": fileCopier.IsUseHardLinks,
+		"from":           from,
+		"to":             to,
+		"isUseHardLinks": t.IsUseHardLinks,
 	}).Debug("copy files")
 
-	err := fileCopier.copyDirOrFile(from, to, true)
+	err := t.copyDirOrFile(from, to, true)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	if fileCopier.links != nil {
-		for _, linkInfo := range fileCopier.links {
+	if t.links != nil {
+		for _, linkInfo := range t.links {
 			err = os.Symlink(linkInfo.link, linkInfo.file)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 		}
-		fileCopier.links = nil
+		t.links = nil
 	}
 
 	return nil
 }
 
-func (fileCopier *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bool) error {
+func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bool) error {
 	fromInfo, err := os.Lstat(from)
 	if err != nil {
 		return errors.WithStack(err)
@@ -108,23 +108,27 @@ func (fileCopier *FileCopier) copyDirOrFile(from string, to string, isCreatePare
 			return errors.WithStack(err)
 		}
 
-		return fileCopier.copyDir(from, to)
-	} else if fromInfo.Mode() & os.ModeSymlink != 0 {
-		return fileCopier.copySymlink(from, to)
+		return t.copyDir(from, to)
+	} else if fromInfo.Mode()&os.ModeSymlink != 0 {
+		return t.copySymlink(from, to)
 	}
 
-	if fileCopier.IsUseHardLinks {
-		err = os.Link(from, to)
+	return t.CopyFile(from, to, isCreateParentDirs, fromInfo)
+}
+
+func (t *FileCopier) CopyFile(from string, to string, isCreateParentDirs bool, fromInfo os.FileInfo) error {
+	if t.IsUseHardLinks {
+		err := os.Link(from, to)
 		if err == nil {
 			return nil
 		}
 
-		fileCopier.IsUseHardLinks = false
+		t.IsUseHardLinks = false
 		log.WithError(err).WithField("from", from).WithField("to", to).Debug("cannot copy using hard link")
 	}
 
 	if isCreateParentDirs {
-		err = os.MkdirAll(filepath.Dir(to), 0777)
+		err := os.MkdirAll(filepath.Dir(to), 0777)
 		if err != nil {
 			return err
 		}
@@ -133,7 +137,7 @@ func (fileCopier *FileCopier) copyDirOrFile(from string, to string, isCreatePare
 }
 
 // symlink cannot be created during copy because symlink can point to not yet copied target file
-func (fileCopier *FileCopier) copySymlink(from string, to string) error {
+func (t *FileCopier) copySymlink(from string, to string) error {
 	link, err := os.Readlink(from)
 	if err != nil {
 		return errors.WithStack(err)
@@ -146,7 +150,7 @@ func (fileCopier *FileCopier) copySymlink(from string, to string) error {
 		}
 	}
 
-	fileCopier.links = append(fileCopier.links, LinkInfo{
+	t.links = append(t.links, LinkInfo{
 		file: to,
 		link: link,
 	})
