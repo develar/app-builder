@@ -12,6 +12,7 @@ import (
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 	"github.com/segmentio/ksuid"
 )
 
@@ -45,7 +46,7 @@ func copyIcons(options *AppImageOptions) ([]IconTemplateInfo, error) {
 	stageDir := *options.stageDir
 
 	iconCommonDir := filepath.Join(stageDir, iconDirRelativePath)
-	err := os.MkdirAll(iconCommonDir, 0777)
+	err := fsutil.EnsureDir(iconCommonDir)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -68,7 +69,7 @@ func copyIcons(options *AppImageOptions) ([]IconTemplateInfo, error) {
 
 		return func() error {
 			iconDir := filepath.Join(iconCommonDir, iconSizeDir)
-			err := os.MkdirAll(iconDir, 0777)
+			err := fsutil.EnsureDir(iconDir)
 			if err != nil {
 				return errors.WithStack(err)
 			}
@@ -101,7 +102,6 @@ func copyIcons(options *AppImageOptions) ([]IconTemplateInfo, error) {
 type fakeFileInfo struct {
 	dir      bool
 	basename string
-	ents     []*fakeFileInfo
 	contents string
 	err      error
 }
@@ -145,7 +145,7 @@ func copyMimeTypes(options *AppImageOptions) (string, error) {
 	mimeTypeDir := filepath.Join(*options.stageDir, mimeTypeDirRelativePath)
 	fileName := options.configuration.ExecutableName + ".xml"
 	mimeTypeFile := filepath.Join(mimeTypeDir, fileName)
-	err := os.MkdirAll(mimeTypeDir, 0777)
+	err := fsutil.EnsureDir(mimeTypeDir)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}

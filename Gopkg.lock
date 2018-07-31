@@ -45,7 +45,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:ac90211d378662a27819ef642c82985a74bcb40f47eea8ed90a726548be2b217"
+  digest = "1:f7c37b226b2215866d0db3f38d58b72835c1371f5eb233ae4fa7981f98852de5"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -83,8 +83,8 @@
     "service/sts",
   ]
   pruneopts = "NU"
-  revision = "96313df4b1ba47ade3de7b2b90d69c02a81ddaa4"
-  version = "v1.14.33"
+  revision = "123c8c8326730972861f45fe2e6e7b1d64b4d487"
+  version = "v1.15.1"
 
 [[projects]]
   branch = "master"
@@ -103,12 +103,12 @@
   version = "v0.8.1"
 
 [[projects]]
-  digest = "1:695fc45d684030d54f6692b9a01e29647c263ce17f211d6802aba1b1a16ba03b"
+  digest = "1:9791c0780e7ec180db08d1ad3b41d0f651412a4731217b287ea835b3b1183734"
   name = "github.com/develar/go-fs-util"
   packages = ["."]
   pruneopts = "NU"
-  revision = "27bcfafd2be58824aea5acdf426166c8b85b15d9"
-  version = "v1.1.1"
+  revision = "eda23b17cc6fb7697abea3d250cbea610703020e"
+  version = "v2.0.0"
 
 [[projects]]
   branch = "master"
@@ -269,6 +269,14 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:4cee7300cbe866db72a6cf4e17e92898b77a89a339f41d3ae6aac8ea42237003"
+  name = "github.com/oxtoacart/bpool"
+  packages = ["."]
+  pruneopts = "NU"
+  revision = "4e1c5567d7c2dd59fa4c7c83d34c2f3528b025d6"
+
+[[projects]]
+  branch = "master"
   digest = "1:d1b498d86937935fac570932f6a4f3c71cf4881981638916726ab2b685967883"
   name = "github.com/phayes/permbits"
   packages = ["."]
@@ -284,12 +292,12 @@
   version = "v0.8.0"
 
 [[projects]]
-  digest = "1:a0333ce8438ee90ea0d9123898e648f4e15c1de457ce4358ec46feace68999c5"
+  digest = "1:09e8cc817e5cea53bc9452ca4ae27d3273bda8a9dde45d8f2b7aac5d05f6e04c"
   name = "github.com/pkg/xattr"
   packages = ["."]
   pruneopts = "NU"
-  revision = "d15dbc2bb0b5da267362b5e066e2c44c1fcff6c7"
-  version = "v0.3.0"
+  revision = "ae385d07bb53f092fcc7daaf738d8513df084931"
+  version = "v0.3.1"
 
 [[projects]]
   digest = "1:6e9df255b1bc673df3d2fa680659919d3d70f4b880aefa1cb7ba190f752f9fbb"
@@ -329,15 +337,15 @@
     "html/charset",
   ]
   pruneopts = "NU"
-  revision = "3673e40ba22529d22c3fd7c93e97b0ce50fa7bdd"
+  revision = "a0f8a16cb08c06df97cbdf9c47f4731ba548c33c"
 
 [[projects]]
   branch = "master"
-  digest = "1:adb58732ec594256413e811acb52ec55fb1b068e89dc3e72fd6ec429fb828a3c"
+  digest = "1:ce5fd73dae7255b9a7ca6e528c5503f28bbd46932eb5b77f00e81e6cd05b3d49"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "NU"
-  revision = "e072cadbbdc8dd3d3ffa82b8b4b9304c261d9311"
+  revision = "bd9dbc187b6e1dacfdd2722a87e83093c2d7bd6e"
 
 [[projects]]
   digest = "1:ab44f87f4f5044b3cf74aee65e3d8856b668f55ca6883d1a1ed7a4659d3dc071"
@@ -414,6 +422,7 @@
     "github.com/mitchellh/go-homedir",
     "github.com/onsi/ginkgo",
     "github.com/onsi/gomega",
+    "github.com/oxtoacart/bpool",
     "github.com/phayes/permbits",
     "github.com/pkg/errors",
     "github.com/pkg/xattr",

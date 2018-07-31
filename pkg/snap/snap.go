@@ -16,7 +16,7 @@ import (
 	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-		"github.com/mcuadros/go-version"
+	"github.com/mcuadros/go-version"
 )
 
 // usr/share/fonts is required, cannot run otherwise
@@ -40,8 +40,8 @@ type TemplateInfo struct {
 }
 
 //noinspection SpellCheckingInspection
-var electronTemplate2 = TemplateInfo {
-	Url: "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-2.3/snap-template-electron-2.3.tar.7z",
+var electronTemplate2 = TemplateInfo{
+	Url:    "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-2.3/snap-template-electron-2.3.tar.7z",
 	Sha512: "XJmVZWUlK+lkmJ82aRS7qKqSlq5rMrJv3p/5Oov9CL0FdoqQ2M6xHXCcuSxQHaqzg21j+SXb2Nff67CqkSG+BQ==",
 }
 
@@ -232,7 +232,7 @@ func writeCommandWrapper(options SnapOptions, isUseTemplateApp bool) error {
 	}
 
 	commandWrapperFile := filepath.Join(*options.stageDir, "command.sh")
-	err := ioutil.WriteFile(commandWrapperFile, []byte("#!/bin/bash\nexec $SNAP/bin/desktop-launch \"$SNAP/" + appPrefix + *options.executableName+`"`), 0755)
+	err := ioutil.WriteFile(commandWrapperFile, []byte("#!/bin/bash\nexec $SNAP/bin/desktop-launch \"$SNAP/"+appPrefix+*options.executableName+`"`), 0755)
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -350,7 +350,7 @@ func buildUsingDocker(options SnapOptions) error {
 	commands = append(commands,
 		"cp -r /stage /s/",
 		"cd /s",
-		"snapcraft prime --target-arch " + *options.arch,
+		"snapcraft prime --target-arch "+*options.arch,
 		"rm -rf prime/"+strings.Join(unnecessaryFiles, " prime/"),
 		"mv /s/prime/* /tmp/final-stage/",
 		"mv /s/command.sh /tmp/final-stage/command.sh",
@@ -364,7 +364,7 @@ func buildUsingDocker(options SnapOptions) error {
 	err := util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("docker", "run", "--rm",
 		"-v", filepath.Dir(*options.output)+":/out:delegated",
 		"--mount", "type=bind,source="+stageDir+",destination=/stage,readonly",
-		"--mount", "type=bind,source=" + *options.appDir+",destination=/tmp/final-stage/app,readonly",
+		"--mount", "type=bind,source="+*options.appDir+",destination=/tmp/final-stage/app,readonly",
 		*options.dockerImage,
 		"/bin/bash", "-c", strings.Join(commands, " && "),
 	), stageDir)

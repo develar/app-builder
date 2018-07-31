@@ -9,7 +9,7 @@ if [ -z "$GITHUB_TOKEN" ] ; then
 fi
 
 NAME=app-builder
-VERSION=2.0.0
+VERSION=2.1.1
 
 OUT_DIR="$BASEDIR/../dist"
 

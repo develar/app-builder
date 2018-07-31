@@ -12,8 +12,9 @@ import (
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/appimage"
 	"github.com/develar/app-builder/pkg/blockmap"
-		"github.com/develar/app-builder/pkg/dmg"
+	"github.com/develar/app-builder/pkg/dmg"
 	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/electron"
 	"github.com/develar/app-builder/pkg/elfExecStack"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/icons"
@@ -28,7 +29,7 @@ import (
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("2.0.0")
+	app = kingpin.New("app-builder", "app-builder").Version("2.1.1")
 
 	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
 	buildBlockMapInFile      = buildBlockMap.Flag("input", "input file").Short('i').Required().String()
@@ -49,11 +50,18 @@ func main() {
 
 	nodeModules.ConfigureCommand(app)
 	//codesign.ConfigureCommand(app)
-	download.ConfigureCommand(app)
 	publisher.ConfigurePublishToS3Command(app)
 	remoteBuild.ConfigureBuildCommand(app)
-	configurePrefetchToolsCommand(app)
+
+	download.ConfigureCommand(app)
 	download.ConfigureArtifactCommand(app)
+
+	electron.ConfigureCommand(app)
+	electron.ConfigureUnpackCommand(app)
+	electron.ConfigureUnzipCommand(app)
+
+	configurePrefetchToolsCommand(app)
+
 	ConfigureCopyCommand(app)
 	appimage.ConfigureCommand(app)
 	snap.ConfigureCommand(app)

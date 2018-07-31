@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 )
@@ -17,8 +18,8 @@ type FileCopier struct {
 }
 
 type LinkInfo struct {
-	file string
-	link string
+	File string
+	Link string
 }
 
 // go doesn't provide native copy operation (CoW)
@@ -70,16 +71,27 @@ func (t *FileCopier) CopyDirOrFile(from string, to string) error {
 	}
 
 	if t.links != nil {
-		for _, linkInfo := range t.links {
-			err = os.Symlink(linkInfo.link, linkInfo.file)
-			if err != nil {
-				return errors.WithStack(err)
-			}
+		err = CreateLinks(t.links)
+		if err != nil {
+			return errors.WithStack(err)
 		}
 		t.links = nil
 	}
 
 	return nil
+}
+
+func CreateLinks(links []LinkInfo) error {
+	return util.MapAsync(len(links), func(taskIndex int) (func() error, error) {
+		linkInfo := links[taskIndex]
+		return func() error {
+			err := os.Symlink(linkInfo.Link, linkInfo.File)
+			if err != nil {
+				return err
+			}
+			return nil
+		}, nil
+	})
 }
 
 func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bool) error {
@@ -91,17 +103,14 @@ func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bo
 	if fromInfo.IsDir() {
 		// cannot use file mode as is because of *** *** *** umask
 		if isCreateParentDirs {
-			err = os.MkdirAll(to, 0777)
+			err = fsutil.EnsureDir(to)
 		} else {
 			err = os.Mkdir(to, 0777)
 		}
 
-		perm := fromInfo.Mode().Perm()
-		if perm != 0755 {
-			err = os.Chmod(to, perm)
-			if err != nil {
-				return errors.WithStack(err)
-			}
+		err = SetDirPermsIfNeed(to, fromInfo.Mode())
+		if err != nil {
+			return errors.WithStack(err)
 		}
 
 		if err != nil && !os.IsExist(err) {
@@ -116,6 +125,17 @@ func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bo
 	return t.CopyFile(from, to, isCreateParentDirs, fromInfo)
 }
 
+func SetDirPermsIfNeed(dir string, mode os.FileMode) error {
+	perm := mode.Perm()
+	if perm != 0755 {
+		err := os.Chmod(dir, perm)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	}
+	return nil
+}
+
 func (t *FileCopier) CopyFile(from string, to string, isCreateParentDirs bool, fromInfo os.FileInfo) error {
 	if t.IsUseHardLinks {
 		err := os.Link(from, to)
@@ -128,7 +148,7 @@ func (t *FileCopier) CopyFile(from string, to string, isCreateParentDirs bool, f
 	}
 
 	if isCreateParentDirs {
-		err := os.MkdirAll(filepath.Dir(to), 0777)
+		err := fsutil.EnsureDir(filepath.Dir(to))
 		if err != nil {
 			return err
 		}
@@ -151,8 +171,8 @@ func (t *FileCopier) copySymlink(from string, to string) error {
 	}
 
 	t.links = append(t.links, LinkInfo{
-		file: to,
-		link: link,
+		File: to,
+		Link: link,
 	})
 
 	return nil

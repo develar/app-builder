@@ -1,17 +1,17 @@
 package download
 
 import (
-		"fmt"
+	"fmt"
 	"net/http"
-	"os"
 	"path/filepath"
 	"runtime"
-		"time"
+	"time"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 	"github.com/dustin/go-humanize"
 )
 
@@ -39,7 +39,7 @@ func ConfigureCommand(app *kingpin.Application) {
 	sha512 := command.Flag("sha512", "The expected sha512 of file.").String()
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		return errors.WithStack(NewDownloader().Download(*fileUrl, *output, *sha512))
+		return NewDownloader().Download(*fileUrl, *output, *sha512)
 	})
 }
 
@@ -70,16 +70,28 @@ func NewDownloaderWithTransport(transport *http.Transport) *Downloader {
 }
 
 func (t *Downloader) Download(url string, output string, sha512 string) error {
+	start := time.Now()
+
 	actualLocation, err := t.follow(url, userAgent, output)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	return t.DownloadResolved(actualLocation, sha512, url)
+	err = t.DownloadResolved(actualLocation, sha512, url)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	log.WithFields(&log.Fields{
+		"url":      url,
+		"duration": fmt.Sprintf("%v", time.Since(start).Round(time.Millisecond)),
+	}).Info("downloaded")
+
+	return err
 }
 
 func (t *Downloader) DownloadResolved(location *ActualLocation, sha512 string, urlToLog string) error {
-	err := os.MkdirAll(filepath.Dir(location.OutFileName), 0777)
+	err := fsutil.EnsureDir(filepath.Dir(location.OutFileName))
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -164,7 +176,7 @@ func (t *Downloader) follow(initialUrl, userAgent, outFileName string) (*ActualL
 				currentUrl = loc.String()
 				return nil, nil
 			} else if response.StatusCode != http.StatusOK {
-				return nil, fmt.Errorf("resolve request failed with status code %d", response.StatusCode)
+				return nil, fmt.Errorf("cannot resolve %s: status code %d", initialUrl, response.StatusCode)
 			}
 
 			actualLocation := NewResolvedLocation(currentUrl, response.ContentLength, outFileName, response.Header.Get("Accept-Ranges") != "")

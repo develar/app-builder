@@ -26,12 +26,22 @@ func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskI
 	markDone := func() {
 		// release semaphore, notify done
 		doneChannel <- true
-		<-sem
+		select {
+		case <-sem:
+			return
+		case <-errorChannel:
+			break
+		}
 	}
 
 	for i := 0; i < taskCount; i++ {
 		// wait semaphore
-		sem <- true
+		select {
+		case <-errorChannel:
+			break
+		case sem <- true:
+			// ok
+		}
 
 		task, err := taskProducer(i)
 		if err != nil {
@@ -40,10 +50,7 @@ func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskI
 		}
 
 		if task == nil {
-			doneChannel <- true
-			go func() {
-				<-sem
-			}()
+			markDone()
 			continue
 		}
 
@@ -80,4 +87,3 @@ func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskI
 		}
 	}
 }
-

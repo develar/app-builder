@@ -12,6 +12,7 @@ import (
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	"github.com/develar/go-fs-util"
 	"github.com/mitchellh/go-homedir"
 )
 
@@ -56,7 +57,7 @@ func ConfigureArtifactCommand(app *kingpin.Application) {
 }
 
 func getCacheDirectoryForArtifact(dirName string) (string, error) {
-	result, err := GetCacheDirectory("electron-builder")
+	result, err := GetCacheDirectory("electron-builder", "ELECTRON_BUILDER_CACHE", true)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -101,7 +102,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 
 	filePath := filepath.Join(cacheDir, dirName)
 
-	logFields := log.Fields{
+	logFields := &log.Fields{
 		"path": filePath,
 	}
 
@@ -115,7 +116,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		return "", errors.WithMessage(err, "error during cache check for path "+filePath)
 	}
 
-	err = os.MkdirAll(cacheDir, 0777)
+	err = fsutil.EnsureDir(cacheDir)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -169,17 +170,21 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		}).Warn("cannot remove downloaded archive (another process downloaded faster?)")
 	}
 
-	err = os.Rename(tempUnpackDir, filePath)
-	if err != nil {
-		log.WithFields(logFields).WithFields(log.Fields{
-			"tempUnpackDir": tempUnpackDir,
-			"error":         err,
-		}).Warn("cannot move downloaded into final location (another process downloaded faster?)")
-	}
+	RenameToFinalFile(tempUnpackDir, filePath, logFields)
 
 	log.WithFields(logFields).Debug("downloaded")
 
 	return filePath, nil
+}
+
+func RenameToFinalFile(tempFile string, filePath string, logFields *log.Fields) {
+	err := os.Rename(tempFile, filePath)
+	if err != nil {
+		log.WithFields(logFields).WithFields(log.Fields{
+			"tempFile": tempFile,
+			"error":    err,
+		}).Warn("cannot move downloaded into final location (another process downloaded faster?)")
+	}
 }
 
 func unpackTarXzNodeJs(archiveName string, unpackDir string) error {
@@ -229,8 +234,8 @@ func runExtractCommands(decompressCommand *exec.Cmd, unTarCommand *exec.Cmd) err
 	return util.RunPipedCommands(decompressCommand, unTarCommand)
 }
 
-func GetCacheDirectory(dirName string) (string, error) {
-	env := os.Getenv("ELECTRON_BUILDER_CACHE")
+func GetCacheDirectory(appName string, envName string, isAvoidSystemOnWindows bool) (string, error) {
+	env := os.Getenv(envName)
 	if len(env) != 0 {
 		return env, nil
 	}
@@ -241,21 +246,29 @@ func GetCacheDirectory(dirName string) (string, error) {
 		if err != nil {
 			return "", errors.WithStack(err)
 		}
-		return filepath.Join(userHomeDir, "Library", "Caches", dirName), nil
+		return filepath.Join(userHomeDir, "Library", "Caches", appName), nil
 	}
 
-	localAppData := os.Getenv("LOCALAPPDATA")
-	if currentOs == WINDOWS && len(localAppData) != 0 {
-		// https://github.com/electron-userland/electron-builder/issues/1164
-		if strings.Contains(strings.ToLower(localAppData), "\\windows\\system32\\") || strings.ToLower(os.Getenv("USERNAME")) == "system" {
-			return filepath.Join(os.TempDir(), dirName+"-cache"), nil
+	if currentOs == WINDOWS {
+		localAppData := os.Getenv("LOCALAPPDATA")
+		if len(localAppData) != 0 {
+			// https://github.com/electron-userland/electron-builder/issues/1164
+			if isAvoidSystemOnWindows && strings.Contains(strings.ToLower(localAppData), "\\windows\\system32\\") || strings.ToLower(os.Getenv("USERNAME")) == "system" {
+				return filepath.Join(os.TempDir(), appName+"-cache"), nil
+			}
+			// https://github.com/sindresorhus/env-paths/blob/master/index.js
+			return filepath.Join(localAppData, appName, "Cache"), nil
 		}
-		return filepath.Join(localAppData, dirName, "cache"), nil
+	}
+
+	xdgCache := os.Getenv("XDG_CACHE_HOME")
+	if xdgCache != "" {
+		return filepath.Join(xdgCache, appName), nil
 	}
 
 	userHomeDir, err := homedir.Dir()
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
-	return filepath.Join(userHomeDir, ".cache", "electron-builder"), nil
+	return filepath.Join(userHomeDir, ".cache", appName), nil
 }
