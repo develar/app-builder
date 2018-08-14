@@ -1,4 +1,4 @@
-package electron
+package zipx
 
 import (
 	"archive/zip"
@@ -41,10 +41,15 @@ const concurrency = 8
 
 // https://github.com/mholt/archiver/issues/21
 // dest should be an empty dir
-func Unzip(src, dest string, excludedFiles map[string]bool) error {
+func Unzip(src string, dest string, excludedFiles map[string]bool) error {
+	if len(src) == 0 {
+		return errors.New("input zip file name is empty")
+	}
+
 	r, err := zip.OpenReader(src)
 	if err != nil {
-		return errors.WithStack(err)
+		// return as is without stack to allow client easily compare error with known zip errors
+		return err
 	}
 
 	defer util.Close(r)

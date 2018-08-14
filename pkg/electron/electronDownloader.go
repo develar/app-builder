@@ -30,24 +30,33 @@ func ConfigureCommand(app *kingpin.Application) {
 	jsonConfig := command.Flag("configuration", "").Short('c').Required().String()
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		_, err := parseConfigAndDownload(jsonConfig)
+		configs, err := parseConfig(jsonConfig)
+		if err != nil {
+			return err
+		}
+
+		_, err = downloadElectron(configs)
 		return err
 	})
 }
 
-func parseConfigAndDownload(jsonConfig *string) ([]string, error) {
+func parseConfig(jsonConfig *string) ([]ElectronDownloadOptions, error) {
 	var configs []ElectronDownloadOptions
 	err := jsoniter.UnmarshalFromString(*jsonConfig, &configs)
 	if err != nil {
 		return nil, err
 	}
+	return configs, nil
+}
 
+func downloadElectron(configs []ElectronDownloadOptions) ([]string, error) {
 	result := make([]string, len(configs))
 	return result, util.MapAsync(len(configs), func(taskIndex int) (func() error, error) {
 		config := configs[taskIndex]
 		return func() error {
 			cacheDir := config.CacheDir
 			if cacheDir == "" {
+				var err error
 				cacheDir, err = download.GetCacheDirectory("electron", "ELECTRON_CACHE", false)
 				if err != nil {
 					return err

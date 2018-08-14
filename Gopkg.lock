@@ -45,7 +45,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:f7c37b226b2215866d0db3f38d58b72835c1371f5eb233ae4fa7981f98852de5"
+  digest = "1:e43ee5d8c8b703968ea32c7e67d9cb0904f55816e1327ab5f6f375748be6af7c"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -83,8 +83,8 @@
     "service/sts",
   ]
   pruneopts = "NU"
-  revision = "123c8c8326730972861f45fe2e6e7b1d64b4d487"
-  version = "v1.15.1"
+  revision = "f831d5a0822a1ad72420ab18c6269bca1ddaf490"
+  version = "v1.15.11"
 
 [[projects]]
   branch = "master"
@@ -164,12 +164,12 @@
   revision = "0b12d6b5"
 
 [[projects]]
-  digest = "1:80d723d527a6527647a41ab2ed87fe42772ea2d1ae320b9289476f462f3ed784"
+  digest = "1:568ecf6a303dae99a5d98f4914b51f2c4370597c4470c8e04ef01518cb0f0aa3"
   name = "github.com/json-iterator/go"
   packages = ["."]
   pruneopts = "NU"
-  revision = "ab8a2e0c74be9d3be70b3184d9acc634935ded82"
-  version = "1.1.4"
+  revision = "1624edc4454b8682399def8740d46db5e4362ba4"
+  version = "1.1.5"
 
 [[projects]]
   branch = "master"
@@ -197,11 +197,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b12155a8fe969a299e38511095f0a19696275a7fa67ef57c75ea705144ddb838"
+  digest = "1:6e40eef6efa3f62764e2078653ccc9d8c0126571a99ce852c75504ef5b88062e"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
   pruneopts = "NU"
-  revision = "3864e76763d94a6df2f9960b16a20a33da9f9a66"
+  revision = "58046073cbffe2f25d425fe1331102f55cf719de"
 
 [[projects]]
   digest = "1:f66d87ce300a9e7b87bbfa1d4c89f65e1548b9872c5be28e3274f5f722cb4114"
@@ -329,7 +329,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:24bb1ce87ed06a789477ee49cbd0ed022a44405eb732596b309d0f97afeb602e"
+  digest = "1:b5a435c670a39e22d39c26341a78f2f40862defb2d189ea0c2d43d335f73f601"
   name = "golang.org/x/net"
   packages = [
     "html",
@@ -337,15 +337,15 @@
     "html/charset",
   ]
   pruneopts = "NU"
-  revision = "a0f8a16cb08c06df97cbdf9c47f4731ba548c33c"
+  revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
 
 [[projects]]
   branch = "master"
-  digest = "1:ce5fd73dae7255b9a7ca6e528c5503f28bbd46932eb5b77f00e81e6cd05b3d49"
+  digest = "1:e0272d4fe9222d738b6fdf2b0d871612cb4f1903d871fa7edf7f5ed52aa7a113"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "NU"
-  revision = "bd9dbc187b6e1dacfdd2722a87e83093c2d7bd6e"
+  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
 
 [[projects]]
   digest = "1:ab44f87f4f5044b3cf74aee65e3d8856b668f55ca6883d1a1ed7a4659d3dc071"
