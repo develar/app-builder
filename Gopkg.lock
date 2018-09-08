@@ -45,7 +45,7 @@
   version = "v1.0.0"
 
 [[projects]]
-  digest = "1:e43ee5d8c8b703968ea32c7e67d9cb0904f55816e1327ab5f6f375748be6af7c"
+  digest = "1:4a6260de400e3f6ab776efed32ccfcbf2905bebf530cce12f14438294242b9fe"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -83,8 +83,8 @@
     "service/sts",
   ]
   pruneopts = "NU"
-  revision = "f831d5a0822a1ad72420ab18c6269bca1ddaf490"
-  version = "v1.15.11"
+  revision = "56018901efd0b8084af1fb83b7e2604aba53f143"
+  version = "v1.15.31"
 
 [[projects]]
   branch = "master"
@@ -119,12 +119,12 @@
   revision = "047329c1d754d75c79c693f95778573ac3eebaee"
 
 [[projects]]
-  digest = "1:b4d0ce7f360015ab57fa478c3e28b5605894960fff721da8b75423ecaab97ead"
+  digest = "1:c8cda7be21e7fbe1b7c21657bee84d20c85414da9ccd7be2bb61a35333859bf0"
   name = "github.com/disintegration/imaging"
   packages = ["."]
   pruneopts = "NU"
-  revision = "bbcee2f5c9d5e94ca42c8b50ec847fec64a6c134"
-  version = "v1.4.2"
+  revision = "0bd5694c78c9c3d9a3cd06a706a8f3c59296a9ac"
+  version = "v1.5.0"
 
 [[projects]]
   branch = "master"
@@ -135,12 +135,12 @@
   revision = "9f541cc9db5d55bce703bd99987c9d5cb8eea45e"
 
 [[projects]]
-  digest = "1:3cd53db133fb6fd7a6c6996de5b7077baced5be6ef7c767d3700734a4edcb951"
+  digest = "1:1be7dafaadd6976a68b5f27bcab1e5b2a1ac3d6af017e74ddf250295d0515799"
   name = "github.com/go-ini/ini"
   packages = ["."]
   pruneopts = "NU"
-  revision = "358ee7663966325963d4e8b2e1fbd570c5195153"
-  version = "v1.38.1"
+  revision = "5cf292cae48347c2490ac1a58fe36735fb78df7e"
+  version = "v1.38.2"
 
 [[projects]]
   digest = "1:05c30842adeeae21984a43d8c988de0ed393b7e688650b9e1b0bf443d468b3c7"
@@ -196,12 +196,12 @@
   revision = "3f5f724cb5b182a5c278d6d3d55b40e7f8c2efb4"
 
 [[projects]]
-  branch = "master"
   digest = "1:6e40eef6efa3f62764e2078653ccc9d8c0126571a99ce852c75504ef5b88062e"
   name = "github.com/mitchellh/go-homedir"
   packages = ["."]
   pruneopts = "NU"
-  revision = "58046073cbffe2f25d425fe1331102f55cf719de"
+  revision = "ae18d6b8b3205b561c79e8e5f69bff09736185f4"
+  version = "v1.0.0"
 
 [[projects]]
   digest = "1:f66d87ce300a9e7b87bbfa1d4c89f65e1548b9872c5be28e3274f5f722cb4114"
@@ -281,7 +281,7 @@
   name = "github.com/phayes/permbits"
   packages = ["."]
   pruneopts = "NU"
-  revision = "529f712b661aa1075f21a3d7380f3a998556c1a2"
+  revision = "59f2482cd4603d9795e7b2385448d5d7f42fdeee"
 
 [[projects]]
   digest = "1:5da5dc86bcd23e94befc0048ccd757fc1706ebd3aa6c0ca9575d8b9def1b8f26"
@@ -329,7 +329,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:b5a435c670a39e22d39c26341a78f2f40862defb2d189ea0c2d43d335f73f601"
+  digest = "1:0632b934bd1d31d42deb89fd7d3511314363fc678a1ed7994d83812b5e0d0e40"
   name = "golang.org/x/net"
   packages = [
     "html",
@@ -337,15 +337,15 @@
     "html/charset",
   ]
   pruneopts = "NU"
-  revision = "c39426892332e1bb5ec0a434a079bf82f5d30c54"
+  revision = "161cd47e91fd58ac17490ef4d742dc98bb4cf60e"
 
 [[projects]]
   branch = "master"
-  digest = "1:e0272d4fe9222d738b6fdf2b0d871612cb4f1903d871fa7edf7f5ed52aa7a113"
+  digest = "1:f0c71300e54b39ebed593d3ba338d30ada453ba14ab71f03585d1002ef9199ab"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "NU"
-  revision = "98c5dad5d1a0e8a73845ecc8897d0bd56586511d"
+  revision = "917fdcba135dcbaccd57425db91723541b4427c8"
 
 [[projects]]
   digest = "1:ab44f87f4f5044b3cf74aee65e3d8856b668f55ca6883d1a1ed7a4659d3dc071"

@@ -8,7 +8,6 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/archive/zipx"
-	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/go-fs-util"
 	"github.com/json-iterator/go"
@@ -55,11 +54,8 @@ func unpackElectron(configs []ElectronDownloadOptions, outputDir string, distMac
 	}
 
 	excludedFiles := make(map[string]bool)
-	if download.GetCurrentOs() == download.MAC {
-		excludedFiles[filepath.Join(outputDir, distMacOsAppName, "Contents", "Resources", "default_app.asar")] = true
-	} else {
-		excludedFiles[filepath.Join(outputDir, "resources", "default_app.asar")] = true
-	}
+	excludedFiles[filepath.Join(outputDir, distMacOsAppName, "Contents", "Resources", "default_app.asar")] = true
+	excludedFiles[filepath.Join(outputDir, "resources", "default_app.asar")] = true
 	excludedFiles[filepath.Join(outputDir, "version")] = true
 
 	err = zipx.Unzip(<-cachedElectronZip, outputDir, excludedFiles)
