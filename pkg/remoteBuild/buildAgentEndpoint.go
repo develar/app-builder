@@ -50,6 +50,10 @@ func findBuildAgent(transport *http.Transport) (string, error) {
 func getBuildAgentEndpoint(client *http.Client, url string) (string, error) {
 	response, err := client.Get(url)
 
+	if err != nil {
+		return "", err
+	}
+
 	if response.Body != nil {
 		defer response.Body.Close()
 	}
@@ -58,10 +62,6 @@ func getBuildAgentEndpoint(client *http.Client, url string) (string, error) {
 		if response.StatusCode != http.StatusOK {
 			err = fmt.Errorf("cannot get %s: http error %d", url, response.StatusCode)
 		}
-	}
-
-	if err != nil {
-		return "", err
 	}
 
 	bodyBytes, err := ioutil.ReadAll(response.Body)
