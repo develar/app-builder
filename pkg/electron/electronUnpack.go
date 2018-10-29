@@ -3,6 +3,7 @@ package electron
 import (
 	"archive/zip"
 	"io"
+	"os"
 	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
@@ -58,11 +59,17 @@ func unpackElectron(configs []ElectronDownloadOptions, outputDir string, distMac
 	excludedFiles[filepath.Join(outputDir, "resources", "default_app.asar")] = true
 	excludedFiles[filepath.Join(outputDir, "version")] = true
 
-	err = zipx.Unzip(<-cachedElectronZip, outputDir, excludedFiles)
+	zipFile := <-cachedElectronZip
+	err = zipx.Unzip(zipFile, outputDir, excludedFiles)
 	if err != nil {
 		if isReDownloadOnFileReadError && (err == zip.ErrFormat || err == io.ErrUnexpectedEOF) {
 			log.WithError(err).Warn("cannot unpack electron zip file, will be re-downloaded")
 			// not just download and unzip, but full - including clearing of output dir
+			err = os.Remove(zipFile)
+			if err != nil && !os.IsNotExist(err) {
+				log.WithError(err).WithField("file", zipFile).Warn("cannot delete")
+			}
+
 			return unpackElectron(configs, outputDir, distMacOsAppName, false)
 		} else {
 			return err
