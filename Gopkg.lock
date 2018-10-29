@@ -45,7 +45,7 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:ea4665268a3c3c5ecd8915c4a75c7d02c3d0a7e5242bcb5c193006b1a3137358"
+  digest = "1:dcc7415e1c7abed4ede7ac9aabf30abb5603177f074bb857c5f40dd28a6cc904"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -85,8 +85,8 @@
     "service/sts",
   ]
   pruneopts = "NU"
-  revision = "f76d9803fd695eebf74cb23c460287fa496efc21"
-  version = "v1.15.63"
+  revision = "34ab03ee1a2b90b3baf97ff666397c8fb9b8714b"
+  version = "v1.15.64"
 
 [[projects]]
   branch = "master"
@@ -286,12 +286,12 @@
   version = "v0.8.0"
 
 [[projects]]
-  digest = "1:09e8cc817e5cea53bc9452ca4ae27d3273bda8a9dde45d8f2b7aac5d05f6e04c"
+  digest = "1:62b0bd20e81944edfee8a5079dc738722202c318cf46cb218815e6e03f358758"
   name = "github.com/pkg/xattr"
   packages = ["."]
   pruneopts = "NU"
-  revision = "ae385d07bb53f092fcc7daaf738d8513df084931"
-  version = "v0.3.1"
+  revision = "503a7f60d699aeb59d42eefed0c64df14335b13f"
+  version = "v0.4.0"
 
 [[projects]]
   digest = "1:eb23748e8079e4c68f15e390071bf548b29da0c0e00d3714a94281b225c0a64c"
@@ -331,15 +331,15 @@
     "html/charset",
   ]
   pruneopts = "NU"
-  revision = "9b4f9f5ad5197c79fd623a3638e70d8b26cef344"
+  revision = "c44066c5c816ec500d459a2a324a753f78531ae0"
 
 [[projects]]
   branch = "master"
-  digest = "1:22d6dea67139c5fa252c14872893d5a4be67ad8632f9161e0ec6ea60a72b2d42"
+  digest = "1:f21abe18566075b1ed13bc1f22c9d4314f4ded5d757c1b1de2645bb18ec57a19"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "NU"
-  revision = "d989b31c87461dc8ab2f1cac6792814e27fadea9"
+  revision = "95b1ffbd15a57cc5abb3f04402b9e8ec0016a52c"
 
 [[projects]]
   digest = "1:ab44f87f4f5044b3cf74aee65e3d8856b668f55ca6883d1a1ed7a4659d3dc071"
