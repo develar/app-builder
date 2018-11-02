@@ -5,7 +5,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+	"syscall"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/develar/app-builder/pkg/fs"
@@ -37,11 +39,11 @@ func ConfigureUnzipCommand(app *kingpin.Application) {
 }
 
 // limit write, cpu count can be larger but IO in any case cannot handle a lot of write requests
-const concurrency = 8
+const concurrency = 4
 
 // https://github.com/mholt/archiver/issues/21
-// dest should be an empty dir
-func Unzip(src string, dest string, excludedFiles map[string]bool) error {
+// dest must be an empty dir
+func Unzip(src string, outputDir string, excludedFiles map[string]bool) error {
 	if len(src) == 0 {
 		return errors.New("input zip file name is empty")
 	}
@@ -55,12 +57,14 @@ func Unzip(src string, dest string, excludedFiles map[string]bool) error {
 	defer util.Close(r)
 
 	extractor := &Extractor{
-		outputDir:     dest,
+		outputDir:     filepath.Clean(outputDir),
 		excludedFiles: excludedFiles,
 
 		createdDirs: make(map[string]bool),
 		bufferPool:  bpool.NewBytePool(concurrency, 32*1024),
 	}
+
+	extractor.createdDirs[extractor.outputDir] = true
 
 	// create dirs first (not async)
 	for _, zipFile := range r.File {
@@ -68,7 +72,7 @@ func Unzip(src string, dest string, excludedFiles map[string]bool) error {
 			continue
 		}
 
-		err := extractor.extractDir(zipFile, dest)
+		err := extractor.extractDir(zipFile)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -89,21 +93,11 @@ func Unzip(src string, dest string, excludedFiles map[string]bool) error {
 		return errors.WithStack(err)
 	}
 
-	// create symlinks
-	if extractor.links != nil {
-		err = fs.CreateLinks(extractor.links)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		extractor.links = nil
-	}
-
 	return nil
 }
 
 type Extractor struct {
 	mutex sync.RWMutex
-	links []fs.LinkInfo
 
 	outputDir     string
 	excludedFiles map[string]bool
@@ -122,37 +116,126 @@ func (t *Extractor) createDirIfNeed(dirPath string) error {
 		return nil
 	}
 
+	t.mutex.Lock()
+	defer t.mutex.Unlock()
+
+	isDirCreated = t.createdDirs[dirPath]
+	if isDirCreated {
+		return nil
+	}
+
 	err := os.MkdirAll(dirPath, 0777)
 	if err != nil {
 		return err
 	}
 
-	t.mutex.Lock()
-	t.createdDirs[dirPath] = true
-	t.mutex.Unlock()
+	t.addWithParentsToCreated(dirPath)
 
 	return nil
 }
 
-func (t *Extractor) extractDir(zipFile *zip.File, dest string) error {
-	if zipFile.FileInfo().IsDir() {
-		filePath := filepath.Join(dest, zipFile.Name)
-		err := os.MkdirAll(filePath, 0777)
-		if err != nil {
-			return err
+// check t.createdDirs before create parent dir
+func (t *Extractor) MkdirAll(path string, perm os.FileMode) error {
+	// fast path: if we can tell whether path is a directory or file, stop with success or error.
+	dir, err := os.Stat(path)
+	if err == nil {
+		if dir.IsDir() {
+			return nil
 		}
-		err = fs.SetDirPermsIfNeed(filePath, zipFile.Mode())
-		if err != nil {
-			return err
+		return &os.PathError{Op: "mkdir", Path: path, Err: syscall.ENOTDIR}
+	}
+
+	// avoid string comparison: dir == t.outputDir, since dir is already checked to has prefix, length check is enough
+	minLength := len(t.outputDir)
+
+	// slow path: make sure parent exists and then call Mkdir for path.
+	i := len(path)
+	for i > minLength && !os.IsPathSeparator(path[i-1]) {
+		i--
+	}
+
+	if i > minLength {
+		// create parent
+		parentPath := path[:i-1]
+		_, isDirCreated := t.createdDirs[parentPath]
+		if !isDirCreated {
+			err = t.MkdirAll(parentPath, perm)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// parent now exists
+	err = os.Mkdir(path, perm)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
+func (t *Extractor) addWithParentsToCreated(dir string)  {
+	// avoid string comparison: dir == t.outputDir, since dir is already checked to has prefix, length check is enough
+	minLength := len(t.outputDir)
+	for {
+		t.createdDirs[dir] = true
+
+		i := len(dir)
+		for i > minLength && !os.IsPathSeparator(dir[i-1]) {
+			i--
 		}
 
-		t.createdDirs[filePath] = true
+		if i <= minLength {
+			break
+		}
+
+		dir = dir[:i-1]
+		_, isDirCreated := t.createdDirs[dir]
+		if isDirCreated {
+			break
+		}
 	}
+}
+
+func (t *Extractor) sanitizeExtractPath(filePath string) error {
+	if strings.HasPrefix(filePath, t.outputDir) {
+		return nil
+	} else {
+		return errors.Errorf("%s: illegal file path", filePath)
+	}
+}
+
+
+func (t *Extractor) extractDir(zipFile *zip.File) error {
+	filePath := filepath.Join(t.outputDir, zipFile.Name)
+
+	err := t.sanitizeExtractPath(filePath)
+	if err != nil {
+		return err
+	}
+
+	err = os.MkdirAll(filePath, 0777)
+	if err != nil {
+		return err
+	}
+
+	err = fs.SetDirPermsIfNeed(filePath, zipFile.Mode())
+	if err != nil {
+		return err
+	}
+
+	t.addWithParentsToCreated(filePath)
 	return nil
 }
 
 func (t *Extractor) extractAndWriteFile(zipFile *zip.File) error {
 	filePath := filepath.Join(t.outputDir, zipFile.Name)
+	err := t.sanitizeExtractPath(filePath)
+	if err != nil {
+		return err
+	}
 
 	if t.excludedFiles != nil {
 		_, isExcluded := t.excludedFiles[filePath]
@@ -173,7 +256,7 @@ func (t *Extractor) extractAndWriteFile(zipFile *zip.File) error {
 		return err
 	}
 
-	if zipFile.FileInfo().Mode()&os.ModeSymlink != 0 {
+	if (zipFile.FileInfo().Mode() & os.ModeSymlink) != 0 {
 		return t.createSymlink(file, zipFile, filePath)
 	}
 
@@ -193,10 +276,5 @@ func (t *Extractor) createSymlink(reader io.ReadCloser, zipFile *zip.File, fileP
 		return err
 	}
 
-	// symlink cannot be created during copy because symlink can point to not yet copied target file
-	t.links = append(t.links, fs.LinkInfo{
-		File: filePath,
-		Link: string(buffer),
-	})
-	return nil
+	return os.Symlink(string(buffer), filePath)
 }

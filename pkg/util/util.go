@@ -1,7 +1,6 @@
 package util
 
 import (
-	"github.com/json-iterator/go"
 	"io"
 	"os"
 	"os/exec"
@@ -9,6 +8,7 @@ import (
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
 	"github.com/develar/errors"
+	"github.com/json-iterator/go"
 )
 
 func ConfigureIsRemoveStageParam(command *kingpin.CmdClause) *bool {

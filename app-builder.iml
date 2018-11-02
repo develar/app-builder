@@ -12,7 +12,6 @@
       <excludeFolder url="file://$MODULE_DIR$/app-builder-bin/win/x64" />
       <excludeFolder url="file://$MODULE_DIR$/dist" />
     </content>
-    <content url="file://$MODULE_DIR$/vendor/github.com/develar/go-keychain" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

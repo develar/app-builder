@@ -6,20 +6,12 @@ import (
 	"runtime"
 
 	"github.com/apex/log"
-	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 )
 
 type FileCopier struct {
 	IsUseHardLinks bool
-
-	links []LinkInfo
-}
-
-type LinkInfo struct {
-	File string
-	Link string
 }
 
 // go doesn't provide native copy operation (CoW)
@@ -69,29 +61,7 @@ func (t *FileCopier) CopyDirOrFile(from string, to string) error {
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	if t.links != nil {
-		err = CreateLinks(t.links)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-		t.links = nil
-	}
-
 	return nil
-}
-
-func CreateLinks(links []LinkInfo) error {
-	return util.MapAsync(len(links), func(taskIndex int) (func() error, error) {
-		linkInfo := links[taskIndex]
-		return func() error {
-			err := os.Symlink(linkInfo.Link, linkInfo.File)
-			if err != nil {
-				return err
-			}
-			return nil
-		}, nil
-	})
 }
 
 func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bool) error {
@@ -118,11 +88,20 @@ func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bo
 		}
 
 		return t.copyDir(from, to)
-	} else if fromInfo.Mode()&os.ModeSymlink != 0 {
-		return t.copySymlink(from, to)
 	}
 
-	return t.CopyFile(from, to, isCreateParentDirs, fromInfo)
+	if isCreateParentDirs {
+		err := fsutil.EnsureDir(filepath.Dir(to))
+		if err != nil {
+			return err
+		}
+	}
+
+	if (fromInfo.Mode() & os.ModeSymlink) != 0 {
+		return t.createSymlink(from, to)
+	} else {
+		return t.CopyFile(from, to, isCreateParentDirs, fromInfo)
+	}
 }
 
 func SetDirPermsIfNeed(dir string, mode os.FileMode) error {
@@ -147,17 +126,10 @@ func (t *FileCopier) CopyFile(from string, to string, isCreateParentDirs bool, f
 		log.WithError(err).WithField("from", from).WithField("to", to).Debug("cannot copy using hard link")
 	}
 
-	if isCreateParentDirs {
-		err := fsutil.EnsureDir(filepath.Dir(to))
-		if err != nil {
-			return err
-		}
-	}
 	return fsutil.CopyFile(from, to, fromInfo)
 }
 
-// symlink cannot be created during copy because symlink can point to not yet copied target file
-func (t *FileCopier) copySymlink(from string, to string) error {
+func (t *FileCopier) createSymlink(from string, to string) error {
 	link, err := os.Readlink(from)
 	if err != nil {
 		return errors.WithStack(err)
@@ -170,10 +142,10 @@ func (t *FileCopier) copySymlink(from string, to string) error {
 		}
 	}
 
-	t.links = append(t.links, LinkInfo{
-		File: to,
-		Link: link,
-	})
+	err = os.Symlink(link, to)
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
 	return nil
 }
