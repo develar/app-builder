@@ -1,6 +1,6 @@
 // +build darwin
 
-package codesign
+package macOsKeychain
 
 import (
 	"fmt"
