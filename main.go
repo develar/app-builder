@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -9,10 +8,10 @@ import (
 	"sync"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/appimage"
 	"github.com/develar/app-builder/pkg/archive/zipx"
 	"github.com/develar/app-builder/pkg/blockmap"
+	"github.com/develar/app-builder/pkg/codesign"
 	"github.com/develar/app-builder/pkg/dmg"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/electron"
@@ -30,12 +29,7 @@ import (
 )
 
 var (
-	app = kingpin.New("app-builder", "app-builder").Version("2.3.1")
-
-	buildBlockMap            = app.Command("blockmap", "Generates file block map for differential update using content defined chunking (that is robust to insertions, deletions, and changes to input file)")
-	buildBlockMapInFile      = buildBlockMap.Flag("input", "input file").Short('i').Required().String()
-	buildBlockMapOutFile     = buildBlockMap.Flag("output", "output file").Short('o').String()
-	buildBlockMapCompression = buildBlockMap.Flag("compression", "compression, one of: gzip, deflate").Short('c').Default("gzip").Enum("gzip", "deflate")
+	app = kingpin.New("app-builder", "app-builder").Version("2.4.1")
 )
 
 func main() {
@@ -70,24 +64,12 @@ func main() {
 	icons.ConfigureCommand(app)
 	dmg.ConfigureCommand(app)
 	elfExecStack.ConfigureCommand(app)
+	blockmap.ConfigureCommand(app)
+	codesign.ConfigureCertificateInfoCommand(app)
 
-	command, err := app.Parse(os.Args[1:])
+	_, err := app.Parse(os.Args[1:])
 	if err != nil {
 		util.LogErrorAndExit(err)
-	}
-
-	switch command {
-	case buildBlockMap.FullCommand():
-		err := doBuildBlockMap()
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
-
-	case buildBlockMap.FullCommand():
-		err := doBuildBlockMap()
-		if err != nil {
-			log.Fatalf("%+v\n", err)
-		}
 	}
 }
 
@@ -131,12 +113,12 @@ func compress() error {
 	go func() {
 		defer waitGroup.Done()
 		defer util.Close(stdin)
-		io.Copy(stdin, os.Stdin)
+		_, _ = io.Copy(stdin, os.Stdin)
 	}()
 
 	go func() {
 		defer waitGroup.Done()
-		io.Copy(os.Stdout, stdout)
+		_, _ = io.Copy(os.Stdout, stdout)
 	}()
 
 	waitGroup.Wait()
@@ -146,25 +128,6 @@ func compress() error {
 	}
 
 	return nil
-}
-
-func doBuildBlockMap() error {
-	var compressionFormat blockmap.CompressionFormat
-	switch *buildBlockMapCompression {
-	case "gzip":
-		compressionFormat = blockmap.GZIP
-	case "deflate":
-		compressionFormat = blockmap.DEFLATE
-	default:
-		return fmt.Errorf("unknown compression format %s", *buildBlockMapCompression)
-	}
-
-	inputInfo, err := blockmap.BuildBlockMap(*buildBlockMapInFile, blockmap.DefaultChunkerConfiguration, compressionFormat, *buildBlockMapOutFile)
-	if err != nil {
-		return err
-	}
-
-	return util.WriteJsonToStdOut(inputInfo)
 }
 
 func configurePrefetchToolsCommand(app *kingpin.Application) {

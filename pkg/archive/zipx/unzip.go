@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"syscall"
 
 	"github.com/alecthomas/kingpin"
@@ -61,32 +60,48 @@ func Unzip(src string, outputDir string, excludedFiles map[string]bool) error {
 		excludedFiles: excludedFiles,
 
 		createdDirs: make(map[string]bool),
-		bufferPool:  bpool.NewBytePool(concurrency, 32*1024),
+		bufferPool:  bpool.NewBytePool(concurrency, 64*1024),
 	}
 
 	extractor.createdDirs[extractor.outputDir] = true
 
-	// create dirs first (not async)
-	for _, zipFile := range r.File {
-		if !zipFile.FileInfo().IsDir() {
-			continue
-		}
-
-		err := extractor.extractDir(zipFile)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
+	lastCreatedDir := ""
 	// create files async
 	err = util.MapAsyncConcurrency(len(r.File), concurrency, func(taskIndex int) (func() error, error) {
 		zipFile := r.File[taskIndex]
 		if zipFile.FileInfo().IsDir() {
+			// create dir (not async)
+			err := extractor.extractDir(zipFile)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
 			return nil, nil
 		}
 
+		filePath, err := extractor.computeExtractPath(zipFile)
+		if err != nil {
+			return nil, errors.WithStack(err)
+		}
+
+		if extractor.excludedFiles != nil {
+			_, isExcluded := extractor.excludedFiles[filePath]
+			if isExcluded {
+				return nil, nil
+			}
+		}
+
+		fileDir := filepath.Dir(filePath)
+		if fileDir != lastCreatedDir {
+			err = extractor.createDirIfNeed(fileDir)
+			if err != nil {
+				return nil, errors.WithStack(err)
+			}
+
+			lastCreatedDir = fileDir
+		}
+
 		return func() error {
-			return extractor.extractAndWriteFile(zipFile)
+			return extractor.extractAndWriteFile(zipFile, filePath)
 		}, nil
 	})
 	if err != nil {
@@ -97,8 +112,6 @@ func Unzip(src string, outputDir string, excludedFiles map[string]bool) error {
 }
 
 type Extractor struct {
-	mutex sync.RWMutex
-
 	outputDir     string
 	excludedFiles map[string]bool
 
@@ -107,19 +120,7 @@ type Extractor struct {
 }
 
 func (t *Extractor) createDirIfNeed(dirPath string) error {
-	isDirCreated := false
-	t.mutex.RLock()
-	_, isDirCreated = t.createdDirs[dirPath]
-	t.mutex.RUnlock()
-
-	if isDirCreated {
-		return nil
-	}
-
-	t.mutex.Lock()
-	defer t.mutex.Unlock()
-
-	isDirCreated = t.createdDirs[dirPath]
+	_, isDirCreated := t.createdDirs[dirPath]
 	if isDirCreated {
 		return nil
 	}
@@ -130,7 +131,6 @@ func (t *Extractor) createDirIfNeed(dirPath string) error {
 	}
 
 	t.addWithParentsToCreated(dirPath)
-
 	return nil
 }
 
@@ -175,7 +175,6 @@ func (t *Extractor) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
 
-
 func (t *Extractor) addWithParentsToCreated(dir string)  {
 	// avoid string comparison: dir == t.outputDir, since dir is already checked to has prefix, length check is enough
 	minLength := len(t.outputDir)
@@ -199,19 +198,17 @@ func (t *Extractor) addWithParentsToCreated(dir string)  {
 	}
 }
 
-func (t *Extractor) sanitizeExtractPath(filePath string) error {
+func (t *Extractor) computeExtractPath(zipFile *zip.File) (string, error) {
+	filePath := filepath.Join(t.outputDir, zipFile.Name)
 	if strings.HasPrefix(filePath, t.outputDir) {
-		return nil
+		return filePath, nil
 	} else {
-		return errors.Errorf("%s: illegal file path", filePath)
+		return "", errors.Errorf("%s: illegal file path", filePath)
 	}
 }
 
-
 func (t *Extractor) extractDir(zipFile *zip.File) error {
-	filePath := filepath.Join(t.outputDir, zipFile.Name)
-
-	err := t.sanitizeExtractPath(filePath)
+	filePath, err := t.computeExtractPath(zipFile)
 	if err != nil {
 		return err
 	}
@@ -230,31 +227,13 @@ func (t *Extractor) extractDir(zipFile *zip.File) error {
 	return nil
 }
 
-func (t *Extractor) extractAndWriteFile(zipFile *zip.File) error {
-	filePath := filepath.Join(t.outputDir, zipFile.Name)
-	err := t.sanitizeExtractPath(filePath)
-	if err != nil {
-		return err
-	}
-
-	if t.excludedFiles != nil {
-		_, isExcluded := t.excludedFiles[filePath]
-		if isExcluded {
-			return nil
-		}
-	}
-
+func (t *Extractor) extractAndWriteFile(zipFile *zip.File, filePath string) error {
 	file, err := zipFile.Open()
 	if err != nil {
 		return err
 	}
 
 	defer util.Close(file)
-
-	err = t.createDirIfNeed(filepath.Dir(filePath))
-	if err != nil {
-		return err
-	}
 
 	if (zipFile.FileInfo().Mode() & os.ModeSymlink) != 0 {
 		return t.createSymlink(file, zipFile, filePath)
