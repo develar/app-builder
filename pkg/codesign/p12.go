@@ -12,8 +12,8 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/develar/errors"
+	"github.com/develar/go-pkcs12"
 	"github.com/json-iterator/go"
-	"github.com/lotus-wu/go-pkcs12"
 )
 
 func ConfigureCertificateInfoCommand(app *kingpin.Application) {
@@ -34,7 +34,7 @@ func readInfo(inFile string, password string) error {
 
 	jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 16*1024)
 
-	_, certificates, err := pkcs12.DecodeAll(data, password)
+	certificates, err := pkcs12.DecodeAllCerts(data, password)
 	if err != nil {
 		jsonWriter.WriteObjectStart()
 		jsonWriter.WriteObjectField("error")

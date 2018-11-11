@@ -1,5 +1,7 @@
 GOPATH = $(CURDIR)/vendor
 
+# ln -fs ~/go/src/github.com/develar/go-pkcs12 ~/go/src/github.com/develar/app-builder/vendor/github.com/develar/go-pkcs12
+
 .PHONY: lint build publish
 
 # vetshadow is disabled because of err (https://groups.google.com/forum/#!topic/golang-nuts/ObtoxsN7AWg)

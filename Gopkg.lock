@@ -45,7 +45,7 @@
   version = "v1.1.0"
 
 [[projects]]
-  digest = "1:364e1b2af97fe71c102161d88e9dab6a8c4c484cc17a0e6caa55735ad22142e9"
+  digest = "1:657773680bad0610a2153c38df7d0640f3161e53a824ca1be0b362a7f3dc622c"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -85,8 +85,8 @@
     "service/sts",
   ]
   pruneopts = "NU"
-  revision = "65d3a00e127da62728a742722df4258ae4206ffc"
-  version = "v1.15.72"
+  revision = "cf00ea20983ce38df17ab0a0814463ab8838459f"
+  version = "v1.15.73"
 
 [[projects]]
   branch = "master"
@@ -121,6 +121,14 @@
   revision = "047329c1d754d75c79c693f95778573ac3eebaee"
 
 [[projects]]
+  branch = "master"
+  digest = "1:b4e13e0484de275e824f611b5f6c88f024eec345204f6ad39ed869a4e83f0dbd"
+  name = "github.com/develar/go-pkcs12"
+  packages = ["."]
+  pruneopts = "NU"
+  revision = "79628bc5218d71cbf6e4e895d9245ecb2eec4c43"
+
+[[projects]]
   digest = "1:c8cda7be21e7fbe1b7c21657bee84d20c85414da9ccd7be2bb61a35333859bf0"
   name = "github.com/disintegration/imaging"
   packages = ["."]
@@ -135,6 +143,14 @@
   pruneopts = "NU"
   revision = "9f541cc9db5d55bce703bd99987c9d5cb8eea45e"
   version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:436a9df335572342ccf8fdd8a06e083eac879f9392794c77e03a2ceb6dfbb097"
+  name = "github.com/geoffgarside/ber"
+  packages = ["."]
+  pruneopts = "NU"
+  revision = "27a1aff36ce64dbe5d93c08cc5f161983134ddc5"
 
 [[projects]]
   digest = "1:05c30842adeeae21984a43d8c988de0ed393b7e688650b9e1b0bf443d468b3c7"
@@ -172,14 +188,6 @@
   packages = ["."]
   pruneopts = "NU"
   revision = "e2ba15ffa76e4db3c90ae9e7c4b1c32a411207a4"
-
-[[projects]]
-  branch = "master"
-  digest = "1:c0b758882b837509cb5539b7d30bf182373a82714055f520a3402f1c9d75d3b0"
-  name = "github.com/lotus-wu/go-pkcs12"
-  packages = ["."]
-  pruneopts = "NU"
-  revision = "7bf8d41fca19a4e76da88bce08d2bc7c5207f23d"
 
 [[projects]]
   branch = "master"
@@ -327,7 +335,7 @@
     "tiff/lzw",
   ]
   pruneopts = "NU"
-  revision = "aa35264064ba97668fab8736503e428bde0b656c"
+  revision = "249dc8530c0efc2766606a940c1c50b434b2f1cd"
 
 [[projects]]
   branch = "master"
@@ -416,10 +424,10 @@
     "github.com/develar/errors",
     "github.com/develar/go-fs-util",
     "github.com/develar/go-keychain",
+    "github.com/develar/go-pkcs12",
     "github.com/disintegration/imaging",
     "github.com/dustin/go-humanize",
     "github.com/json-iterator/go",
-    "github.com/lotus-wu/go-pkcs12",
     "github.com/mcuadros/go-version",
     "github.com/minio/blake2b-simd",
     "github.com/mitchellh/go-homedir",
