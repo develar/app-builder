@@ -199,7 +199,7 @@ func (t *RemoteBuilder) upload(buildRequest string, filesToPack []string, buildR
 		}
 	}
 
-	tarCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), tarArgs...)
+	tarCommand := exec.Command(util.Get7zPath(), tarArgs...)
 
 	tarCommand.Stderr = os.Stderr
 	tarOutput, err := tarCommand.StdoutPipe()

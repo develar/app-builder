@@ -1,7 +1,6 @@
 package icons
 
 import (
-	"fmt"
 	"image"
 	"path/filepath"
 	"strings"
@@ -18,13 +17,17 @@ import (
 func ConfigureCommand(app *kingpin.Application) {
 	command := app.Command("icon", "create ICNS or ICO or icon set from PNG files")
 
-	sources := command.Flag("input", "input directory or file").Short('i').Required().Strings()
+	// first is used as is and file ext can be missed,
+	// then common sources added,
+	sources := command.Flag("input", "input directory or file").Short('i').Strings()
+	// then fallback sources
+	fallbackSources := command.Flag("fallback-input", "input directory or file").Strings()
 	iconOutFormat := command.Flag("format", "output format").Short('f').Required().Enum("icns", "ico", "set")
 	outDir := command.Flag("out", "output directory").Required().String()
 	iconRoots := command.Flag("root", "base directory to resolve relative path").Short('r').Strings()
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		icons, err := ConvertIcon(*sources, *iconRoots, *iconOutFormat, *outDir)
+		icons, err := ConvertIcon(createCommonIconSources(*sources, *fallbackSources, *iconOutFormat), *iconRoots, *iconOutFormat, *outDir)
 		if err != nil {
 			switch t := errors.Cause(err).(type) {
 			case *ImageSizeError:
@@ -42,6 +45,55 @@ func ConfigureCommand(app *kingpin.Application) {
 
 		return util.WriteJsonToStdOut(IconConvertResult{Icons: icons})
 	})
+}
+
+func isFileHasImageFormatExtension(name string, outputFormat string) bool {
+	return strings.HasSuffix(name, "."+outputFormat) || strings.HasSuffix(name, ".png") || strings.HasSuffix(name, ".ico") || strings.HasSuffix(name, ".svg") || strings.HasSuffix(name, ".icns")
+}
+
+func createCommonIconSources(sources []string, fallbackSources []string, outputFormat string) []string {
+	var list []string
+
+	if len(sources) != 0 {
+		source := sources[0]
+		// do not use filepath.Ext to ensure that dot can be used in filename
+		if outputFormat != "set" && !isFileHasImageFormatExtension(source, outputFormat) {
+			list = append(list, source+"."+outputFormat)
+			appendImageVariants(source, outputFormat, list)
+		} else {
+			list = append(list, source)
+		}
+	}
+
+	if outputFormat != "set" {
+		list = append(list, "icon." + outputFormat)
+	}
+
+	list = append(list, "icons")
+
+	list = appendImageVariants("icon", outputFormat, list)
+
+	if sources != nil && len(sources) > 1 {
+		list = append(list, sources[1:]...)
+	}
+	if fallbackSources != nil && len(fallbackSources) > 0 {
+		list = append(list, fallbackSources...)
+	}
+	return list
+}
+
+func appendImageVariants(name string, outputFormat string, list []string) []string {
+	if outputFormat != "png" {
+		list = append(list, name + ".png")
+	}
+	if outputFormat != "icns" {
+		list = append(list, name + ".icns")
+		// ico only for non icns
+		if outputFormat != "ico" {
+			list = append(list, name+".ico")
+		}
+	}
+	return list
 }
 
 func writeUserError(error util.MessageError) error {
@@ -84,7 +136,7 @@ func outputFormatToSingleFileExtension(outputFormat string) string {
 func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outDir string) ([]IconInfo, error) {
 	// allowed to specify path to icns without extension, so, if file not resolved, try to add ".icns" extension
 	outExt := outputFormatToSingleFileExtension(outputFormat)
-	resolvedPath, fileInfo, err := resolveSourceFile(sourceFiles, roots, outExt)
+	resolvedPath, fileInfo, err := resolveSourceFile(sourceFiles, roots)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
@@ -154,12 +206,21 @@ func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outD
 		inputInfo.MaxIconPath = maxIcon.File
 		inputInfo.MaxIconSize = maxIcon.Size
 	} else {
-		if outputFormat == "set" && strings.HasSuffix(resolvedPath, ".icns") {
-			result, err := ConvertIcnsToPng(resolvedPath, outDir)
-			if err != nil {
-				return nil, errors.WithStack(err)
+		if outputFormat == "set" {
+			if strings.HasSuffix(resolvedPath, ".icns") {
+				result, err := ConvertIcnsToPng(resolvedPath, outDir)
+				if err != nil {
+					return nil, errors.WithStack(err)
+				}
+				return result, nil
+			} else if strings.HasSuffix(resolvedPath, ".svg") {
+				return []IconInfo{
+					{
+						File: resolvedPath,
+						Size: 1024,
+					},
+				}, nil
 			}
-			return result, nil
 		}
 
 		err = configureInputInfoFromSingleFile(resolvedPath, isOutputFormatIco, &inputInfo)
@@ -245,11 +306,17 @@ func convertSingleFile(inputInfo *InputFileInfo, outFile string, outputFormat st
 		return []IconInfo{{File: outFile}}, nil
 
 	default:
-		return nil, fmt.Errorf("unknown output format %s", outputFormat)
+		return nil, errors.Errorf("unknown output format %s", outputFormat)
 	}
 }
 
 func configureInputInfoFromSingleFile(file string, isOutputFormatIco bool, inputInfo *InputFileInfo) error {
+	if strings.HasSuffix(file, ".svg") {
+		inputInfo.MaxIconSize = 1024
+		inputInfo.SizeToPath[inputInfo.MaxIconSize] = file
+		return nil
+	}
+
 	maxImage, err := loadImage(file, inputInfo.recommendedMinSize)
 	if err != nil {
 		return errors.WithStack(err)

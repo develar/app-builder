@@ -143,7 +143,7 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 				command.Env = env
 			}
 
-			err = util.Execute(command, "")
+			_, err = util.Execute(command, "")
 			if err != nil {
 				return errors.WithStack(err)
 			}

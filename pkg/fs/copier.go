@@ -126,7 +126,7 @@ func (t *FileCopier) CopyFile(from string, to string, isCreateParentDirs bool, f
 		log.WithError(err).WithField("from", from).WithField("to", to).Debug("cannot copy using hard link")
 	}
 
-	return fsutil.CopyFile(from, to, fromInfo)
+	return fsutil.CopyFile(from, to, fromInfo.Mode())
 }
 
 func (t *FileCopier) createSymlink(from string, to string) error {

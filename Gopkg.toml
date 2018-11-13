@@ -1,7 +1,0 @@
-[prune]
-  non-go = true
-  unused-packages = true
-
-[[override]]
-  name = "gopkg.in/fsnotify.v1"
-  source = "gopkg.in/fsnotify/fsnotify.v1"

@@ -4,12 +4,13 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 )
 
 func DownloadFpm() (string, error) {
-	currentOs := GetCurrentOs()
-	if currentOs == LINUX {
+	currentOs := util.GetCurrentOs()
+	if currentOs == util.LINUX {
 		var checksum string
 		var archSuffix string
 		if runtime.GOARCH == "amd64" {
@@ -31,20 +32,16 @@ func DownloadFpm() (string, error) {
 		)
 	} else {
 		//noinspection SpellCheckingInspection
-		return DownloadArtifact(
-			"fpm-1.9.3-20150715-2.2.2-mac",
-			"https://github.com/electron-userland/electron-builder-binaries/releases/download/fpm-1.9.3-20150715-2.2.2-mac/fpm-1.9.3-20150715-2.2.2-mac.7z",
-			"oXfq+0H2SbdrbMik07mYloAZ8uHrmf6IJk+Q3P1kwywuZnKTXSaaeZUJNlWoVpRDWNu537YxxpBQWuTcF+6xfw==",
-		)
+		return downloadFromGithub("fpm", "1.9.3-20150715-2.2.2-mac", "oXfq+0H2SbdrbMik07mYloAZ8uHrmf6IJk+Q3P1kwywuZnKTXSaaeZUJNlWoVpRDWNu537YxxpBQWuTcF+6xfw==")
 	}
 }
 
-func DownloadZstd(osName osName) (string, error) {
+func DownloadZstd(osName util.OsName) (string, error) {
 	//noinspection SpellCheckingInspection
 	return DownloadTool(ToolDescriptor{
-		name: "zstd",
-		version: "1.3.7",
-		mac: "hTM6htzzi9ALEBdl2GBiH5NtmttBYEQiCugJ/u6CqsBwydPm39vgigSlUX1QMYGKu5jjG18vGKvjFJuhMQkOSw==",
+		Name:    "zstd",
+		Version: "1.3.7",
+		mac:     "hTM6htzzi9ALEBdl2GBiH5NtmttBYEQiCugJ/u6CqsBwydPm39vgigSlUX1QMYGKu5jjG18vGKvjFJuhMQkOSw==",
 		linux: map[string]string{
 			"x64": "oSyW9a2YzLZ4xC8y7WyzivZcrpuc+NqN1/IESj7nqjUL9905N5ZfC50GbS6mSmu2nlVq5VNafFGgf/RUJf/pkA==",
 		},
@@ -55,7 +52,17 @@ func DownloadZstd(osName osName) (string, error) {
 	}, osName)
 }
 
-func DownloadTool(descriptor ToolDescriptor, osName osName) (string, error) {
+func DownloadWinCodeSign() (string, error) {
+	//noinspection SpellCheckingInspection
+	return downloadFromGithub("winCodeSign", "2.4.0", "HqyyMAtVH5VtDHV9jwhn36VfSL+JrxQpgNeT+vThDp2+7t9mnrzOjjbHoBEfcFAmd5xUIZSdMPmp63GlOpJYwg==")
+}
+
+func downloadFromGithub(name string, version string, checksum string) (string, error) {
+	id := name + "-" + version
+	return DownloadArtifact(id, "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+id+"/"+id+".7z", checksum)
+}
+
+func DownloadTool(descriptor ToolDescriptor, osName util.OsName) (string, error) {
 	arch := runtime.GOARCH
 	if arch == "arm" {
 		arch = "armv7"
@@ -68,13 +75,13 @@ func DownloadTool(descriptor ToolDescriptor, osName osName) (string, error) {
 	var checksum string
 	var archQualifier string
 	var osQualifier string
-	if osName == MAC {
+	if osName == util.MAC {
 		checksum = descriptor.mac
 		archQualifier = ""
 		osQualifier = "mac"
 	} else {
 		archQualifier = "-" + arch
-		if osName == WINDOWS {
+		if osName == util.WINDOWS {
 			osQualifier = "win"
 			checksum = descriptor.win[arch]
 		} else {
@@ -94,22 +101,22 @@ func DownloadTool(descriptor ToolDescriptor, osName osName) (string, error) {
 
 	var tagPrefix string
 	if descriptor.repository == "" {
-		tagPrefix = descriptor.name + "-"
+		tagPrefix = descriptor.Name + "-"
 	} else {
 		tagPrefix = "v"
 	}
 
 	osAndArch := osQualifier + archQualifier
 	return DownloadArtifact(
-		descriptor.name+"-"+descriptor.version+"-"+osAndArch /* ability to use cache dir on any platform (e.g. keep cache under project) */,
-		"https://github.com/"+repository+"/releases/download/"+tagPrefix+descriptor.version+"/"+descriptor.name+"-v"+descriptor.version+"-"+osAndArch+".7z",
+		descriptor.Name+"-"+descriptor.Version+"-"+osAndArch /* ability to use cache dir on any platform (e.g. keep cache under project) */,
+		"https://github.com/"+repository+"/releases/download/"+tagPrefix+descriptor.Version+"/"+descriptor.Name+"-v"+descriptor.Version+"-"+osAndArch+".7z",
 		checksum,
 	)
 }
 
 type ToolDescriptor struct {
-	name string
-	version string
+	Name    string
+	Version string
 
 	repository string
 
@@ -119,13 +126,13 @@ type ToolDescriptor struct {
 }
 
 func GetZstd() (string, error) {
-	dir, err := DownloadZstd(GetCurrentOs())
+	dir, err := DownloadZstd(util.GetCurrentOs())
 	if err != nil {
 		return "", err
 	}
 
 	executableName := "zstd"
-	if GetCurrentOs() == WINDOWS {
+	if util.GetCurrentOs() == util.WINDOWS {
 		executableName += ".exe"
 	}
 

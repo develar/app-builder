@@ -16,34 +16,10 @@ import (
 	"github.com/mitchellh/go-homedir"
 )
 
-type osName int
-
-const (
-	MAC osName = iota
-	LINUX
-	WINDOWS
-)
-
-//noinspection GoExportedFuncWithUnexportedType
-func GetCurrentOs() osName {
-	return ToOsName(runtime.GOOS)
-}
-
-//noinspection GoExportedFuncWithUnexportedType
-func ToOsName(name string) osName {
-	if name == "windows" || name == "win32" {
-		return WINDOWS
-	} else if name == "darwin" {
-		return MAC
-	} else {
-		return LINUX
-	}
-}
-
 func ConfigureArtifactCommand(app *kingpin.Application) {
 	command := app.Command("download-artifact", "Download, unpack and cache artifact from GitHub.")
 	name := command.Flag("name", "The artifact name.").Short('n').Required().String()
-	url := command.Flag("url", "The artifact URL.").Short('u').Required().String()
+	url := command.Flag("url", "The artifact URL.").Short('u').String()
 	sha512 := command.Flag("sha512", "The expected sha512 of file.").String()
 
 	command.Action(func(context *kingpin.ParseContext) error {
@@ -56,7 +32,7 @@ func ConfigureArtifactCommand(app *kingpin.Application) {
 	})
 }
 
-func getCacheDirectoryForArtifact(dirName string) (string, error) {
+func GetCacheDirectoryForArtifact(dirName string) (string, error) {
 	result, err := GetCacheDirectory("electron-builder", "ELECTRON_BUILDER_CACHE", true)
 	if err != nil {
 		return "", errors.WithStack(err)
@@ -71,6 +47,14 @@ func getCacheDirectoryForArtifact(dirName string) (string, error) {
 	return result, nil
 }
 
+func GetCacheDirectoryForArtifactCustom(dirName string) (string, error) {
+	result, err := GetCacheDirectory("electron-builder", "ELECTRON_BUILDER_CACHE", true)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	return filepath.Join(result, dirName), nil
+}
+
 // we cache in the global location - in the home dir, not in the node_modules/.cache (https://www.npmjs.com/package/find-cache-dir) because
 // * don't need to find node_modules
 // * don't pollute user project dir (important in case of 1-package.json project structure)
@@ -79,23 +63,19 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	if dirName == "fpm" {
 		return DownloadFpm()
 	} else if dirName == "zstd" {
-		return DownloadZstd(GetCurrentOs())
+		return DownloadZstd(util.GetCurrentOs())
+	} else if dirName == "winCodeSign" {
+		return DownloadWinCodeSign()
 	}
 
-	isNodeJsArtifact := dirName == "node"
-	if isNodeJsArtifact {
-		versionAndArch := url
-		version := versionAndArch[0:strings.Index(versionAndArch, "-")]
-		url = "https://nodejs.org/dist/v" + version + "/node-v" + versionAndArch + ".tar.xz"
-		dirName = dirName + "-" + versionAndArch
-	} else if len(dirName) == 0 {
+	if len(dirName) == 0 {
 		dirName = path.Base(url)
 		// cannot simply find fist dot because file name can contains version like 9.1.0
 		dirName = strings.TrimSuffix(dirName, ".7z")
 		dirName = strings.TrimSuffix(dirName, ".tar")
 	}
 
-	cacheDir, err := getCacheDirectoryForArtifact(dirName)
+	cacheDir, err := GetCacheDirectoryForArtifact(dirName)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -106,22 +86,13 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		"path": filePath,
 	}
 
-	dirStat, err := os.Stat(filePath)
-	if err == nil && dirStat.IsDir() {
-		log.WithFields(logFields).Debug("found existing")
+	isFound, err := CheckCache(filePath, cacheDir, logFields)
+	if isFound {
 		return filePath, nil
 	}
-
-	if err != nil && !os.IsNotExist(err) {
-		return "", errors.WithMessage(err, "error during cache check for path "+filePath)
-	}
-
-	err = fsutil.EnsureDir(cacheDir)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
-
-	log.WithFields(logFields).WithField("url", url).Info("downloading")
 
 	// 7z cannot be extracted from the input stream, temp file is required
 	tempUnpackDir, err := util.TempDir(cacheDir, "")
@@ -129,30 +100,20 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		return "", errors.WithStack(err)
 	}
 
-	var archiveName string
-	if isNodeJsArtifact {
-		archiveName = tempUnpackDir + ".tar.xz"
-	} else {
-		archiveName = tempUnpackDir + ".7z"
-	}
+	archiveName := tempUnpackDir + ".7z"
 
 	err = NewDownloader().Download(url, archiveName, checksum)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
 
-	if isNodeJsArtifact {
-		err = unpackTarXzNodeJs(archiveName, tempUnpackDir)
-		if err != nil {
-			return "", errors.WithStack(err)
-		}
-	} else if strings.HasSuffix(url, ".tar.7z") {
+	if strings.HasSuffix(url, ".tar.7z") {
 		err = unpackTar7z(archiveName, tempUnpackDir)
 		if err != nil {
 			return "", errors.WithStack(err)
 		}
 	} else {
-		command := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "x", "-bd", archiveName, "-o"+tempUnpackDir)
+		command := exec.Command(util.Get7zPath(), "x", "-bd", archiveName, "-o"+tempUnpackDir)
 		command.Dir = cacheDir
 		output, err := command.CombinedOutput()
 		if err != nil {
@@ -162,19 +123,39 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		log.Debug(string(output))
 	}
 
-	err = os.Remove(archiveName)
+	RemoveArchiveFile(archiveName, tempUnpackDir, logFields)
+	RenameToFinalFile(tempUnpackDir, filePath, logFields)
+
+	return filePath, nil
+}
+
+func RemoveArchiveFile(archiveName string, tempUnpackDir string, logFields *log.Fields) {
+	err := os.Remove(archiveName)
 	if err != nil {
 		log.WithFields(logFields).WithFields(log.Fields{
 			"tempUnpackDir": tempUnpackDir,
 			"error":         err,
 		}).Warn("cannot remove downloaded archive (another process downloaded faster?)")
 	}
+}
 
-	RenameToFinalFile(tempUnpackDir, filePath, logFields)
+func CheckCache(filePath string, cacheDir string, logFields *log.Fields) (bool, error) {
+	dirStat, err := os.Stat(filePath)
+	if err == nil && dirStat.IsDir() {
+		log.WithFields(logFields).Debug("found existing")
+		return true, nil
+	}
 
-	log.WithFields(logFields).Debug("downloaded")
+	if err != nil && !os.IsNotExist(err) {
+		return false, errors.WithMessage(err, "error during cache check for path "+filePath)
+	}
 
-	return filePath, nil
+	err = fsutil.EnsureDir(cacheDir)
+	if err != nil {
+		return false, errors.WithStack(err)
+	}
+
+	return false, nil
 }
 
 func RenameToFinalFile(tempFile string, filePath string, logFields *log.Fields) {
@@ -187,28 +168,11 @@ func RenameToFinalFile(tempFile string, filePath string, logFields *log.Fields) 
 	}
 }
 
-func unpackTarXzNodeJs(archiveName string, unpackDir string) error {
-	decompressCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-txz", archiveName, "-so")
-
-	//noinspection SpellCheckingInspection
-	unTarCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-ttar", "-o"+unpackDir, "*/bin/node", "-r", "-si")
-	err := runExtractCommands(decompressCommand, unTarCommand)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	err = os.Chmod(filepath.Join(unpackDir, "node"), 0755)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
 func unpackTar7z(archiveName string, unpackDir string) error {
-	decompressCommand := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), "e", "-bd", "-t7z", archiveName, "-so")
+	decompressCommand := exec.Command(util.Get7zPath(), "e", "-bd", "-t7z", archiveName, "-so")
 
 	args := []string{"-x"}
+	//noinspection SpellCheckingInspection
 	if runtime.GOOS == "darwin" {
 		// otherwise snap error review "unusual mode 'rwxr-xr-x' for symlink"
 		args = append(args, "-p")
@@ -218,10 +182,10 @@ func unpackTar7z(archiveName string, unpackDir string) error {
 	//noinspection SpellCheckingInspection
 	unTarCommand := exec.Command("tar", args...)
 	unTarCommand.Dir = unpackDir
-	return runExtractCommands(decompressCommand, unTarCommand)
+	return RunExtractCommands(decompressCommand, unTarCommand)
 }
 
-func runExtractCommands(decompressCommand *exec.Cmd, unTarCommand *exec.Cmd) error {
+func RunExtractCommands(decompressCommand *exec.Cmd, unTarCommand *exec.Cmd) error {
 	decompressCommand.Stderr = os.Stderr
 	decompressStdout, err := decompressCommand.StdoutPipe()
 	if err != nil {
@@ -240,8 +204,8 @@ func GetCacheDirectory(appName string, envName string, isAvoidSystemOnWindows bo
 		return env, nil
 	}
 
-	currentOs := GetCurrentOs()
-	if currentOs == MAC {
+	currentOs := util.GetCurrentOs()
+	if currentOs == util.MAC {
 		userHomeDir, err := homedir.Dir()
 		if err != nil {
 			return "", errors.WithStack(err)
@@ -249,7 +213,7 @@ func GetCacheDirectory(appName string, envName string, isAvoidSystemOnWindows bo
 		return filepath.Join(userHomeDir, "Library", "Caches", appName), nil
 	}
 
-	if currentOs == WINDOWS {
+	if currentOs == util.WINDOWS {
 		localAppData := os.Getenv("LOCALAPPDATA")
 		if len(localAppData) != 0 {
 			// https://github.com/electron-userland/electron-builder/issues/1164

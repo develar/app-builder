@@ -51,15 +51,22 @@ func copyIcons(options *AppImageOptions) ([]IconTemplateInfo, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	iconFileName := options.configuration.ExecutableName + ".png"
 	icons := options.configuration.Icons
+	iconExtWithDot := filepath.Ext(icons[0].File)
+	iconFileName := options.configuration.ExecutableName + iconExtWithDot
 	templateIcons := make([]IconTemplateInfo, len(icons))
 	maxIconIndex := len(icons) - 1
 	var fileCopier fs.FileCopier
 	fileCopier.IsUseHardLinks = true
 	err = util.MapAsync(len(icons), func(taskIndex int) (func() error, error) {
 		icon := icons[taskIndex]
-		iconSizeDir := fmt.Sprintf("%dx%d/apps", icon.Size, icon.Size)
+		var iconSizeDir string
+		if iconExtWithDot == ".svg" {
+			// https://bugs.freedesktop.org/show_bug.cgi?id=91759
+			iconSizeDir = "scalable"
+		} else {
+			iconSizeDir = fmt.Sprintf("%dx%d/apps", icon.Size, icon.Size)
+		}
 		iconRelativeToStageFile := iconDirRelativePath + "/" + iconSizeDir + "/" + iconFileName
 		templateInfo := IconTemplateInfo{
 			Size: icon.Size,

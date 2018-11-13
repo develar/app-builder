@@ -11,12 +11,12 @@ import (
 	"github.com/develar/go-fs-util"
 )
 
-//noinspection GoSnakeCaseUsage,SpellCheckingInspection
-const APPIMAGE_TOOL_SHA512 = "/9ipJexioCIFK+aQ/LktAHEieFFWxwkikxXZZlKXzm3fY5tFs+xUKv2m4OymD6ITRGiA4zzAKmlWyhVOjCxXuw=="
-
 func GetAppImageToolDir() (string, error) {
 	dirName := "appimage-9.1.0"
-	result, err := download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", APPIMAGE_TOOL_SHA512)
+	//noinspection SpellCheckingInspection
+	result, err := download.DownloadArtifact("",
+		"https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z",
+		"/9ipJexioCIFK+aQ/LktAHEieFFWxwkikxXZZlKXzm3fY5tFs+xUKv2m4OymD6ITRGiA4zzAKmlWyhVOjCxXuw==")
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
@@ -24,7 +24,7 @@ func GetAppImageToolDir() (string, error) {
 }
 
 func GetAppImageToolBin(toolDir string) string {
-	if runtime.GOOS == "darwin" {
+	if util.GetCurrentOs() == util.MAC {
 		return filepath.Join(toolDir, "darwin")
 	} else {
 		return filepath.Join(toolDir, "linux-"+goArchToNodeArch(runtime.GOARCH))
@@ -56,7 +56,7 @@ func GetMksquashfs() (string, error) {
 	return result, nil
 }
 
-func goArchToNodeArch(arch string) (string) {
+func goArchToNodeArch(arch string) string {
 	switch arch {
 	case "amd64":
 		return "x64"

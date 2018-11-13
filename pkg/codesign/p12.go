@@ -5,12 +5,18 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/hex"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-pkcs12"
 	"github.com/json-iterator/go"
@@ -29,18 +35,31 @@ func ConfigureCertificateInfoCommand(app *kingpin.Application) {
 func readInfo(inFile string, password string) error {
 	data, err := ioutil.ReadFile(inFile)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return writeError(err.Error())
+		}
 		return err
 	}
 
-	jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 16*1024)
-
 	certificates, err := pkcs12.DecodeAllCerts(data, password)
 	if err != nil {
-		jsonWriter.WriteObjectStart()
-		jsonWriter.WriteObjectField("error")
-		jsonWriter.WriteString(err.Error())
-		jsonWriter.WriteObjectEnd()
-		return flushJsonWriterAndCloseOut(jsonWriter)
+		if err.Error() == "pkcs12: decryption password incorrect" {
+			return writeError("password incorrect")
+		}
+
+		log.Debug("cannot decode PKCS 12 data using Go pure implementation, openssl will be used")
+		certificates, err = readUsingOpenssl(inFile, password)
+		if err != nil {
+			if strings.Contains(err.Error(), "Mac verify error: invalid password?") {
+				return writeError("password incorrect")
+			}
+
+			m := err.Error()
+			if exitError, ok := errors.Cause(err).(*exec.ExitError); ok {
+				m += "; error output:\n" + string(exitError.Stderr)
+			}
+			return writeError(m)
+		}
 	}
 
 	if len(certificates) == 0 {
@@ -62,19 +81,65 @@ certLoop:
 		return fmt.Errorf("no certificates with ExtKeyUsageCodeSigning")
 	}
 
+	jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 16*1024)
 	jsonWriter.WriteObjectStart()
 
-	jsonWriter.WriteObjectField("commonName")
-	jsonWriter.WriteString(firstCert.Subject.CommonName)
+	util.WriteStringProperty("commonName", firstCert.Subject.CommonName, jsonWriter)
 
 	// DN
 	jsonWriter.WriteMore()
-	jsonWriter.WriteObjectField("bloodyMicrosoftSubjectDn")
-	jsonWriter.WriteString(BloodyMsString(firstCert.Subject.ToRDNSequence()))
+	util.WriteStringProperty("bloodyMicrosoftSubjectDn", BloodyMsString(firstCert.Subject.ToRDNSequence()), jsonWriter)
 
 	jsonWriter.WriteObjectEnd()
 
-	return flushJsonWriterAndCloseOut(jsonWriter)
+	return util.FlushJsonWriterAndCloseOut(jsonWriter)
+}
+
+func writeError(error string) error {
+	jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 16*1024)
+	jsonWriter.WriteObjectStart()
+	util.WriteStringProperty("error", error, jsonWriter)
+	jsonWriter.WriteObjectEnd()
+	return util.FlushJsonWriterAndCloseOut(jsonWriter)
+}
+
+func readUsingOpenssl(inFile string, password string) ([]*x509.Certificate, error) {
+	opensslPath := "openssl"
+	if util.GetCurrentOs() == util.WINDOWS {
+		vendor, err := download.DownloadWinCodeSign()
+		if err != nil {
+			return nil, err
+		}
+
+		opensslPath = filepath.Join(vendor, "openssl", "openssl.exe")
+	}
+
+	pemData, err := util.Execute(exec.Command(opensslPath, "pkcs12", "-in", inFile, "-passin", "pass:"+password, "-nokeys"), "")
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+
+	var blocks []byte
+	rest := pemData
+	for {
+		var block *pem.Block
+		block, rest = pem.Decode(rest)
+		if block == nil {
+			log.Debug("PEM not parsed")
+			break
+		}
+
+		blocks = append(blocks, block.Bytes...)
+		if len(rest) == 0 {
+			break
+		}
+	}
+
+	result, err := x509.ParseCertificates(blocks)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return result, nil
 }
 
 //noinspection SpellCheckingInspection
@@ -149,12 +214,4 @@ func BloodyMsString(r pkix.RDNSequence) string {
 		}
 	}
 	return s.String()
-}
-
-func flushJsonWriterAndCloseOut(jsonWriter *jsoniter.Stream) error {
-	err := jsonWriter.Flush()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	return errors.WithStack(os.Stdout.Close())
 }

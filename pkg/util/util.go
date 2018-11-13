@@ -1,9 +1,12 @@
 package util
 
 import (
+	"crypto/sha512"
+	"encoding/hex"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
@@ -58,17 +61,38 @@ func ExecuteWithInheritedStdOutAndStdErr(command *exec.Cmd, currentWorkingDirect
 	return nil
 }
 
-func Execute(command *exec.Cmd, currentWorkingDirectory string) error {
+func Execute(command *exec.Cmd, currentWorkingDirectory string) ([]byte, error) {
 	preCommandExecute(command, currentWorkingDirectory)
 
-	output, err := command.CombinedOutput()
+	output, err := command.Output()
 	if err != nil {
-		return errors.Errorf("error: %s\npath: %s\nargs: %s\noutput: %s", err, command.Path, command.Args, output)
-	} else if IsDebugEnabled() && len(output) != 0 {
+		errorOut := ""
+		if exitError, ok := err.(*exec.ExitError); ok {
+			errorOut = string(exitError.Stderr)
+		}
+		return nil, errors.Errorf("error: %s\npath: %s\nargs: %s\noutput: %s\nerror output:", err, command.Path, argListToSafeString(command.Args), output, errorOut)
+	} else if IsDebugEnabled() && len(output) != 0 && !(strings.HasSuffix(command.Path, "openssl") || strings.HasSuffix(command.Path, "openssl.exe")) {
 		log.Debug(string(output))
 	}
 
-	return nil
+	return output, nil
+}
+
+func argListToSafeString(args []string)  string {
+	var result strings.Builder
+	for index, value := range args {
+		if strings.HasPrefix(value, "pass:") {
+			hasher := sha512.New()
+			hasher.Write([]byte(value))
+			value = "sha512-first-8-chars-" + hex.EncodeToString(hasher.Sum(nil)[0:4])
+		}
+		if index > 0 {
+			result.WriteRune(' ')
+		}
+		result.WriteString(value)
+	}
+
+	return result.String()
 }
 
 func StartPipedCommands(producer *exec.Cmd, consumer *exec.Cmd) error {
@@ -120,7 +144,7 @@ func preCommandExecute(command *exec.Cmd, currentWorkingDirectory string) {
 
 	log.WithFields(log.Fields{
 		"path": command.Path,
-		"args": command.Args,
+		"args": argListToSafeString(command.Args),
 	}).Debug("execute command")
 }
 

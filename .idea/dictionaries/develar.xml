@@ -7,6 +7,9 @@
       <w>chunking</w>
       <w>geoip</w>
       <w>goreleaser</w>
+      <w>hasher</w>
+      <w>launchui</w>
+      <w>libui</w>
       <w>lintian</w>
       <w>mkfs</w>
       <w>mksquashfs</w>

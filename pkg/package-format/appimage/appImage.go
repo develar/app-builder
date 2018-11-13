@@ -180,7 +180,7 @@ func createSquashFs(options *AppImageOptions, offset int) error {
 		}
 	}
 
-	err = util.Execute(exec.Command(mksquashfsPath, args...), *options.stageDir)
+	_, err = util.Execute(exec.Command(mksquashfsPath, args...), *options.stageDir)
 	if err != nil {
 		return errors.WithStack(err)
 	}

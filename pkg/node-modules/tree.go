@@ -1,4 +1,4 @@
-package nodeModules
+package node_modules
 
 import (
 	"io/ioutil"
@@ -18,9 +18,22 @@ func ConfigureCommand(app *kingpin.Application) {
 	command := app.Command("node-dep-tree", "")
 
 	dir := command.Flag("dir", "").Required().String()
+	excludedDependencies := command.Flag("exclude-dep", "").Strings()
+
 	command.Action(func(context *kingpin.ParseContext) error {
+		var excluded map[string]bool
+		if excludedDependencies == nil || len(*excludedDependencies) == 0 {
+			excluded = nil
+		} else {
+			excluded = make(map[string]bool, len(*excludedDependencies))
+			for _, name := range *excludedDependencies {
+				excluded[name] = true
+			}
+		}
+
 		collector := &Collector{
 			unresolvedDependencies:       make(map[string]bool),
+			excludedDependencies:         excluded,
 			NodeModuleDirToDependencyMap: make(map[string]*map[string]*Dependency),
 		}
 		dependency, err := readPackageJson(*dir)
@@ -149,6 +162,8 @@ type Dependency struct {
 type Collector struct {
 	unresolvedDependencies map[string]bool
 
+	excludedDependencies map[string]bool
+
 	NodeModuleDirToDependencyMap map[string]*map[string]*Dependency `json:"nodeModuleDirToDependencyMap"`
 }
 
@@ -203,6 +218,13 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir string, isOptional bool, queue *[]*Dependency, queueIndex int) (int, error) {
 	unresolved := make([]string, 0)
 	for name := range *list {
+		if t.excludedDependencies != nil {
+			_, isExcluded := t.excludedDependencies[name]
+			if isExcluded {
+				continue
+			}
+		}
+
 		childDependency, err := t.resolveDependency(nodeModuleDir, name, isOptional)
 		if err != nil {
 			return queueIndex, errors.WithStack(err)
@@ -219,7 +241,7 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 	var err error
 	guardCount := 0
 	for len(unresolved) > 0 {
-		nodeModuleDir, err = findNearestNodeModuleDir(filepath.Dir(filepath.Dir(nodeModuleDir)))
+		nodeModuleDir, err = findNearestNodeModuleDir(getParentDir(getParentDir(nodeModuleDir)))
 		if err != nil {
 			return queueIndex, errors.WithStack(err)
 		}
@@ -284,6 +306,14 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string, i
 
 	dependencyDir := filepath.Join(parentNodeModuleDir, name)
 	dependency, err := readPackageJson(dependencyDir)
+
+	if //noinspection SpellCheckingInspection
+	name == "libui-node" {
+		// remove because production app doesn't need to download libui
+		//noinspection SpellCheckingInspection
+		delete(dependency.Dependencies, "libui-download")
+	}
+
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -304,6 +334,10 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string, i
 }
 
 func findNearestNodeModuleDir(dir string) (string, error) {
+	if len(dir) == 0 {
+		return "", nil
+	}
+
 	guardCount := 0
 	for {
 		nodeModuleDir := filepath.Join(dir, "node_modules")
@@ -329,6 +363,10 @@ func findNearestNodeModuleDir(dir string) (string, error) {
 }
 
 func getParentDir(file string) string {
+	if len(file) == 0 {
+		return file
+	}
+
 	dir := filepath.Dir(file)
 	// https://github.com/develar/app-builder/pull/3
 	if len(dir) > 1 /* . or / or empty */ && dir != file {

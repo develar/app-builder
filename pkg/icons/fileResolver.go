@@ -41,7 +41,7 @@ func resolveSourceFileOrNull(sourceFile string, roots []string) (string, os.File
 	return "", nil, nil
 }
 
-func resolveSourceFile(sourceFiles []string, roots []string, extraExtension string) (string, os.FileInfo, error) {
+func resolveSourceFile(sourceFiles []string, roots []string) (string, os.FileInfo, error) {
 	for _, sourceFile := range sourceFiles {
 		resolvedPath, fileInfo, err := resolveSourceFileOrNull(sourceFile, roots)
 		if err != nil {
@@ -49,23 +49,6 @@ func resolveSourceFile(sourceFiles []string, roots []string, extraExtension stri
 		}
 		if fileInfo != nil {
 			return resolvedPath, fileInfo, nil
-		}
-
-		if extraExtension != "" {
-			var candidate string
-			if extraExtension == ".png" && sourceFile == "icons" {
-				candidate = "icon.png"
-			} else {
-				candidate = sourceFile + extraExtension
-			}
-
-			resolvedPath, fileInfo, err = resolveSourceFileOrNull(candidate, roots)
-			if err != nil {
-				return "", nil, errors.WithStack(err)
-			}
-			if fileInfo != nil {
-				return resolvedPath, fileInfo, nil
-			}
 		}
 	}
 

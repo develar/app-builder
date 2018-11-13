@@ -8,11 +8,9 @@ import (
 	"sync"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/develar/app-builder/pkg/appimage"
 	"github.com/develar/app-builder/pkg/archive/zipx"
 	"github.com/develar/app-builder/pkg/blockmap"
 	"github.com/develar/app-builder/pkg/codesign"
-	"github.com/develar/app-builder/pkg/dmg"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/electron"
 	"github.com/develar/app-builder/pkg/elfExecStack"
@@ -20,16 +18,16 @@ import (
 	"github.com/develar/app-builder/pkg/icons"
 	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/log-cli"
-	"github.com/develar/app-builder/pkg/nodeModules"
+	"github.com/develar/app-builder/pkg/node-modules"
+	"github.com/develar/app-builder/pkg/package-format/appimage"
+	"github.com/develar/app-builder/pkg/package-format/dmg"
+	"github.com/develar/app-builder/pkg/package-format/proton-native"
+	"github.com/develar/app-builder/pkg/package-format/snap"
 	"github.com/develar/app-builder/pkg/publisher"
 	"github.com/develar/app-builder/pkg/remoteBuild"
-	"github.com/develar/app-builder/pkg/snap"
 	"github.com/develar/app-builder/pkg/util"
+	"github.com/develar/app-builder/pkg/wine"
 	"github.com/develar/errors"
-)
-
-var (
-	app = kingpin.New("app-builder", "app-builder").Version("2.4.1")
 )
 
 func main() {
@@ -43,7 +41,9 @@ func main() {
 		return
 	}
 
-	nodeModules.ConfigureCommand(app)
+	var app = kingpin.New("app-builder", "app-builder").Version("2.5.0")
+
+	node_modules.ConfigureCommand(app)
 	//codesign.ConfigureCommand(app)
 	publisher.ConfigurePublishToS3Command(app)
 	remoteBuild.ConfigureBuildCommand(app)
@@ -55,6 +55,7 @@ func main() {
 	electron.ConfigureUnpackCommand(app)
 
 	zipx.ConfigureUnzipCommand(app)
+	proton_native.ConfigureCommand(app)
 
 	configurePrefetchToolsCommand(app)
 
@@ -66,6 +67,8 @@ func main() {
 	elfExecStack.ConfigureCommand(app)
 	blockmap.ConfigureCommand(app)
 	codesign.ConfigureCertificateInfoCommand(app)
+
+	wine.ConfigureCommand(app)
 
 	_, err := app.Parse(os.Args[1:])
 	if err != nil {
@@ -90,7 +93,7 @@ func compress() error {
 	args := []string{"a", "-si", "-so", "-t" + util.GetEnvOrDefault("SZA_ARCHIVE_TYPE", "xz"), "-mx" + util.GetEnvOrDefault("SZA_COMPRESSION_LEVEL", "9"), "dummy"}
 	args = append(args, os.Args[1:]...)
 
-	command := exec.Command(util.GetEnvOrDefault("SZA_PATH", "7za"), args...)
+	command := exec.Command(util.Get7zPath(), args...)
 	command.Stderr = os.Stderr
 
 	stdin, err := command.StdinPipe()
@@ -148,7 +151,7 @@ func configurePrefetchToolsCommand(app *kingpin.Application) {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		_, err = download.DownloadZstd(download.ToOsName(*osName))
+		_, err = download.DownloadZstd(util.ToOsName(*osName))
 		if err != nil {
 			return errors.WithStack(err)
 		}

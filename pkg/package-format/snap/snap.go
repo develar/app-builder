@@ -154,7 +154,7 @@ func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {
 	}
 
 	if err == nil {
-		if version.CompareSimple(strings.TrimSpace(string(out)), "2.40.0") == 1 {
+		if version.Compare(strings.TrimSpace(string(out)), "2.40.0", "<") {
 			return util.NewMessageError("at least snapcraft 2.40.0 is required, please: "+install, "ERR_SNAPCRAFT_OUTDATED")
 		} else {
 			return nil
@@ -294,7 +294,7 @@ func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) e
 
 	args = append(args, *options.output, "-no-progress", "-quiet", "-noappend", "-comp", "xz", "-no-xattrs", "-no-fragments", "-all-root")
 
-	err = util.Execute(exec.Command(mksquashfsPath, args...), "")
+	_, err = util.Execute(exec.Command(mksquashfsPath, args...), "")
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -336,7 +336,7 @@ func buildWithoutDockerAndWithoutTemplate(options SnapOptions) error {
 		return errors.WithStack(err)
 	}
 
-	err = util.Execute(exec.Command("snapcraft", "pack", primeDir, "--output", *options.output), stageDir)
+	_, err = util.Execute(exec.Command("snapcraft", "pack", primeDir, "--output", *options.output), stageDir)
 	if err != nil {
 		return errors.WithStack(err)
 	}

@@ -10,8 +10,8 @@ import (
 
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/util"
+	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
-	"github.com/pkg/errors"
 )
 
 const maxAttemptNumber = 3
