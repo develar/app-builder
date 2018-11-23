@@ -66,17 +66,17 @@ func createCommonIconSources(sources []string, fallbackSources []string, outputF
 	}
 
 	if outputFormat != "set" {
-		list = append(list, "icon." + outputFormat)
+		list = append(list, "icon."+outputFormat)
 	}
 
 	list = append(list, "icons")
 
 	list = appendImageVariants("icon", outputFormat, list)
 
-	if sources != nil && len(sources) > 1 {
+	if len(sources) > 1 {
 		list = append(list, sources[1:]...)
 	}
-	if fallbackSources != nil && len(fallbackSources) > 0 {
+	if len(fallbackSources) > 0 {
 		list = append(list, fallbackSources...)
 	}
 	return list
@@ -84,10 +84,10 @@ func createCommonIconSources(sources []string, fallbackSources []string, outputF
 
 func appendImageVariants(name string, outputFormat string, list []string) []string {
 	if outputFormat != "png" {
-		list = append(list, name + ".png")
+		list = append(list, name+".png")
 	}
 	if outputFormat != "icns" {
-		list = append(list, name + ".icns")
+		list = append(list, name+".icns")
 		// ico only for non icns
 		if outputFormat != "ico" {
 			list = append(list, name+".ico")

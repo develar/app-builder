@@ -185,4 +185,3 @@ func ReadIcns(reader *bufio.Reader) (map[string]SubImage, error) {
 
 	return typeToImage, nil
 }
-

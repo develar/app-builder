@@ -21,7 +21,8 @@ func ConfigureCommand(app *kingpin.Application) {
 	command := app.Command("wine", "")
 
 	ia32Name := command.Flag("ia32", "The ia32 executable name").String()
-	x64Name := command.Flag("x64", "The x64 executable name").String()
+	// x64Name not used for now
+	_ = command.Flag("x64", "The x64 executable name").String()
 	jsonEncodedArgs := command.Flag("args", "The json-encoded array of executable args").String()
 
 	command.Validate(func(clause *kingpin.CmdClause) error {
@@ -39,13 +40,12 @@ func ConfigureCommand(app *kingpin.Application) {
 			}
 		}
 
-		return execWine(*ia32Name, *x64Name, parsedArgs)
+		return execWine(*ia32Name, parsedArgs)
 	})
 }
 
-// x64Name not used for now
 //noinspection GoUnusedParameter
-func execWine(ia32Name string, x64Name string, args []string) error {
+func execWine(ia32Name string, args []string) error {
 	args = append([]string{ia32Name}, args...)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -97,7 +97,7 @@ func checkWineVersion() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-  wineVersionResult, err := exec.CommandContext(ctx, "wine", "--version").Output()
+	wineVersionResult, err := exec.CommandContext(ctx, "wine", "--version").Output()
 	if err != nil {
 		log.WithError(err).Debug("wine version check result")
 		return util.NewMessageError("wine is required, please see https://electron.build/multi-platform-build#linux", "ERR_WINE_NOT_INSTALLED")

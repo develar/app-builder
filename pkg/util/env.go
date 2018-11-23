@@ -1,6 +1,8 @@
 package util
 
-import "os"
+import (
+	"os"
+)
 
 func GetEnvOrDefault(envName string, defaultValue string) string {
 	result := os.Getenv(envName)

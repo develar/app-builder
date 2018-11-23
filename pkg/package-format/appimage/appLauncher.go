@@ -110,7 +110,6 @@ type fakeFileInfo struct {
 	dir      bool
 	basename string
 	contents string
-	err      error
 }
 
 func (f *fakeFileInfo) Name() string       { return f.basename }

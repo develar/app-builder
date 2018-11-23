@@ -1,0 +1,9 @@
+linters:
+  enable-all: true
+  disable:
+    - golint
+    - gochecknoglobals
+    - prealloc
+    - gofmt
+    - lll
+    - goconst # todo

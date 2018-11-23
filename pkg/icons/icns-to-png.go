@@ -116,7 +116,7 @@ func contains(files []string, name string) bool {
 	return false
 }
 
-func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInfo, sizeList []int) (error) {
+func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInfo, sizeList []int) error {
 	imageCount := len(sizeList)
 	if imageCount == 0 {
 		return nil
@@ -130,7 +130,7 @@ func multiResizeImage(inFile string, outFileNameFormat string, result *[]IconInf
 	return multiResizeImage2(&originalImage, outFileNameFormat, result, sizeList)
 }
 
-func multiResizeImage2(originalImage *image.Image, outFileNameFormat string, result *[]IconInfo, sizeList []int) (error) {
+func multiResizeImage2(originalImage *image.Image, outFileNameFormat string, result *[]IconInfo, sizeList []int) error {
 	imageCount := len(sizeList)
 	if imageCount == 0 {
 		return nil

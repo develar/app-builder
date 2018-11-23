@@ -4,7 +4,7 @@ import (
 	"context"
 	"mime"
 	"net/http"
-		"os"
+	"os"
 	"path"
 	"strings"
 
@@ -84,7 +84,7 @@ func configureResolveBucketLocationCommand(app *kingpin.Application) {
 func getBucketRegion(awsConfig *aws.Config, bucket *string, context context.Context, httpClient *http.Client) (string, error) {
 	awsSession, err := session.NewSession(awsConfig, &aws.Config{
 		// any region required
-		Region: aws.String("us-east-1"),
+		Region:     aws.String("us-east-1"),
 		HTTPClient: httpClient,
 	})
 	if err != nil {
@@ -107,10 +107,10 @@ func getBucketRegion(awsConfig *aws.Config, bucket *string, context context.Cont
 func upload(options *ObjectOptions) error {
 	publishContext, _ := util.CreateContext()
 
-	httpclient := createHttpClient()
+	httpClient := createHttpClient()
 
 	awsConfig := &aws.Config{
-		HTTPClient: httpclient,
+		HTTPClient: httpClient,
 	}
 	if *options.endpoint != "" {
 		awsConfig.Endpoint = options.endpoint
@@ -123,13 +123,14 @@ func upload(options *ObjectOptions) error {
 		awsConfig.Credentials = credentials.NewStaticCredentials(*options.accessKey, *options.secretKey, "")
 	}
 
-	if *options.region != "" {
+	switch {
+	case *options.region != "":
 		awsConfig.Region = options.region
-	} else if *options.endpoint != "" {
+	case *options.endpoint != "":
 		awsConfig.Region = aws.String("us-east-1")
-	} else {
+	default:
 		// AWS SDK for Go requires region
-		region, err := getBucketRegion(awsConfig, options.bucket, publishContext, httpclient)
+		region, err := getBucketRegion(awsConfig, options.bucket, publishContext, httpClient)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -144,7 +145,7 @@ func upload(options *ObjectOptions) error {
 	uploader := s3manager.NewUploader(awsSession)
 
 	file, err := os.Open(*options.file)
-	defer file.Close()
+	defer util.Close(file)
 	if err != nil {
 		return errors.WithStack(err)
 	}

@@ -77,13 +77,12 @@ func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bo
 		} else {
 			err = os.Mkdir(to, 0777)
 		}
-
-		err = SetDirPermsIfNeed(to, fromInfo.Mode())
-		if err != nil {
+		if err != nil && !os.IsExist(err) {
 			return errors.WithStack(err)
 		}
 
-		if err != nil && !os.IsExist(err) {
+		err = SetDirPermsIfNeed(to, fromInfo.Mode())
+		if err != nil {
 			return errors.WithStack(err)
 		}
 

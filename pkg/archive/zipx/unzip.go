@@ -175,7 +175,7 @@ func (t *Extractor) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
 
-func (t *Extractor) addWithParentsToCreated(dir string)  {
+func (t *Extractor) addWithParentsToCreated(dir string) {
 	// avoid string comparison: dir == t.outputDir, since dir is already checked to has prefix, length check is enough
 	minLength := len(t.outputDir)
 	for {
@@ -199,6 +199,7 @@ func (t *Extractor) addWithParentsToCreated(dir string)  {
 }
 
 func (t *Extractor) computeExtractPath(zipFile *zip.File) (string, error) {
+	// #nosec G305
 	filePath := filepath.Join(t.outputDir, zipFile.Name)
 	if strings.HasPrefix(filePath, t.outputDir) {
 		return filePath, nil
@@ -248,7 +249,7 @@ func (t *Extractor) extractAndWriteFile(zipFile *zip.File, filePath string) erro
 	return nil
 }
 
-func (t *Extractor) createSymlink(reader io.ReadCloser, zipFile *zip.File, filePath string) error {
+func (t *Extractor) createSymlink(reader io.Reader, zipFile *zip.File, filePath string) error {
 	buffer := make([]byte, zipFile.FileInfo().Size())
 	_, err := io.ReadFull(reader, buffer)
 	if err != nil {

@@ -70,7 +70,12 @@ func Execute(command *exec.Cmd, currentWorkingDirectory string) ([]byte, error) 
 		if exitError, ok := err.(*exec.ExitError); ok {
 			errorOut = string(exitError.Stderr)
 		}
-		return nil, errors.Errorf("error: %s\npath: %s\nargs: %s\noutput: %s\nerror output:", err, command.Path, argListToSafeString(command.Args), output, errorOut)
+
+		return nil, errors.New("error: " + err.Error() +
+			"\npath: " + command.Path +
+			"\nargs: " + argListToSafeString(command.Args) +
+			"\noutput: " + string(output) +
+			"\nerror output:" + errorOut)
 	} else if IsDebugEnabled() && len(output) != 0 && !(strings.HasSuffix(command.Path, "openssl") || strings.HasSuffix(command.Path, "openssl.exe")) {
 		log.Debug(string(output))
 	}
@@ -78,13 +83,18 @@ func Execute(command *exec.Cmd, currentWorkingDirectory string) ([]byte, error) 
 	return output, nil
 }
 
-func argListToSafeString(args []string)  string {
+func argListToSafeString(args []string) string {
 	var result strings.Builder
 	for index, value := range args {
 		if strings.HasPrefix(value, "pass:") {
 			hasher := sha512.New()
-			hasher.Write([]byte(value))
-			value = "sha512-first-8-chars-" + hex.EncodeToString(hasher.Sum(nil)[0:4])
+			_, err := hasher.Write([]byte(value))
+			if err == nil {
+				value = "sha512-first-8-chars-" + hex.EncodeToString(hasher.Sum(nil)[0:4])
+			} else {
+				log.WithError(err).Warn("cannot compute sha512 hash of password to log")
+				value = "<hidden>"
+			}
 		}
 		if index > 0 {
 			result.WriteRune(' ')

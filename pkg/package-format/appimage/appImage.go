@@ -36,6 +36,7 @@ type AppImageOptions struct {
 func ConfigureCommand(app *kingpin.Application) {
 	command := app.Command("appimage", "Build AppImage.")
 
+	//noinspection SpellCheckingInspection
 	options := &AppImageOptions{
 		appDir:   command.Flag("app", "The app dir.").Short('a').Required().String(),
 		stageDir: command.Flag("stage", "The stage dir.").Short('s').Required().String(),
@@ -56,6 +57,9 @@ func ConfigureCommand(app *kingpin.Application) {
 		var err error
 		if strings.HasPrefix(*configuration, "{") {
 			err = jsoniter.UnmarshalFromString(*configuration, &options.configuration)
+			if err != nil {
+				return err
+			}
 		} else {
 			data, err := base64.StdEncoding.DecodeString(*configuration)
 			if err != nil {
@@ -63,10 +67,9 @@ func ConfigureCommand(app *kingpin.Application) {
 			}
 
 			err = jsoniter.Unmarshal(data, &options.configuration)
-		}
-
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
 		}
 
 		err = AppImage(options)

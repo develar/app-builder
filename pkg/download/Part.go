@@ -110,9 +110,10 @@ func (part *Part) doRequest(request *http.Request, client *http.Client, index in
 		return nil, errors.WithStack(err)
 	}
 
-	if response.StatusCode == http.StatusPartialContent {
+	switch response.StatusCode {
+	case http.StatusPartialContent:
 		return response, nil
-	} else if response.StatusCode == http.StatusOK {
+	case http.StatusOK:
 		if part.End > 0 {
 			if index > 0 {
 				part.Skip = true
@@ -122,7 +123,7 @@ func (part *Part) doRequest(request *http.Request, client *http.Client, index in
 			part.End = response.ContentLength
 		}
 		return response, nil
-	} else {
+	default:
 		util.Close(response.Body)
 		return nil, errors.WithStack(fmt.Errorf("part download request failed with status code %d", response.StatusCode))
 	}

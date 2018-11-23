@@ -1,13 +1,11 @@
 package icons
 
 import (
-"os"
-"path/filepath"
+	"os"
+	"path/filepath"
 
-
-
-"github.com/apex/log"
-"github.com/develar/errors"
+	"github.com/apex/log"
+	"github.com/develar/errors"
 )
 
 // returns file if exists, null if file not exists, or error if unknown error
@@ -24,13 +22,14 @@ func resolveSourceFileOrNull(sourceFile string, roots []string) (string, os.File
 	for _, root := range roots {
 		resolvedPath := filepath.Join(root, sourceFile)
 		fileInfo, err := os.Stat(resolvedPath)
-		if err == nil {
+		switch {
+		case err == nil:
 			return resolvedPath, fileInfo, nil
-		} else if os.IsNotExist(err) {
+		case os.IsNotExist(err):
 			log.WithFields(log.Fields{
-				"path":  resolvedPath,
+				"path": resolvedPath,
 			}).Debug("path doesn't exist")
-		} else {
+		default:
 			log.WithFields(log.Fields{
 				"path":  resolvedPath,
 				"error": err,

@@ -204,7 +204,7 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		return nil
 	}
 
- 	// do not sort - final result will be sorted
+	// do not sort - final result will be sorted
 	for i := 0; i < queueIndex; i++ {
 		err = t.readDependencyTree(queue[i])
 		if err != nil {
@@ -225,7 +225,7 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 			}
 		}
 
-		childDependency, err := t.resolveDependency(nodeModuleDir, name, isOptional)
+		childDependency, err := t.resolveDependency(nodeModuleDir, name)
 		if err != nil {
 			return queueIndex, errors.WithStack(err)
 		}
@@ -267,7 +267,7 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 				continue
 			}
 
-			childDependency, err := t.resolveDependency(nodeModuleDir, name, isOptional)
+			childDependency, err := t.resolveDependency(nodeModuleDir, name)
 			if err != nil {
 				return queueIndex, errors.WithStack(err)
 			}
@@ -294,8 +294,8 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 	return queueIndex, nil
 }
 
-// nill if already handled
-func (t *Collector) resolveDependency(parentNodeModuleDir string, name string, isOptional bool) (*Dependency, error) {
+// nil if already handled
+func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (*Dependency, error) {
 	dependencyNameToDependency := t.NodeModuleDirToDependencyMap[parentNodeModuleDir]
 	if dependencyNameToDependency != nil {
 		dependency := (*dependencyNameToDependency)[name]

@@ -33,7 +33,7 @@ type BlockMapFile struct {
 }
 
 type InputFileInfo struct {
-	Size   int  `json:"size"`
+	Size   int    `json:"size"`
 	Sha512 string `json:"sha512"`
 
 	BlockMapSize *int `json:"blockMapSize,omitempty"`
@@ -57,9 +57,9 @@ const (
 
 var DefaultChunkerConfiguration = ChunkerConfiguration{
 	Window: 64,
-	Avg: 16*1024,
-	Min: 8*1024,
-	Max: 32*1024,
+	Avg:    16 * 1024,
+	Min:    8 * 1024,
+	Max:    32 * 1024,
 }
 
 func BuildBlockMap(inFile string, chunkerConfiguration ChunkerConfiguration, compressionFormat CompressionFormat, outFile string) (*InputFileInfo, error) {

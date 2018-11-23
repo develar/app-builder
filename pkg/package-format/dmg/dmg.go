@@ -73,13 +73,9 @@ func GetEffectiveBackgroundPath(path string) (string, error) {
 		return path, nil
 	}
 
-	re, err := regexp.Compile(`\.([a-z]+)$`)
-	if err != nil {
-		return "", err
-	}
-
+	re := regexp.MustCompile(`\.([a-z]+)$`)
 	retinaFile := re.ReplaceAllString(path, "@2x.$1")
-	_, err = os.Stat(retinaFile)
+	_, err := os.Stat(retinaFile)
 	if err != nil {
 		if !os.IsNotExist(err) {
 			log.WithError(err).Debug("checking retina file")
@@ -92,6 +88,7 @@ func GetEffectiveBackgroundPath(path string) (string, error) {
 		return "", err
 	}
 
+	//noinspection SpellCheckingInspection
 	_, err = util.Execute(exec.Command("tiffutil", "-cathidpicheck", path, retinaFile, "-out", tiffFile), "")
 	if err != nil {
 		return "", err

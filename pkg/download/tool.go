@@ -27,7 +27,7 @@ func DownloadFpm() (string, error) {
 		name := "fpm-1.9.3-2.3.1-linux" + archSuffix
 		return DownloadArtifact(
 			name,
-			"https://github.com/electron-userland/electron-builder-binaries/releases/download/" + name + "/" + name + ".7z",
+			"https://github.com/electron-userland/electron-builder-binaries/releases/download/"+name+"/"+name+".7z",
 			checksum,
 		)
 	} else {
@@ -47,7 +47,7 @@ func DownloadZstd(osName util.OsName) (string, error) {
 		},
 		win: map[string]string{
 			"ia32": "EcogWukKij8MqHr0pEqFw8Wb3EHLeLgXyj+AbokJ5uejf8y38GyR4nbsSLlbstgkG0SbaJYs7JvyPFgaT2Hc0Q==",
-			"x64": "NlN0f1Usvwdu4WRjK7KXfNPUOGv7uKJcwyGTX5fGL6zEuPJtCQ8cpd0S/Zgx1yxo0YYOFYm/z1xyy8eaoTxKog==",
+			"x64":  "NlN0f1Usvwdu4WRjK7KXfNPUOGv7uKJcwyGTX5fGL6zEuPJtCQ8cpd0S/Zgx1yxo0YYOFYm/z1xyy8eaoTxKog==",
 		},
 	}, osName)
 }
@@ -64,11 +64,14 @@ func downloadFromGithub(name string, version string, checksum string) (string, e
 
 func DownloadTool(descriptor ToolDescriptor, osName util.OsName) (string, error) {
 	arch := runtime.GOARCH
-	if arch == "arm" {
+	switch arch {
+	case "arm":
+		//noinspection SpellCheckingInspection
 		arch = "armv7"
-	} else if arch == "arm64" {
+	case "arm64":
+		//noinspection SpellCheckingInspection
 		arch = "armv8"
-	} else if arch == "amd64" {
+	case "amd64":
 		arch = "x64"
 	}
 
@@ -108,7 +111,7 @@ func DownloadTool(descriptor ToolDescriptor, osName util.OsName) (string, error)
 
 	osAndArch := osQualifier + archQualifier
 	return DownloadArtifact(
-		descriptor.Name+"-"+descriptor.Version+"-"+osAndArch /* ability to use cache dir on any platform (e.g. keep cache under project) */,
+		descriptor.Name+"-"+descriptor.Version+"-"+osAndArch, /* ability to use cache dir on any platform (e.g. keep cache under project) */
 		"https://github.com/"+repository+"/releases/download/"+tagPrefix+descriptor.Version+"/"+descriptor.Name+"-v"+descriptor.Version+"-"+osAndArch+".7z",
 		checksum,
 	)
@@ -120,9 +123,9 @@ type ToolDescriptor struct {
 
 	repository string
 
-	mac string
+	mac   string
 	linux map[string]string
-	win map[string]string
+	win   map[string]string
 }
 
 func GetZstd() (string, error) {

@@ -57,7 +57,7 @@ type Handler struct {
 // New handler.
 func New(w io.Writer) *Handler {
 	return &Handler{
-		Writer:  w,
+		Writer: w,
 		// change default padding from 3 to 2 (as electron-builder does, more compact)
 		Padding: 2,
 	}
@@ -72,14 +72,14 @@ func (h *Handler) HandleLog(e *log.Entry) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	fmt.Fprintf(h.Writer, "\033[%dm%*s\033[0m %-25s", color, h.Padding+1, level, e.Message)
+	_, _ = fmt.Fprintf(h.Writer, "\033[%dm%*s\033[0m %-25s", color, h.Padding+1, level, e.Message)
 
 	for _, name := range names {
 		if name == "source" {
 			continue
 		}
 
-		fmt.Fprintf(h.Writer, " \033[%dm%s\033[0m=%v", color, name, e.Fields.Get(name))
+		_, _ = fmt.Fprintf(h.Writer, " \033[%dm%s\033[0m=%v", color, name, e.Fields.Get(name))
 	}
 
 	_, err := fmt.Fprintln(h.Writer)

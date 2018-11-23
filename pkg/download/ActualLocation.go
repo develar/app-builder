@@ -62,7 +62,7 @@ func (actualLocation *ActualLocation) computeParts(minPartSize int64) {
 	start := int64(0)
 	for i := 0; i < partCount; i++ {
 		end := start + partSize
-		if end > contentLength || i == (partCount - 1) {
+		if end > contentLength || i == (partCount-1) {
 			end = contentLength
 		}
 

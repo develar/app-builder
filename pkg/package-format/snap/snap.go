@@ -75,6 +75,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		isUseDockerDefault = "true"
 	}
 
+	//noinspection SpellCheckingInspection
 	options := SnapOptions{
 		appDir:         command.Flag("app", "The app dir.").Short('a').Required().String(),
 		stageDir:       command.Flag("stage", "The stage dir.").Short('s').Required().String(),
@@ -214,11 +215,12 @@ func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
 		}
 	}
 
-	if isUseTemplateApp {
+	switch {
+	case isUseTemplateApp:
 		return buildWithoutDockerUsingTemplate(templateFile, options)
-	} else if isUseDocker {
+	case isUseDocker:
 		return buildUsingDocker(options)
-	} else {
+	default:
 		return buildWithoutDockerAndWithoutTemplate(options)
 	}
 }
@@ -251,10 +253,7 @@ func RemoveAdapter(snapFilePath string) error {
 		return errors.WithStack(err)
 	}
 
-	re, err := regexp.Compile("(?m)[\r\n]+^\\s+adapter: none.*$")
-	if err != nil {
-		return errors.WithStack(err)
-	}
+	re := regexp.MustCompile("(?m)[\r\n]+^\\s+adapter: none.*$")
 
 	fixedData := re.ReplaceAll(data, []byte{})
 	if len(fixedData) != len(data) {
@@ -375,7 +374,7 @@ func buildUsingDocker(options SnapOptions) error {
 	return nil
 }
 
-func cleanUpSnap(dir string) (error) {
+func cleanUpSnap(dir string) error {
 	return util.MapAsync(len(unnecessaryFiles), func(taskIndex int) (func() error, error) {
 		file := filepath.Join(dir, unnecessaryFiles[taskIndex])
 		return func() error {

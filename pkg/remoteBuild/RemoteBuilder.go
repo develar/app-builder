@@ -9,7 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-		"strings"
+	"strings"
 	"time"
 
 	"github.com/alecthomas/kingpin"
@@ -82,7 +82,7 @@ func (t *RemoteBuilder) build(buildRequest string, filesToPack []string, outDir 
 	}
 
 	if resultEvent == nil {
-		os.Stdout.Write(rawResult)
+		_, _ = os.Stdout.Write(rawResult)
 		return nil
 	}
 
@@ -91,7 +91,7 @@ func (t *RemoteBuilder) build(buildRequest string, filesToPack []string, outDir 
 		return err
 	}
 
-	os.Stdout.Write(rawResult)
+	_, _ = os.Stdout.Write(rawResult)
 
 	log.Info("found build service useful? Please donate (https://donorbox.org/electron-build-service)")
 	return nil
@@ -110,7 +110,7 @@ func readEvents(response *http.Response) (*Event, []byte, error) {
 		}
 
 		// exclude last \n
-		encodedEvent = encodedEvent[0:len(encodedEvent) - 1]
+		encodedEvent = encodedEvent[0 : len(encodedEvent)-1]
 
 		if util.IsDebugEnabled() {
 			log.WithField("event", string(encodedEvent)).Debug("remote builder event")
@@ -122,13 +122,14 @@ func readEvents(response *http.Response) (*Event, []byte, error) {
 			return nil, nil, err
 		}
 
-		if event.Status != "" {
+		switch {
+		case event.Status != "":
 			log.WithField("status", strings.TrimSuffix(event.Status, "\n")).Info("remote building")
-		} else if event.Error != "" {
+		case event.Error != "":
 			return nil, encodedEvent, nil
-		} else if event.Files != nil {
+		case event.Files != nil:
 			return &event, encodedEvent, nil
-		} else {
+		default:
 			log.WithField("event", string(encodedEvent)).Warn("unknown builder event")
 		}
 	}
@@ -156,11 +157,11 @@ func (t *RemoteBuilder) downloadArtifacts(resultEvent *Event, outDir string) err
 }
 
 type Event struct {
-	Status string `json:"status"`
-	Error string `json:"error"`
-	BaseUrl string `json:"baseUrl"`
-	Files []File `json:"files"`
-	FileSizes []int `json:"fileSizes"`
+	Status    string `json:"status"`
+	Error     string `json:"error"`
+	BaseUrl   string `json:"baseUrl"`
+	Files     []File `json:"files"`
+	FileSizes []int  `json:"fileSizes"`
 }
 
 type File struct {
@@ -218,6 +219,9 @@ func (t *RemoteBuilder) upload(buildRequest string, filesToPack []string, buildR
 	log.Info("compressing and uploading to remote builder")
 	startTime := time.Now()
 	err = util.StartPipedCommands(tarCommand, compressCommand)
+	if err != nil {
+		return nil, err
+	}
 
 	url := t.endpoint + "/v2/build"
 	req, err := http.NewRequest(http.MethodPost, url, compressOutput)
@@ -230,12 +234,12 @@ func (t *RemoteBuilder) upload(buildRequest string, filesToPack []string, buildR
 	// only for stats purpose, not required for build
 	req.Header.Set("x-zstd-compression-level", zstdCompressionLevel)
 
-	util.StartPipedCommands(tarCommand, compressCommand)
+	_ = util.StartPipedCommands(tarCommand, compressCommand)
 	response, err := client.Do(req)
 
 	if err == nil {
 		if response.StatusCode != http.StatusOK {
-			response.Body.Close()
+			_ = response.Body.Close()
 			err = fmt.Errorf("cannot get %s: http error %d", url, response.StatusCode)
 		}
 	}
@@ -259,15 +263,15 @@ func (t *RemoteBuilder) upload(buildRequest string, filesToPack []string, buildR
 
 func getZstdCompressionLevel(endpoint string) string {
 	result := os.Getenv("BUILD_SERVICE_ZSTD_COMPRESSION")
-  if result != "" {
-    return result
-  }
+	if result != "" {
+		return result
+	}
 
-  // 18 - 40s
-  // 17 - 30s
-  // 16 - 20s
-  if strings.HasPrefix(endpoint, "https://127.0.0.1:") || strings.HasPrefix(endpoint, "https://localhost:") || strings.HasPrefix(endpoint, "[::1]:") {
-  	return "3"
+	// 18 - 40s
+	// 17 - 30s
+	// 16 - 20s
+	if strings.HasPrefix(endpoint, "https://127.0.0.1:") || strings.HasPrefix(endpoint, "https://localhost:") || strings.HasPrefix(endpoint, "[::1]:") {
+		return "3"
 	} else {
 		return "16"
 	}

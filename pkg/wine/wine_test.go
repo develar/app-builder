@@ -26,7 +26,9 @@ func TestCheckWineVersion(t *testing.T) {
 }
 
 //noinspection GoUnusedFunction
-func _TestCheckWineVersionReal(t *testing.T) {
+func TestCheckWineVersionReal(t *testing.T) {
+	t.SkipNow()
+
 	g := NewGomegaWithT(t)
 
 	err := checkWineVersion()

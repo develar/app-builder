@@ -36,7 +36,7 @@ YYs=
 -----END CERTIFICATE-----
 `
 
-func getTls() (*tls.Config) {
+func getTls() *tls.Config {
 	caCertPool := x509.NewCertPool()
 	pemCerts, serverName := getCaCerts()
 	caCertPool.AppendCertsFromPEM(pemCerts)

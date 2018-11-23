@@ -1,7 +1,6 @@
 package remoteBuild
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -11,10 +10,11 @@ import (
 
 	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/util"
+	"github.com/develar/errors"
 	"github.com/json-iterator/go"
 )
 
-func findBuildAgent(transport *http.Transport) (string, error) {
+func findBuildAgent(transport http.RoundTripper) (string, error) {
 	result := os.Getenv("BUILD_AGENT_HOST")
 	if result != "" {
 		log.WithField("host", result).Debug("build agent host is set explicitly")
@@ -57,10 +57,8 @@ func getBuildAgentEndpoint(client *http.Client, url string) (string, error) {
 		defer util.Close(response.Body)
 	}
 
-	if err == nil {
-		if response.StatusCode != http.StatusOK {
-			err = fmt.Errorf("cannot get %s: http error %d", url, response.StatusCode)
-		}
+	if response.StatusCode != http.StatusOK {
+		return "", errors.Errorf("cannot get %s: http error %d", url, response.StatusCode)
 	}
 
 	bodyBytes, err := ioutil.ReadAll(response.Body)

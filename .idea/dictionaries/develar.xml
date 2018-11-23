@@ -3,22 +3,29 @@
     <words>
       <w>Errorf</w>
       <w>KHTML</w>
+      <w>appimage</w>
       <w>blockmap</w>
       <w>chunking</w>
       <w>geoip</w>
       <w>goreleaser</w>
       <w>hasher</w>
+      <w>icns</w>
       <w>launchui</w>
       <w>libui</w>
       <w>lintian</w>
+      <w>localappdata</w>
       <w>mkfs</w>
       <w>mksquashfs</w>
       <w>noappend</w>
       <w>ostype</w>
       <w>snapcore</w>
+      <w>snapcraft</w>
+      <w>tiffutil</w>
       <w>umask</w>
+      <w>userland</w>
       <w>virtualgo</w>
       <w>xattrs</w>
+      <w>zstd</w>
     </words>
   </dictionary>
 </component>

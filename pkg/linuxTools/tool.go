@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-		"github.com/develar/app-builder/pkg/download"
-		"github.com/develar/app-builder/pkg/util"
+	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 )

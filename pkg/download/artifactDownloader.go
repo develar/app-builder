@@ -60,11 +60,12 @@ func GetCacheDirectoryForArtifactCustom(dirName string) (string, error) {
 // * don't pollute user project dir (important in case of 1-package.json project structure)
 // * simplify/speed-up tests (don't download fpm for each test project)
 func DownloadArtifact(dirName string, url string, checksum string) (string, error) {
-	if dirName == "fpm" {
+	switch dirName {
+	case "fpm":
 		return DownloadFpm()
-	} else if dirName == "zstd" {
+	case "zstd":
 		return DownloadZstd(util.GetCurrentOs())
-	} else if dirName == "winCodeSign" {
+	case "winCodeSign":
 		return DownloadWinCodeSign()
 	}
 
@@ -129,7 +130,7 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	return filePath, nil
 }
 
-func RemoveArchiveFile(archiveName string, tempUnpackDir string, logFields *log.Fields) {
+func RemoveArchiveFile(archiveName string, tempUnpackDir string, logFields log.Fielder) {
 	err := os.Remove(archiveName)
 	if err != nil {
 		log.WithFields(logFields).WithFields(log.Fields{
@@ -139,7 +140,7 @@ func RemoveArchiveFile(archiveName string, tempUnpackDir string, logFields *log.
 	}
 }
 
-func CheckCache(filePath string, cacheDir string, logFields *log.Fields) (bool, error) {
+func CheckCache(filePath string, cacheDir string, logFields log.Fielder) (bool, error) {
 	dirStat, err := os.Stat(filePath)
 	if err == nil && dirStat.IsDir() {
 		log.WithFields(logFields).Debug("found existing")
@@ -158,7 +159,7 @@ func CheckCache(filePath string, cacheDir string, logFields *log.Fields) (bool, 
 	return false, nil
 }
 
-func RenameToFinalFile(tempFile string, filePath string, logFields *log.Fields) {
+func RenameToFinalFile(tempFile string, filePath string, logFields log.Fielder) {
 	err := os.Rename(tempFile, filePath)
 	if err != nil {
 		log.WithFields(logFields).WithFields(log.Fields{

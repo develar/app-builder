@@ -1,6 +1,8 @@
 package util
 
-import "runtime"
+import (
+	"runtime"
+)
 
 type OsName int
 
@@ -10,6 +12,17 @@ const (
 	WINDOWS
 )
 
+func (t OsName) String() string {
+	switch t {
+	case MAC:
+		return "mac"
+	case WINDOWS:
+		return "windows"
+	default:
+		return "linux"
+	}
+}
+
 //noinspection GoExportedFuncWithUnexportedType
 func GetCurrentOs() OsName {
 	return ToOsName(runtime.GOOS)
@@ -17,11 +30,12 @@ func GetCurrentOs() OsName {
 
 //noinspection GoExportedFuncWithUnexportedType
 func ToOsName(name string) OsName {
-	if name == "windows" || name == "win32" {
+	switch name {
+	case "windows", "win32", "win":
 		return WINDOWS
-	} else if name == "darwin" || name == "mac" || name == "macOs" {
+	case "darwin", "mac", "macOS", "macOs":
 		return MAC
-	} else {
+	default:
 		return LINUX
 	}
 }

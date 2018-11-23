@@ -1,2 +1,0 @@
-package resource_editor
-

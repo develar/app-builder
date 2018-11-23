@@ -18,7 +18,7 @@ type ProtonNativeOptions struct {
 	nodeJsVersion   string
 	LaunchUiVersion string
 
-	stageDir string
+	stageDir       string
 	executableName string
 
 	platform util.OsName
@@ -163,7 +163,7 @@ func toLaunchUiDownloadPlatform(os util.OsName) string {
 func toNodeJsExecutableName(os util.OsName) string {
 	if os == util.WINDOWS {
 		return "node.exe"
-	}	else {
+	} else {
 		return "node"
 	}
 }
