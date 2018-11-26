@@ -14,6 +14,7 @@ import (
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 	"github.com/oxtoacart/bpool"
+	"github.com/phayes/permbits"
 )
 
 func ConfigureUnzipCommand(app *kingpin.Application) {
@@ -219,9 +220,19 @@ func (t *Extractor) extractDir(zipFile *zip.File) error {
 		return err
 	}
 
-	err = fs.SetDirPermsIfNeed(filePath, zipFile.Mode())
-	if err != nil {
-		return err
+	perm := zipFile.Mode()
+	if perm != 0755 {
+		isChanged, err := util.FixPermissions(filePath, permbits.FileMode(perm))
+		if err != nil {
+			return err
+		}
+
+		if !isChanged {
+			err = fs.SetDirPermsIfNeed(filePath, perm)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	t.addWithParentsToCreated(filePath)
@@ -231,7 +242,7 @@ func (t *Extractor) extractDir(zipFile *zip.File) error {
 func (t *Extractor) extractAndWriteFile(zipFile *zip.File, filePath string) error {
 	file, err := zipFile.Open()
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
 
 	defer util.Close(file)

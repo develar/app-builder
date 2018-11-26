@@ -242,19 +242,9 @@ func checkAndFixIconPermissions(icons []IconInfo) error {
 				return errors.WithStack(err)
 			}
 
-			if permissions.GroupRead() && permissions.OtherRead() {
-				return nil
-			}
-
-			log.WithFields(log.Fields{
-				"file":   filePath,
-				"reason": "group or other cannot read",
-			}).Error("fix permissions")
-			permissions.SetGroupWrite(true)
-			permissions.SetOtherRead(true)
-			err = permbits.Chmod(filePath, permissions)
+			_, err = util.FixPermissions(filePath, permissions)
 			if err != nil {
-				return errors.WithStack(err)
+				return err
 			}
 			return nil
 		}, nil
