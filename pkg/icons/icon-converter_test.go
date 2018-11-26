@@ -1,4 +1,4 @@
-package icons_test
+package icons
 
 import (
 	"io/ioutil"
@@ -11,8 +11,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/develar/app-builder/pkg/icons"
-
 	"github.com/biessek/golang-ico"
 	"github.com/develar/app-builder/pkg/log-cli"
 )
@@ -21,6 +19,24 @@ func TestIcons(t *testing.T) {
 	log_cli.InitLogger()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Icons Suite")
+}
+
+func TestCommonSourcesSet(t *testing.T) {
+	result := createCommonIconSources([]string{"foo"}, nil, "set")
+	g := NewGomegaWithT(t)
+	g.Expect(result).To(Equal([]string{"foo", "foo.png", "foo.icns", "foo.ico", "icons", "icon.png", "icon.icns", "icon.ico"}))
+}
+
+func TestCommonSourcesIcns(t *testing.T) {
+	result := createCommonIconSources([]string{"foo"}, nil, "icns")
+	g := NewGomegaWithT(t)
+	g.Expect(result).To(Equal([]string{"foo.icns", "foo", "foo.png", "icon.icns", "icons", "icon.png"}))
+}
+
+func TestCommonSourcesNil(t *testing.T) {
+	result := createCommonIconSources(nil, nil, "set")
+	g := NewGomegaWithT(t)
+	g.Expect(result).To(Equal([]string{"icons", "icon.png", "icon.icns", "icon.ico"}))
 }
 
 func getTestDataPath() string {

@@ -44,7 +44,7 @@ func resolveSourceFile(sourceFiles []string, roots []string) (string, os.FileInf
 	for _, sourceFile := range sourceFiles {
 		resolvedPath, fileInfo, err := resolveSourceFileOrNull(sourceFile, roots)
 		if err != nil {
-			return "", nil, errors.WithStack(err)
+			return "", nil, err
 		}
 		if fileInfo != nil {
 			return resolvedPath, fileInfo, nil

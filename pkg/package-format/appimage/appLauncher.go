@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/package-format"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
@@ -174,9 +175,24 @@ func writeDesktopFile(options *AppImageOptions) (string, error) {
 }
 
 func writeAppLauncherAndRelatedFiles(options *AppImageOptions) error {
-	t, err := template.ParseFiles(*options.template)
-	if err != nil {
-		return errors.WithStack(err)
+	var t *template.Template
+	if *options.template == "" {
+		data, err := package_format.Asset("appimage/templates/AppRun.sh")
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		t = template.New("AppRun.sh")
+		t, err = t.Parse(string(data))
+		if err != nil {
+			return errors.WithStack(err)
+		}
+	} else {
+		var err error
+		t, err = template.ParseFiles(*options.template)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 
 	desktopFileName, err := writeDesktopFile(options)
@@ -192,6 +208,10 @@ func writeAppLauncherAndRelatedFiles(options *AppImageOptions) error {
 		ProductName:       configuration.ProductName,
 		ResourceName:      "appimagekit-" + executableName,
 		SystemIntegration: configuration.SystemIntegration,
+	}
+
+	if templateConfiguration.SystemIntegration == "" {
+		templateConfiguration.SystemIntegration = "ask"
 	}
 
 	licenseFile := *options.license

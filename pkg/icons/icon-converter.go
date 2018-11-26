@@ -52,45 +52,40 @@ func isFileHasImageFormatExtension(name string, outputFormat string) bool {
 }
 
 func createCommonIconSources(sources []string, fallbackSources []string, outputFormat string) []string {
-	var list []string
+	var result []string
 
-	if len(sources) != 0 {
-		source := sources[0]
+	for _, source := range sources {
 		// do not use filepath.Ext to ensure that dot can be used in filename
-		if outputFormat != "set" && !isFileHasImageFormatExtension(source, outputFormat) {
-			list = append(list, source+"."+outputFormat)
-			appendImageVariants(source, outputFormat, list)
+		if isFileHasImageFormatExtension(source, outputFormat) {
+			result = append(result, source)
 		} else {
-			list = append(list, source)
+			result = appendImageVariants(source, source, outputFormat, result)
 		}
 	}
 
-	if outputFormat != "set" {
-		list = append(list, "icon."+outputFormat)
-	}
+	result = appendImageVariants("icon", "icons", outputFormat, result)
 
-	list = append(list, "icons")
-
-	list = appendImageVariants("icon", outputFormat, list)
-
-	if len(sources) > 1 {
-		list = append(list, sources[1:]...)
-	}
 	if len(fallbackSources) > 0 {
-		list = append(list, fallbackSources...)
+		result = append(result, fallbackSources...)
 	}
-	return list
+	return result
 }
 
-func appendImageVariants(name string, outputFormat string, list []string) []string {
+func appendImageVariants(nameWithoutExt string, nameForSetWithoutExt string, outputFormat string, list []string) []string {
+	if outputFormat != "set" {
+		list = append(list, nameWithoutExt+"."+outputFormat)
+	}
+
+	list = append(list, nameForSetWithoutExt)
+
 	if outputFormat != "png" {
-		list = append(list, name+".png")
+		list = append(list, nameWithoutExt+".png")
 	}
 	if outputFormat != "icns" {
-		list = append(list, name+".icns")
+		list = append(list, nameWithoutExt+".icns")
 		// ico only for non icns
 		if outputFormat != "ico" {
-			list = append(list, name+".ico")
+			list = append(list, nameWithoutExt+".ico")
 		}
 	}
 	return list

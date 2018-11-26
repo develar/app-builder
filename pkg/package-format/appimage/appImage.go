@@ -43,7 +43,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		output:   command.Flag("output", "The output file.").Short('o').Required().String(),
 		arch:     command.Flag("arch", "The arch.").Default("x64").Enum("x64", "ia32", "armv7l", "arm64"),
 
-		template: command.Flag("template", "The template file.").Required().String(),
+		template: command.Flag("template", "The template file.").String(),
 		license:  command.Flag("license", "The license file.").String(),
 
 		compression: command.Flag("compression", "The compression.").Enum("xz", "gzip"),
