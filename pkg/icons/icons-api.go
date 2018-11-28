@@ -18,6 +18,7 @@ func sortBySize(list []IconInfo) {
 
 type IconConvertResult struct {
 	Icons []IconInfo `json:"icons"`
+	Fallback bool `json:"fallback"`
 }
 
 type MisConfigurationError struct {
