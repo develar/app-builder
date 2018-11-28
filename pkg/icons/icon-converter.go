@@ -27,7 +27,7 @@ func ConfigureCommand(app *kingpin.Application) {
 	iconRoots := command.Flag("root", "base directory to resolve relative path").Short('r').Strings()
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		icons, err := ConvertIcon(createCommonIconSources(*sources, *iconOutFormat), *iconRoots, *iconOutFormat, *outDir)
+		icons, err := ConvertIcon(validateIconSources(*sources, *iconOutFormat), *iconRoots, *iconOutFormat, *outDir)
 		fallback := false
 
 		// try using fallback sources
@@ -60,7 +60,7 @@ func isFileHasImageFormatExtension(name string, outputFormat string) bool {
 	return strings.HasSuffix(name, "."+outputFormat) || strings.HasSuffix(name, ".png") || strings.HasSuffix(name, ".ico") || strings.HasSuffix(name, ".svg") || strings.HasSuffix(name, ".icns")
 }
 
-func createCommonIconSources(sources []string, outputFormat string) []string {
+func validateIconSources(sources []string, outputFormat string) []string {
 	var result []string
 
 	for _, source := range sources {
