@@ -12,4 +12,6 @@ cache:
 go:
   - 1.11.x
 
-script: make test
+script:
+  - make build
+  - make test
