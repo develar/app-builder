@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/apex/log v1.1.0
-	github.com/aws/aws-sdk-go v1.15.83
+	github.com/aws/aws-sdk-go v1.15.87
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -35,10 +35,11 @@ require (
 	github.com/stretchr/testify v1.2.2 // indirect
 	github.com/zieckey/goini v0.0.0-20180118150432-0da17d361d26
 	golang.org/x/image v0.0.0-20181116024801-cd38e8056d9b // indirect
-	golang.org/x/net v0.0.0-20181114220301-adae6a3d119a // indirect
+	golang.org/x/net v0.0.0-20181129055619-fae4c4e3ad76 // indirect
 	golang.org/x/sync v0.0.0-20181108010431-42b317875d0f // indirect
-	golang.org/x/sys v0.0.0-20181122145206-62eef0e2fa9b // indirect
+	golang.org/x/sys v0.0.0-20181128092732-4ed8d59d0b35 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	gopkg.in/yaml.v2 v2.2.2 // indirect
 )
 
 //replace github.com/develar/go-pkcs12 => ../go-pkcs12
