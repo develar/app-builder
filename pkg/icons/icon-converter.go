@@ -14,20 +14,23 @@ import (
 	"github.com/phayes/permbits"
 )
 
-func ConfigureCommand(app *kingpin.Application) {
+func ConfigureCommand(app *kingpin.Application) error {
 	command := app.Command("icon", "create ICNS or ICO or icon set from PNG files")
 
-	// first is used as is and file ext can be missed,
-	// then common sources added,
-	sources := command.Flag("input", "input directory or file").Short('i').Strings()
-	// then fallback sources
-	fallbackSources := command.Flag("fallback-input", "input directory or file").Strings()
+	configuration := &IconConvertRequest{
+		Sources:         command.Flag("input", "input source file or directory").Short('i').Strings(),
+		FallbackSources: command.Flag("fallback-input", "fallback source file or directory").Strings(),
+		Roots:           command.Flag("root", "base directory to resolve relative path").Strings(),
+	}
+
 	iconOutFormat := command.Flag("format", "output format").Short('f').Required().Enum("icns", "ico", "set")
 	outDir := command.Flag("out", "output directory").Required().String()
-	iconRoots := command.Flag("root", "base directory to resolve relative path").Short('r').Strings()
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		icons, err := ConvertIcon(createCommonIconSources(*sources, *fallbackSources, *iconOutFormat), *iconRoots, *iconOutFormat, *outDir)
+		configuration.OutputFormat = *iconOutFormat
+		configuration.OutputDir = *outDir
+
+		result, err := ConvertIcon(configuration)
 		if err != nil {
 			switch t := errors.Cause(err).(type) {
 			case *ImageSizeError:
@@ -43,15 +46,39 @@ func ConfigureCommand(app *kingpin.Application) {
 			}
 		}
 
-		return util.WriteJsonToStdOut(IconConvertResult{Icons: icons})
+		return util.WriteJsonToStdOut(result)
 	})
+
+	return nil
+}
+
+func ConvertIcon(configuration *IconConvertRequest) (*IconConvertResult, error) {
+	result, err := doConvertIcon(createCommonIconSources(*configuration.Sources, configuration.OutputFormat), *configuration.Roots, configuration.OutputFormat, configuration.OutputDir)
+	if err != nil {
+		return nil, err
+	}
+
+	isFallback := false
+
+	// try using fallback sources
+	if result == nil {
+		log.Debug("no icons found, using provided fallback sources")
+		result, err = doConvertIcon(*configuration.FallbackSources, *configuration.Roots, configuration.OutputFormat, configuration.OutputDir)
+		if err != nil {
+			return nil, err
+		}
+
+		isFallback = true
+	}
+
+	return &IconConvertResult{Icons: result, IsFallback: isFallback}, nil
 }
 
 func isFileHasImageFormatExtension(name string, outputFormat string) bool {
 	return strings.HasSuffix(name, "."+outputFormat) || strings.HasSuffix(name, ".png") || strings.HasSuffix(name, ".ico") || strings.HasSuffix(name, ".svg") || strings.HasSuffix(name, ".icns")
 }
 
-func createCommonIconSources(sources []string, fallbackSources []string, outputFormat string) []string {
+func createCommonIconSources(sources []string, outputFormat string) []string {
 	var result []string
 
 	for _, source := range sources {
@@ -64,10 +91,6 @@ func createCommonIconSources(sources []string, fallbackSources []string, outputF
 	}
 
 	result = appendImageVariants("icon", "icons", outputFormat, result)
-
-	if len(fallbackSources) > 0 {
-		result = append(result, fallbackSources...)
-	}
 	return result
 }
 
@@ -128,7 +151,7 @@ func outputFormatToSingleFileExtension(outputFormat string) string {
 	return "." + outputFormat
 }
 
-func ConvertIcon(sourceFiles []string, roots []string, outputFormat string, outDir string) ([]IconInfo, error) {
+func doConvertIcon(sourceFiles []string, roots []string, outputFormat string, outDir string) ([]IconInfo, error) {
 	// allowed to specify path to icns without extension, so, if file not resolved, try to add ".icns" extension
 	outExt := outputFormatToSingleFileExtension(outputFormat)
 	resolvedPath, fileInfo, err := resolveSourceFile(sourceFiles, roots)

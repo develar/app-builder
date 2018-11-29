@@ -16,8 +16,18 @@ func sortBySize(list []IconInfo) {
 	sort.Slice(list, func(i, j int) bool { return list[i].Size < list[j].Size })
 }
 
+type IconConvertRequest struct {
+	Sources         *[]string
+	FallbackSources *[]string
+	Roots           *[]string
+
+	OutputFormat string
+	OutputDir    string
+}
+
 type IconConvertResult struct {
-	Icons []IconInfo `json:"icons"`
+	Icons      []IconInfo `json:"icons"`
+	IsFallback bool       `json:"isFallback"`
 }
 
 type MisConfigurationError struct {

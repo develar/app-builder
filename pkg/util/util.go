@@ -39,11 +39,12 @@ func getLevel() log.Level {
 func WriteJsonToStdOut(v interface{}) error {
 	serializedInputInfo, err := jsoniter.ConfigFastest.Marshal(v)
 	if err != nil {
-		return err
+		return errors.WithStack(err)
 	}
+
 	_, err = os.Stdout.Write(serializedInputInfo)
 	_ = os.Stdout.Close()
-	return err
+	return errors.WithStack(err)
 }
 
 // useful for snap, where prime command took a lot of time and we need to read progress messages

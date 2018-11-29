@@ -22,19 +22,20 @@ func TestIcons(t *testing.T) {
 }
 
 func TestCommonSourcesSet(t *testing.T) {
-	result := createCommonIconSources([]string{"foo"}, nil, "set")
 	g := NewGomegaWithT(t)
+
+	result := createCommonIconSources([]string{"foo"}, "set")
 	g.Expect(result).To(Equal([]string{"foo", "foo.png", "foo.icns", "foo.ico", "icons", "icon.png", "icon.icns", "icon.ico"}))
 }
 
 func TestCommonSourcesIcns(t *testing.T) {
-	result := createCommonIconSources([]string{"foo"}, nil, "icns")
+	result := createCommonIconSources([]string{"foo"}, "icns")
 	g := NewGomegaWithT(t)
 	g.Expect(result).To(Equal([]string{"foo.icns", "foo", "foo.png", "icon.icns", "icons", "icon.png"}))
 }
 
 func TestCommonSourcesNil(t *testing.T) {
-	result := createCommonIconSources(nil, nil, "set")
+	result := createCommonIconSources(nil, "set")
 	g := NewGomegaWithT(t)
 	g.Expect(result).To(Equal([]string{"icons", "icon.png", "icon.icns", "icon.ico"}))
 }
@@ -60,12 +61,12 @@ var _ = Describe("Blockmap", func() {
 	})
 
 	It("CheckIcoImageSize", func() {
-		_, err := ConvertIcon([]string{filepath.Join(getTestDataPath(), "icon.ico")}, nil, "ico", tmpDir)
+		_, err := doConvertIcon([]string{filepath.Join(getTestDataPath(), "icon.ico")}, nil, "ico", tmpDir)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
 	It("IcnsToIco", func() {
-		files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(), "icon.icns")}, nil, "ico", tmpDir)
+		files, err := doConvertIcon([]string{filepath.Join(getTestDataPath(), "icon.icns")}, nil, "ico", tmpDir)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(files)).To(Equal(1))
 		file := files[0].File
@@ -93,7 +94,7 @@ var _ = Describe("Blockmap", func() {
 	})
 
 	It("LargePngTo256Ico", func() {
-		files, err := ConvertIcon([]string{filepath.Join(getTestDataPath(), "512x512.png")}, nil, "ico", tmpDir)
+		files, err := doConvertIcon([]string{filepath.Join(getTestDataPath(), "512x512.png")}, nil, "ico", tmpDir)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(len(files)).To(Equal(1))
 		file := files[0].File

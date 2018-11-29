@@ -41,7 +41,7 @@ func main() {
 		return
 	}
 
-	var app = kingpin.New("app-builder", "app-builder").Version("2.5.5")
+	var app = kingpin.New("app-builder", "app-builder").Version("2.6.0")
 
 	node_modules.ConfigureCommand(app)
 	//codesign.ConfigureCommand(app)
@@ -62,7 +62,12 @@ func main() {
 	ConfigureCopyCommand(app)
 	appimage.ConfigureCommand(app)
 	snap.ConfigureCommand(app)
-	icons.ConfigureCommand(app)
+
+	err := icons.ConfigureCommand(app)
+	if err != nil {
+		util.LogErrorAndExit(err)
+	}
+
 	dmg.ConfigureCommand(app)
 	elfExecStack.ConfigureCommand(app)
 	blockmap.ConfigureCommand(app)
@@ -70,7 +75,7 @@ func main() {
 
 	wine.ConfigureCommand(app)
 
-	_, err := app.Parse(os.Args[1:])
+	_, err = app.Parse(os.Args[1:])
 	if err != nil {
 		util.LogErrorAndExit(err)
 	}
