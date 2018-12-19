@@ -147,25 +147,33 @@ func ResolveTemplateFile(templateFile string, templateUrl string, templateSha512
 func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {
 	out, err := exec.Command("snapcraft", "--version").Output()
 
-	var install string
+	var installMessage string
 	if runtime.GOOS == "darwin" {
-		install = "brew update snapcraft"
+		installMessage = "brew update snapcraft"
 	} else {
-		install = "sudo snap install snapcraft --classic"
+		installMessage = "sudo snap install snapcraft --classic"
 	}
 
 	if err == nil {
-		if version.Compare(strings.TrimSpace(string(out)), "2.40.0", "<") {
-			return util.NewMessageError("at least snapcraft 2.40.0 is required, please: "+install, "ERR_SNAPCRAFT_OUTDATED")
-		} else {
-			return nil
-		}
+		return doCheckSnapVersion(string(out), installMessage)
 	}
 
 	log.Debug(err.Error())
 
 	if isRequireToBeInstalled {
-		return util.NewMessageError("snapcraft is not installed, please: "+install, "ERR_SNAPCRAFT_NOT_INSTALLED")
+		return util.NewMessageError("snapcraft is not installed, please: "+installMessage, "ERR_SNAPCRAFT_NOT_INSTALLED")
+	} else {
+		return nil
+	}
+}
+
+func doCheckSnapVersion(rawVersion string, installMessage string) error {
+	s := strings.TrimSpace(rawVersion)
+	s = strings.TrimSpace(strings.TrimPrefix(s, "snapcraft"))
+	s = strings.TrimSpace(strings.TrimPrefix(s, ","))
+	s = strings.TrimSpace(strings.TrimPrefix(s, "version"))
+	if version.Compare(s, "2.40.0", "<") {
+		return util.NewMessageError("at least snapcraft 2.40.0 is required, but " + rawVersion + " installed, please: "+installMessage, "ERR_SNAPCRAFT_OUTDATED")
 	} else {
 		return nil
 	}
