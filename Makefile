@@ -39,7 +39,7 @@ test:
 assets:
 	go-bindata -o ./pkg/package-format/bindata.go -pkg package_format -prefix ./pkg/package-format ./pkg/package-format/appimage/templates
 
-publish: build
+publish: build-all
 	./scripts/publish-npm.sh
 
 update-deps:
