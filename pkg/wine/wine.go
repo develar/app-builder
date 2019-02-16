@@ -51,11 +51,28 @@ func execWine(ia32Name string, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	if util.IsEnvTrue("USE_SYSTEM_WINE") {
+	useSystemWine := util.IsEnvTrue("USE_SYSTEM_WINE")
+	if useSystemWine {
 		log.Debug("using system wine is forced")
 	}
 
 	if util.GetCurrentOs() == util.MAC {
+		if useSystemWine {
+			command := exec.CommandContext(ctx, "wine", args...)
+			env := os.Environ()
+			env = append(env,
+				fmt.Sprintf("WINEDEBUG=%s", "-all,err+all"),
+				fmt.Sprintf("WINEDLLOVERRIDES=%s", "winemenubuilder.exe=d"),
+			)
+			command.Env = env
+
+			if _, err := util.Execute(command, ""); err != nil {
+				return err
+			}
+
+			return nil
+		}
+
 		dirName := "wine-2.0.3-mac-10.13"
 		checksum := "dlEVCf0YKP5IEiOKPNE48Q8NKXbXVdhuaI9hG2oyDEay2c+93PE5qls7XUbIYq4Xi1gRK8fkWeCtzN2oLpVQtg=="
 		wineDir, err := download.DownloadArtifact(dirName, "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", checksum)
