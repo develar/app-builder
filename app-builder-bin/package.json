@@ -1,7 +1,7 @@
 {
   "name": "app-builder-bin",
   "description": "app-builder precompiled binaries",
-  "version": "2.6.3",
+  "version": "2.6.4",
   "files": [
     "*.js",
     "mac",

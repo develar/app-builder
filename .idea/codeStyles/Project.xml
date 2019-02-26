@@ -3,6 +3,10 @@
     <option name="LINE_SEPARATOR" value="&#10;" />
     <GoCodeStyleSettings>
       <option name="ADD_PARENTHESES_FOR_SINGLE_IMPORT" value="true" />
+      <option name="IMPORT_SORTING" value="GOIMPORTS" />
+      <option name="MOVE_ALL_IMPORTS_IN_ONE_DECLARATION" value="true" />
+      <option name="MOVE_ALL_STDLIB_IMPORTS_IN_ONE_GROUP" value="true" />
+      <option name="GROUP_STDLIB_IMPORTS" value="true" />
     </GoCodeStyleSettings>
     <codeStyleSettings language="JavaScript">
       <indentOptions>
