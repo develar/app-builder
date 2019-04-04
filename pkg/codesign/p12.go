@@ -47,7 +47,7 @@ func readInfo(inFile string, password string) error {
 			return writeError("password incorrect")
 		}
 
-		log.Debug("cannot decode PKCS 12 data using Go pure implementation, openssl will be used")
+		log.Warn("cannot decode PKCS 12 data using Go pure implementation, openssl will be used: " + err.Error())
 		certificates, err = readUsingOpenssl(inFile, password)
 		if err != nil {
 			if strings.Contains(err.Error(), "Mac verify error: invalid password?") {
