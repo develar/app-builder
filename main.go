@@ -28,6 +28,7 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/app-builder/pkg/wine"
 	"github.com/develar/errors"
+	"github.com/segmentio/ksuid"
 )
 
 func main() {
@@ -41,7 +42,7 @@ func main() {
 		return
 	}
 
-	var app = kingpin.New("app-builder", "app-builder").Version("2.6.4")
+	var app = kingpin.New("app-builder", "app-builder").Version("2.6.6")
 
 	node_modules.ConfigureCommand(app)
 	//codesign.ConfigureCommand(app)
@@ -74,6 +75,7 @@ func main() {
 	codesign.ConfigureCertificateInfoCommand(app)
 
 	wine.ConfigureCommand(app)
+	configureKsUidCommand(app)
 
 	_, err = app.Parse(os.Args[1:])
 	if err != nil {
@@ -91,6 +93,14 @@ func ConfigureCopyCommand(app *kingpin.Application) {
 		var fileCopier fs.FileCopier
 		fileCopier.IsUseHardLinks = *isUseHardLinks
 		return errors.WithStack(fileCopier.CopyDirOrFile(*from, *to))
+	})
+}
+
+func configureKsUidCommand(app *kingpin.Application) {
+	command := app.Command("ksuid", "Generate KSUID")
+	command.Action(func(context *kingpin.ParseContext) error {
+		_, err := os.Stdout.Write([]byte(ksuid.New().String()))
+		return errors.WithStack(err)
 	})
 }
 
