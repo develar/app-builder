@@ -81,7 +81,7 @@ func appimageTemplatesApprunSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "appimage/templates/AppRun.sh", size: 8022, mode: os.FileMode(493), modTime: time.Unix(1543214019, 0)}
+	info := bindataFileInfo{name: "appimage/templates/AppRun.sh", size: 8024, mode: os.FileMode(493), modTime: time.Unix(1554315247, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }

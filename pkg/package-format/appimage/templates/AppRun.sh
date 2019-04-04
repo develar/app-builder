@@ -16,7 +16,7 @@ NUMBER_OF_ARGS="$#"
 # such as desktop integration daemons
 VENDORPREFIX=appimagekit
 
-if [ -z $APPDIR ] ; then
+if [ -z "$APPDIR" ] ; then
   # Find the AppDir. It is the directory that contains AppRun.
   # This assumes that this script resides inside the AppDir or a subdirectory.
   # If this script is run inside an AppImage, then the AppImage runtime likely has already set $APPDIR
