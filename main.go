@@ -42,7 +42,7 @@ func main() {
 		return
 	}
 
-	var app = kingpin.New("app-builder", "app-builder").Version("2.6.6")
+	var app = kingpin.New("app-builder", "app-builder").Version("2.6.7")
 
 	node_modules.ConfigureCommand(app)
 	//codesign.ConfigureCommand(app)

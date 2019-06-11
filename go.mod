@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
 	github.com/apex/log v1.1.0
-	github.com/aws/aws-sdk-go v1.19.9
+	github.com/aws/aws-sdk-go v1.19.47
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -26,16 +26,16 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
-	github.com/oxtoacart/bpool v0.0.0-20190227141107-8c4636f812cc
+	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c
 	github.com/phayes/permbits v0.0.0-20190108233746-1efae4548023
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/pkg/xattr v0.4.1
 	github.com/segmentio/ksuid v1.0.2
-	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/zieckey/goini v0.0.0-20180118150432-0da17d361d26
-	golang.org/x/image v0.0.0-20190321063152-3fc05d484e9f // indirect
-	golang.org/x/net v0.0.0-20190403144856-b630fd6fe46b // indirect
-	golang.org/x/sys v0.0.0-20190403152447-81d4e9dc473e // indirect
+	golang.org/x/image v0.0.0-20190523035834-f03afa92d3ff // indirect
+	golang.org/x/net v0.0.0-20190611141213-3f473d35a33a // indirect
+	golang.org/x/sys v0.0.0-20190610200419-93c9922d18ae // indirect
+	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )

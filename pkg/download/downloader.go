@@ -151,14 +151,14 @@ func (t *Downloader) follow(initialUrl, userAgent, outFileName string) (*ActualL
 
 		// should use GET instead of HEAD because ContentLength maybe omitted for HEAD requests
 		// https://stackoverflow.com/questions/3854842/content-length-header-with-head-requests
-		req, err := http.NewRequest(http.MethodGet, currentUrl, nil)
+		request, err := http.NewRequest(http.MethodGet, currentUrl, nil)
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
 
-		req.Header.Set("User-Agent", userAgent)
+		request.Header.Set("User-Agent", userAgent)
 		actualLocation, err := func() (*ActualLocation, error) {
-			response, err := t.client.Do(req)
+			response, err := t.client.Do(request)
 			if response != nil {
 				util.Close(response.Body)
 			}

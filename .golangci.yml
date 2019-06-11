@@ -6,4 +6,6 @@ linters:
     - prealloc
     - gofmt
     - lll
+    - bodyclose
+    - goimports
     - goconst # todo
