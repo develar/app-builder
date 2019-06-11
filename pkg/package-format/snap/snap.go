@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"syscall"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/apex/log"
@@ -54,6 +55,8 @@ type SnapOptions struct {
 	hooksDir       *string
 	executableName *string
 
+	extraAppArgs *string
+
 	dockerImage *string
 
 	arch   *string
@@ -82,6 +85,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		icon:           command.Flag("icon", "The path to the icon.").String(),
 		hooksDir:       command.Flag("hooks", "The hooks dir.").String(),
 		executableName: command.Flag("executable", "The executable file name to create command wrapper.").String(),
+		extraAppArgs:   command.Flag("extraAppArgs", "").String(),
 
 		arch: command.Flag("arch", "The arch.").Default("amd64").Enum("amd64", "i386", "armv7l", "arm64"),
 
@@ -172,8 +176,8 @@ func doCheckSnapVersion(rawVersion string, installMessage string) error {
 	s = strings.TrimSpace(strings.TrimPrefix(s, "snapcraft"))
 	s = strings.TrimSpace(strings.TrimPrefix(s, ","))
 	s = strings.TrimSpace(strings.TrimPrefix(s, "version"))
-	if version.Compare(s, "2.40.0", "<") {
-		return util.NewMessageError("at least snapcraft 2.40.0 is required, but " + rawVersion + " installed, please: "+installMessage, "ERR_SNAPCRAFT_OUTDATED")
+	if version.Compare(s, "3.1.0", "<") {
+		return util.NewMessageError("at least snapcraft 3.1.0 is required, but "+rawVersion+" installed, please: "+installMessage, "ERR_SNAPCRAFT_OUTDATED")
 	} else {
 		return nil
 	}
@@ -184,11 +188,16 @@ func DetectIsUseDocker(isUseDocker bool, isUseTemplateApp bool) bool {
 		return true
 	}
 
+	//if util.IsEnvTrue("USE_SNAPCRAFT") {
+	//	return false
+	//}
+
 	if runtime.GOOS != "darwin" {
 		return isUseDocker
 	}
 
 	return !isUseTemplateApp
+	//return !isUseTemplateApp
 }
 
 func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
@@ -223,6 +232,9 @@ func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
 		}
 	}
 
+	chromeSandbox := filepath.Join(*options.stageDir, "app", "chrome-sandbox")
+	_ = syscall.Unlink(chromeSandbox)
+
 	switch {
 	case isUseTemplateApp:
 		return buildWithoutDockerUsingTemplate(templateFile, options)
@@ -242,7 +254,12 @@ func writeCommandWrapper(options SnapOptions, isUseTemplateApp bool) error {
 	}
 
 	commandWrapperFile := filepath.Join(*options.stageDir, "command.sh")
-	err := ioutil.WriteFile(commandWrapperFile, []byte("#!/bin/bash\nexec $SNAP/bin/desktop-launch \"$SNAP/"+appPrefix+*options.executableName+`"`), 0755)
+	text := "#!/bin/bash\nexec $SNAP/bin/desktop-launch \"$SNAP/" + appPrefix + *options.executableName + `"`
+	extraAppArgs := *options.extraAppArgs
+	if extraAppArgs != "" {
+		text += " " + extraAppArgs
+	}
+	err := ioutil.WriteFile(commandWrapperFile, []byte(text), 0755)
 	if err != nil {
 		return errors.WithStack(err)
 	}

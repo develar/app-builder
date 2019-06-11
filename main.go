@@ -13,7 +13,6 @@ import (
 	"github.com/develar/app-builder/pkg/codesign"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/electron"
-	"github.com/develar/app-builder/pkg/elfExecStack"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/icons"
 	"github.com/develar/app-builder/pkg/linuxTools"
@@ -42,7 +41,7 @@ func main() {
 		return
 	}
 
-	var app = kingpin.New("app-builder", "app-builder").Version("2.6.7")
+	var app = kingpin.New("app-builder", "app-builder").Version("2.6.8")
 
 	node_modules.ConfigureCommand(app)
 	//codesign.ConfigureCommand(app)
@@ -70,7 +69,6 @@ func main() {
 	}
 
 	dmg.ConfigureCommand(app)
-	elfExecStack.ConfigureCommand(app)
 	blockmap.ConfigureCommand(app)
 	codesign.ConfigureCertificateInfoCommand(app)
 

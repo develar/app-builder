@@ -90,8 +90,4 @@ Commands:
     --volume=VOLUME
     --icon=ICON
     --background=BACKGROUND
-
-  clear-exec-stack --input=INPUT
-
-    -i, --input=INPUT
 ```
