@@ -57,6 +57,10 @@ func unpackElectron(configs []ElectronDownloadOptions, outputDir string, distMac
 	excludedFiles := make(map[string]bool)
 	excludedFiles[filepath.Join(outputDir, distMacOsAppName, "Contents", "Resources", "default_app.asar")] = true
 	excludedFiles[filepath.Join(outputDir, "resources", "default_app.asar")] = true
+
+	excludedFiles[filepath.Join(outputDir, distMacOsAppName, "Contents", "Resources", "inspector", ".htaccess")] = true
+	excludedFiles[filepath.Join(outputDir, "resources", "inspector", ".htaccess")] = true
+
 	excludedFiles[filepath.Join(outputDir, "version")] = true
 
 	zipFile := <-cachedElectronZip
