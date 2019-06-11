@@ -385,6 +385,7 @@ func readPackageJson(dir string) (*Dependency, error) {
 	var dependency Dependency
 	err = jsoniter.Unmarshal(data, &dependency)
 	if err != nil {
+		log.Error("Error reading package.json: " + filepath.Join(dir, "package.json"))
 		return nil, errors.WithStack(err)
 	}
 
