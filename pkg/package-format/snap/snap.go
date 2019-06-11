@@ -46,6 +46,12 @@ var electronTemplate2 = TemplateInfo{
 	Sha512: "njelQ3fVOUEa4DoUsxmuTifrnQ51hvt4OIAfiQ1zQkqY4JpnjxE0GG/+8Jc3m+lA7fNH0uBO8pxfNTJMD5UHsA==",
 }
 
+//noinspection SpellCheckingInspection
+var electronTemplate4 = TemplateInfo{
+	Url:    "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-4.0/snap-template-electron-4.0.tar.7z",
+	Sha512: "RrSa4rpsgrmgcqPymuc7t5Ueobuk17R/JWUc8i/N/dowDdu37M9pccZ9YicfeptKkFbWOqaUqeUuSsNwi93HCQ==",
+}
+
 // --enable-geoip leads to very slow fetching - it seems local sources are more slow.
 
 type SnapOptions struct {
@@ -134,6 +140,8 @@ func ResolveTemplateFile(templateFile string, templateUrl string, templateSha512
 	var templateInfo TemplateInfo
 	if templateUrl == "electron2" {
 		templateInfo = electronTemplate2
+	} else if templateUrl == "electron4" {
+		templateInfo = electronTemplate4
 	} else {
 		templateInfo = TemplateInfo{
 			Url:    templateUrl,
@@ -188,16 +196,11 @@ func DetectIsUseDocker(isUseDocker bool, isUseTemplateApp bool) bool {
 		return true
 	}
 
-	//if util.IsEnvTrue("USE_SNAPCRAFT") {
-	//	return false
-	//}
-
 	if runtime.GOOS != "darwin" {
 		return isUseDocker
 	}
 
 	return !isUseTemplateApp
-	//return !isUseTemplateApp
 }
 
 func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
