@@ -60,13 +60,16 @@ func GetCacheDirectoryForArtifactCustom(dirName string) (string, error) {
 // * don't pollute user project dir (important in case of 1-package.json project structure)
 // * simplify/speed-up tests (don't download fpm for each test project)
 func DownloadArtifact(dirName string, url string, checksum string) (string, error) {
-	switch dirName {
-	case "fpm":
-		return DownloadFpm()
-	case "zstd":
-		return DownloadZstd(util.GetCurrentOs())
-	case "winCodeSign":
-		return DownloadWinCodeSign()
+	if len(url) == 0 {
+		// if no url is provided download these artifacts from Github. Otherwise use the provided url to download the artifacts.
+		switch dirName {
+		case "fpm":
+			return DownloadFpm()
+		case "zstd":
+			return DownloadZstd(util.GetCurrentOs())
+		case "winCodeSign":
+			return DownloadWinCodeSign()
+		}
 	}
 
 	if len(dirName) == 0 {
