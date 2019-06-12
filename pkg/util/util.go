@@ -173,3 +173,12 @@ func Close(c io.Closer) {
 		log.Errorf("%v", err)
 	}
 }
+
+func ContainsString(list []string, s string) bool {
+	for _, item := range list {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}

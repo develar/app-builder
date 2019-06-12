@@ -67,14 +67,16 @@ func goArchToNodeArch(arch string) string {
 	}
 }
 
-func ReadDirContentTo(dir string, paths []string) ([]string, error) {
+func ReadDirContentTo(dir string, paths []string, filter func(string) bool) ([]string, error) {
 	content, err := fsutil.ReadDirContent(dir)
 	if err != nil {
 		return nil, errors.WithStack(err)
 	}
 
 	for _, value := range content {
-		paths = append(paths, filepath.Join(dir, value))
+		if filter == nil || filter(value) {
+			paths = append(paths, filepath.Join(dir, value))
+		}
 	}
 	return paths, nil
 }

@@ -89,7 +89,7 @@ func ConvertIcnsToPngUsingIconUtil(inFile string, outDir string, sizeList *[]int
 	var result []IconInfo
 	for _, item := range icnsTypeToSize {
 		fileName := fmt.Sprintf("icon_%dx%d.png", item.Size, item.Size)
-		if contains(iconFileNames, fileName) {
+		if util.ContainsString(iconFileNames, fileName) {
 			result = append(result, IconInfo{filepath.Join(outDir, fileName), item.Size})
 		} else {
 			*sizeList = append(*sizeList, item.Size)
@@ -101,15 +101,6 @@ func ConvertIcnsToPngUsingIconUtil(inFile string, outDir string, sizeList *[]int
 func hasSize(list []IconInfo, size int) bool {
 	for _, info := range list {
 		if info.Size == size {
-			return true
-		}
-	}
-	return false
-}
-
-func contains(files []string, name string) bool {
-	for _, fileName := range files {
-		if fileName == name {
 			return true
 		}
 	}

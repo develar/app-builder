@@ -61,7 +61,8 @@ type SnapOptions struct {
 	hooksDir       *string
 	executableName *string
 
-	extraAppArgs *string
+	extraAppArgs     *string
+	excludedAppFiles *[]string
 
 	dockerImage *string
 
@@ -86,12 +87,13 @@ func ConfigureCommand(app *kingpin.Application) {
 
 	//noinspection SpellCheckingInspection
 	options := SnapOptions{
-		appDir:         command.Flag("app", "The app dir.").Short('a').Required().String(),
-		stageDir:       command.Flag("stage", "The stage dir.").Short('s').Required().String(),
-		icon:           command.Flag("icon", "The path to the icon.").String(),
-		hooksDir:       command.Flag("hooks", "The hooks dir.").String(),
-		executableName: command.Flag("executable", "The executable file name to create command wrapper.").String(),
-		extraAppArgs:   command.Flag("extraAppArgs", "").String(),
+		appDir:           command.Flag("app", "The app dir.").Short('a').Required().String(),
+		stageDir:         command.Flag("stage", "The stage dir.").Short('s').Required().String(),
+		icon:             command.Flag("icon", "The path to the icon.").String(),
+		hooksDir:         command.Flag("hooks", "The hooks dir.").String(),
+		executableName:   command.Flag("executable", "The executable file name to create command wrapper.").String(),
+		extraAppArgs:     command.Flag("extraAppArgs", "The extra app launch arguments").String(),
+		excludedAppFiles: command.Flag("exclude", "The excluded app files.").Strings(),
 
 		arch: command.Flag("arch", "The arch.").Default("amd64").Enum("amd64", "i386", "armv7l", "arm64"),
 
@@ -235,7 +237,7 @@ func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
 		}
 	}
 
-	chromeSandbox := filepath.Join(*options.stageDir, "app", "chrome-sandbox")
+	chromeSandbox := filepath.Join(*options.appDir, "app", "chrome-sandbox")
 	_ = syscall.Unlink(chromeSandbox)
 
 	switch {
@@ -304,17 +306,23 @@ func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) e
 
 	var args []string
 
-	args, err = linuxTools.ReadDirContentTo(templateFile, args)
+	args, err = linuxTools.ReadDirContentTo(templateFile, args, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	args, err = linuxTools.ReadDirContentTo(stageDir, args)
+	args, err = linuxTools.ReadDirContentTo(stageDir, args, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	args, err = linuxTools.ReadDirContentTo(*options.appDir, args)
+	args, err = linuxTools.ReadDirContentTo(*options.appDir, args, func(name string) bool {
+		if name == "LICENSES.chromium.html" || name == "LICENSE.electron.txt" {
+			return false
+		}
+		return options.excludedAppFiles == nil || !util.ContainsString(*options.excludedAppFiles, name)
+	})
+
 	if err != nil {
 		return errors.WithStack(err)
 	}
@@ -328,6 +336,7 @@ func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) e
 	return nil
 }
 
+// todo remove chrome-sandbox file (doesn't harm, but increases size)
 func buildWithoutDockerAndWithoutTemplate(options SnapOptions) error {
 	stageDir := *options.stageDir
 
@@ -371,6 +380,7 @@ func buildWithoutDockerAndWithoutTemplate(options SnapOptions) error {
 	return nil
 }
 
+// todo remove chrome-sandbox file (doesn't harm, but increases size)
 func buildUsingDocker(options SnapOptions) error {
 	var commands []string
 	// copy stage to linux fs to avoid performance issues (https://docs.docker.com/docker-for-mac/osxfs-caching/)
@@ -381,7 +391,6 @@ func buildUsingDocker(options SnapOptions) error {
 		"rm -rf prime/"+strings.Join(unnecessaryFiles, " prime/"),
 		"mv /s/prime/* /tmp/final-stage/",
 		"mv /s/command.sh /tmp/final-stage/command.sh",
-		"sed -i '/adapter: none/d' /tmp/final-stage/meta/snap.yaml",
 		"snapcraft pack /tmp/final-stage --output /out/"+filepath.Base(*options.output),
 	)
 
