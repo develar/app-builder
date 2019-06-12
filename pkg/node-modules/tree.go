@@ -306,20 +306,18 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 
 	dependencyDir := filepath.Join(parentNodeModuleDir, name)
 	dependency, err := readPackageJson(dependencyDir)
-
-	if //noinspection SpellCheckingInspection
-	name == "libui-node" {
-		// remove because production app doesn't need to download libui
-		//noinspection SpellCheckingInspection
-		delete(dependency.Dependencies, "libui-download")
-	}
-
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
 		} else {
 			return nil, errors.WithStack(err)
 		}
+	}
+
+	if name == "libui-node" {
+		// remove because production app doesn't need to download libui
+		//noinspection SpellCheckingInspection
+		delete(dependency.Dependencies, "libui-download")
 	}
 
 	if dependencyNameToDependency == nil {
@@ -377,7 +375,8 @@ func getParentDir(file string) string {
 }
 
 func readPackageJson(dir string) (*Dependency, error) {
-	data, err := ioutil.ReadFile(filepath.Join(dir, "package.json"))
+	packageFile := filepath.Join(dir, "package.json")
+	data, err := ioutil.ReadFile(packageFile)
 	if err != nil {
 		return nil, err
 	}
@@ -385,7 +384,7 @@ func readPackageJson(dir string) (*Dependency, error) {
 	var dependency Dependency
 	err = jsoniter.Unmarshal(data, &dependency)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, errors.WithMessage(err, "Error reading package.json: "+packageFile)
 	}
 
 	return &dependency, nil
