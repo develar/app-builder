@@ -20,6 +20,7 @@ else
 endif
 
 # ln -sf ~/Documents/app-builder/dist/app-builder_darwin_amd64/app-builder ~/Documents/electron-builder/node_modules/app-builder-bin/mac/app-builder
+# cp ~/Documents/app-builder/dist/app-builder_linux_amd64/app-builder ~/Documents/electron-builder/node_modules/app-builder-bin/linux/x64/app-builder
 build:
 	go build -ldflags='-s -w' -o dist/app-builder_$(OS_ARCH)/app-builder
 
@@ -38,6 +39,7 @@ test:
 
 assets:
 	go-bindata -o ./pkg/package-format/bindata.go -pkg package_format -prefix ./pkg/package-format ./pkg/package-format/appimage/templates
+	go-bindata -o ./pkg/package-format/snap/snapScripts.go -pkg snap -prefix ./pkg/package-format/snap ./pkg/package-format/snap/desktop-scripts
 
 publish: build-all
 	./scripts/publish-npm.sh

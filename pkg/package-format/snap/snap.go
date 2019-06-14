@@ -4,8 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"syscall"
@@ -17,23 +17,9 @@ import (
 	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
+	fsutil "github.com/develar/go-fs-util"
 	"github.com/mcuadros/go-version"
 )
-
-// usr/share/fonts is required, cannot run otherwise
-var unnecessaryFiles = []string{
-	"usr/share/fonts",
-	"usr/share/doc",
-	"usr/share/man",
-	"usr/share/icons",
-	"usr/share/bash-completion",
-	"usr/share/lintian",
-	"usr/share/dh-python",
-	"usr/share/python3",
-
-	"usr/lib/python*",
-	"usr/bin/python*",
-}
 
 type TemplateInfo struct {
 	Url    string
@@ -49,7 +35,7 @@ var electronTemplate2 = TemplateInfo{
 //noinspection SpellCheckingInspection
 var electronTemplate4 = TemplateInfo{
 	Url:    "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-4.0/snap-template-electron-4.0.tar.7z",
-	Sha512: "RrSa4rpsgrmgcqPymuc7t5Ueobuk17R/JWUc8i/N/dowDdu37M9pccZ9YicfeptKkFbWOqaUqeUuSsNwi93HCQ==",
+	Sha512: "bkh/IjSmCcR/QR01ed/TPDn0yKlteCREDbMyqEYGmLp/bYNp2eUaK+XDPeDF94o6MgzQv1Ugp8sqRQBcI4YCtg==",
 }
 
 // --enable-geoip leads to very slow fetching - it seems local sources are more slow.
@@ -78,13 +64,6 @@ func ConfigureCommand(app *kingpin.Application) {
 	templateUrl := command.Flag("template-url", "The template archive URL.").Short('u').String()
 	templateSha512 := command.Flag("template-sha512", "The expected sha512 of template archive.").String()
 
-	var isUseDockerDefault string
-	if runtime.GOOS == "linux" || runtime.GOOS == "darwin" {
-		isUseDockerDefault = "false"
-	} else {
-		isUseDockerDefault = "true"
-	}
-
 	//noinspection SpellCheckingInspection
 	options := SnapOptions{
 		appDir:           command.Flag("app", "The app dir.").Short('a').Required().String(),
@@ -98,11 +77,8 @@ func ConfigureCommand(app *kingpin.Application) {
 		arch: command.Flag("arch", "The arch.").Default("amd64").Enum("amd64", "i386", "armv7l", "arm64"),
 
 		output: command.Flag("output", "The output file.").Short('o').Required().String(),
-
-		dockerImage: command.Flag("docker-image", "The docker image.").Default("snapcore/snapcraft:latest").String(),
 	}
 
-	isUseDockerCommandArg := command.Flag("docker", "Whether to use Docker.").Default(isUseDockerDefault).Envar("SNAP_USE_DOCKER").Bool()
 	isRemoveStage := util.ConfigureIsRemoveStageParam(command)
 
 	command.Action(func(context *kingpin.ParseContext) error {
@@ -111,8 +87,7 @@ func ConfigureCommand(app *kingpin.Application) {
 			return errors.WithStack(err)
 		}
 
-		isUseDocker := DetectIsUseDocker(*isUseDockerCommandArg, len(resolvedTemplateFile) != 0)
-		err = Snap(resolvedTemplateFile, isUseDocker, options)
+		err = Snap(resolvedTemplateFile, options)
 		if err != nil {
 			switch e := errors.Cause(err).(type) {
 			case util.MessageError:
@@ -193,19 +168,7 @@ func doCheckSnapVersion(rawVersion string, installMessage string) error {
 	}
 }
 
-func DetectIsUseDocker(isUseDocker bool, isUseTemplateApp bool) bool {
-	if isUseDocker {
-		return true
-	}
-
-	if runtime.GOOS != "darwin" {
-		return isUseDocker
-	}
-
-	return !isUseTemplateApp
-}
-
-func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
+func Snap(templateFile string, options SnapOptions) error {
 	stageDir := *options.stageDir
 	isUseTemplateApp := len(templateFile) != 0
 	var snapMetaDir string
@@ -230,8 +193,14 @@ func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
 		}
 	}
 
+	scriptDir := filepath.Join(stageDir, "scripts")
+	err := fsutil.EnsureEmptyDir(scriptDir)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
 	if len(*options.executableName) != 0 {
-		err := writeCommandWrapper(options, isUseTemplateApp)
+		err := writeCommandWrapper(options, isUseTemplateApp, scriptDir)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -242,28 +211,31 @@ func Snap(templateFile string, isUseDocker bool, options SnapOptions) error {
 
 	switch {
 	case isUseTemplateApp:
-		return buildWithoutDockerUsingTemplate(templateFile, options)
-	case isUseDocker:
-		return buildUsingDocker(options)
+		return buildUsingTemplate(templateFile, options)
 	default:
-		return buildWithoutDockerAndWithoutTemplate(options)
+		return buildWithoutTemplate(options, scriptDir)
 	}
 }
 
-func writeCommandWrapper(options SnapOptions, isUseTemplateApp bool) error {
+func writeCommandWrapper(options SnapOptions, isUseTemplateApp bool, scriptDir string) error {
 	var appPrefix string
+	var dir string
 	if isUseTemplateApp {
 		appPrefix = ""
+		dir = *options.stageDir
 	} else {
 		appPrefix = "app/"
+		dir = scriptDir
 	}
 
-	commandWrapperFile := filepath.Join(*options.stageDir, "command.sh")
-	text := "#!/bin/bash\nexec $SNAP/bin/desktop-launch \"$SNAP/" + appPrefix + *options.executableName + `"`
+	commandWrapperFile := filepath.Join(dir, "command.sh")
+	text := "#!/bin/bash -e\n" + `exec "$SNAP/desktop-init.sh" "$SNAP/desktop-common.sh" "$SNAP/desktop-gnome-specific.sh" "$SNAP/` + appPrefix + *options.executableName + `"`
+
 	extraAppArgs := *options.extraAppArgs
 	if extraAppArgs != "" {
 		text += " " + extraAppArgs
 	}
+
 	err := ioutil.WriteFile(commandWrapperFile, []byte(text), 0755)
 	if err != nil {
 		return errors.WithStack(err)
@@ -277,26 +249,7 @@ func writeCommandWrapper(options SnapOptions, isUseTemplateApp bool) error {
 	return nil
 }
 
-func RemoveAdapter(snapFilePath string) error {
-	data, err := ioutil.ReadFile(snapFilePath)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	re := regexp.MustCompile("(?m)[\r\n]+^\\s+adapter: none.*$")
-
-	fixedData := re.ReplaceAll(data, []byte{})
-	if len(fixedData) != len(data) {
-		err = ioutil.WriteFile(snapFilePath, fixedData, 0666)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-
-	return nil
-}
-
-func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) error {
+func buildUsingTemplate(templateFile string, options SnapOptions) error {
 	stageDir := *options.stageDir
 
 	mksquashfsPath, err := linuxTools.GetMksquashfs()
@@ -331,95 +284,38 @@ func buildWithoutDockerUsingTemplate(templateFile string, options SnapOptions) e
 
 	_, err = util.Execute(exec.Command(mksquashfsPath, args...), "")
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 	return nil
 }
 
-// todo remove chrome-sandbox file (doesn't harm, but increases size)
-func buildWithoutDockerAndWithoutTemplate(options SnapOptions) error {
-	stageDir := *options.stageDir
-
-	var primeDir string
+func buildWithoutTemplate(options SnapOptions, scriptDir string) error {
 	err := CheckSnapcraftVersion(true)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	err = util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("snapcraft", "prime", "--target-arch", *options.arch), stageDir)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	primeDir = filepath.Join(stageDir, "prime")
-	err = cleanUpSnap(primeDir)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	err = RemoveAdapter(filepath.Join(primeDir, "meta", "snap.yaml"))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	err = fs.CopyUsingHardlink(*options.appDir, filepath.Join(primeDir, "app"))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	err = fs.CopyUsingHardlink(filepath.Join(stageDir, "command.sh"), filepath.Join(primeDir, "command.sh"))
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	_, err = util.Execute(exec.Command("snapcraft", "pack", primeDir, "--output", *options.output), stageDir)
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
-// todo remove chrome-sandbox file (doesn't harm, but increases size)
-func buildUsingDocker(options SnapOptions) error {
-	var commands []string
-	// copy stage to linux fs to avoid performance issues (https://docs.docker.com/docker-for-mac/osxfs-caching/)
-	commands = append(commands,
-		"cp -r /stage /s/",
-		"cd /s",
-		"snapcraft prime --target-arch "+*options.arch,
-		"rm -rf prime/"+strings.Join(unnecessaryFiles, " prime/"),
-		"mv /s/prime/* /tmp/final-stage/",
-		"mv /s/command.sh /tmp/final-stage/command.sh",
-		"snapcraft pack /tmp/final-stage --output /out/"+filepath.Base(*options.output),
-	)
-
-	log.WithField("command", strings.Join(commands, "\n")).Debug("build snap using docker")
-
 	stageDir := *options.stageDir
-	err := util.ExecuteWithInheritedStdOutAndStdErr(exec.Command("docker", "run", "--rm",
-		"-v", filepath.Dir(*options.output)+":/out:delegated",
-		"--mount", "type=bind,source="+stageDir+",destination=/stage,readonly",
-		"--mount", "type=bind,source="+*options.appDir+",destination=/tmp/final-stage/app,readonly",
-		*options.dockerImage,
-		"/bin/bash", "-c", strings.Join(commands, " && "),
-	), stageDir)
-	if err != nil {
-		return errors.WithStack(err)
-	}
 
-	return nil
-}
-
-func cleanUpSnap(dir string) error {
-	return util.MapAsync(len(unnecessaryFiles), func(taskIndex int) (func() error, error) {
-		file := filepath.Join(dir, unnecessaryFiles[taskIndex])
-		return func() error {
-			err := fs.RemoveByGlob(file)
+	for _, name := range AssetNames() {
+		if strings.HasPrefix(name, "desktop-scripts/") {
+			err := ioutil.WriteFile(filepath.Join(scriptDir, path.Base(name)), MustAsset(name), 0755)
 			if err != nil {
 				return errors.WithStack(err)
 			}
-			return nil
-		}, nil
-	})
+		}
+	}
+
+	// multipass cannot access files outside of stage dir
+	err = fs.CopyUsingHardlink(*options.appDir, filepath.Join(stageDir, "app"))
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	_, err = util.Execute(exec.Command("snapcraft", "snap", "--output", *options.output), stageDir)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
