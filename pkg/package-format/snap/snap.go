@@ -74,7 +74,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		extraAppArgs:     command.Flag("extraAppArgs", "The extra app launch arguments").String(),
 		excludedAppFiles: command.Flag("exclude", "The excluded app files.").Strings(),
 
-		arch: command.Flag("arch", "The arch.").Default("amd64").Enum("amd64", "i386", "armv7l", "arm64"),
+		arch: command.Flag("arch", "The arch.").Default("amd64").String(),
 
 		output: command.Flag("output", "The output file.").Short('o').Required().String(),
 	}
@@ -312,7 +312,12 @@ func buildWithoutTemplate(options SnapOptions, scriptDir string) error {
 		return errors.WithStack(err)
 	}
 
-	_, err = util.Execute(exec.Command("snapcraft", "snap", "--output", *options.output), stageDir)
+``	var args []string
+	args = append(args, "snap", "--output", *options.output)
+	if len(*options.arch) != 0 {
+		args = append(args, "--target-arch", *options.arch)
+	}
+		_, err = util.Execute(exec.Command("snapcraft", args...), stageDir)
 	if err != nil {
 		return err
 	}
