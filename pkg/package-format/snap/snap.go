@@ -312,12 +312,12 @@ func buildWithoutTemplate(options SnapOptions, scriptDir string) error {
 		return errors.WithStack(err)
 	}
 
-``	var args []string
+	var args []string
 	args = append(args, "snap", "--output", *options.output)
 	if len(*options.arch) != 0 {
 		args = append(args, "--target-arch", *options.arch)
 	}
-		_, err = util.Execute(exec.Command("snapcraft", args...), stageDir)
+	_, err = util.Execute(exec.Command("snapcraft", args...), stageDir)
 	if err != nil {
 		return err
 	}
