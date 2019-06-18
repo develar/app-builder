@@ -18,7 +18,6 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	fsutil "github.com/develar/go-fs-util"
-	"github.com/mcuadros/go-version"
 )
 
 type TemplateInfo struct {
@@ -316,6 +315,9 @@ func buildWithoutTemplate(options SnapOptions, scriptDir string) error {
 	args = append(args, "snap", "--output", *options.output)
 	if len(*options.arch) != 0 {
 		args = append(args, "--target-arch", *options.arch)
+	}
+	if util.IsEnvTrue("SNAP_DESTRUCTIVE_MODE") {
+		args = append(args, "--destructive-mode")
 	}
 	_, err = util.Execute(exec.Command("snapcraft", args...), stageDir)
 	if err != nil {
