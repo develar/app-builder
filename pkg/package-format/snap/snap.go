@@ -18,6 +18,7 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	fsutil "github.com/develar/go-fs-util"
+	"github.com/mcuadros/go-version"
 )
 
 type TemplateInfo struct {
