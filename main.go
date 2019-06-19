@@ -41,7 +41,7 @@ func main() {
 		return
 	}
 
-	var app = kingpin.New("app-builder", "app-builder").Version("2.6.16")
+	var app = kingpin.New("app-builder", "app-builder").Version("2.6.17")
 
 	node_modules.ConfigureCommand(app)
 	//codesign.ConfigureCommand(app)
@@ -155,7 +155,7 @@ func configurePrefetchToolsCommand(app *kingpin.Application) {
 			return errors.WithStack(err)
 		}
 
-		_, err = snap.ResolveTemplateFile("", "electron2", "")
+		_, err = snap.ResolveTemplateFile("", "electron4", "")
 		if err != nil {
 			return errors.WithStack(err)
 		}
