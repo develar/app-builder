@@ -27,12 +27,6 @@ type TemplateInfo struct {
 }
 
 //noinspection SpellCheckingInspection
-var electronTemplate2 = TemplateInfo{
-	Url:    "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-2.4/snap-template-electron-2.4.tar.7z",
-	Sha512: "njelQ3fVOUEa4DoUsxmuTifrnQ51hvt4OIAfiQ1zQkqY4JpnjxE0GG/+8Jc3m+lA7fNH0uBO8pxfNTJMD5UHsA==",
-}
-
-//noinspection SpellCheckingInspection
 var electronTemplate4 = TemplateInfo{
 	Url:    "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-4.0/snap-template-electron-4.0.tar.7z",
 	Sha512: "bkh/IjSmCcR/QR01ed/TPDn0yKlteCREDbMyqEYGmLp/bYNp2eUaK+XDPeDF94o6MgzQv1Ugp8sqRQBcI4YCtg==",
@@ -115,9 +109,7 @@ func ResolveTemplateFile(templateFile string, templateUrl string, templateSha512
 	}
 
 	var templateInfo TemplateInfo
-	if templateUrl == "electron2" {
-		templateInfo = electronTemplate2
-	} else if templateUrl == "electron4" {
+	if templateUrl == "electron4" {
 		templateInfo = electronTemplate4
 	} else {
 		templateInfo = TemplateInfo{
@@ -161,6 +153,7 @@ func doCheckSnapVersion(rawVersion string, installMessage string) error {
 	s = strings.TrimSpace(strings.TrimPrefix(s, "snapcraft"))
 	s = strings.TrimSpace(strings.TrimPrefix(s, ","))
 	s = strings.TrimSpace(strings.TrimPrefix(s, "version"))
+	s = strings.Trim(s, "'")
 	if version.Compare(s, "3.1.0", "<") {
 		return util.NewMessageError("at least snapcraft 3.1.0 is required, but "+rawVersion+" installed, please: "+installMessage, "ERR_SNAPCRAFT_OUTDATED")
 	} else {
@@ -312,17 +305,40 @@ func buildWithoutTemplate(options SnapOptions, scriptDir string) error {
 		return errors.WithStack(err)
 	}
 
+	isDestructiveMode := util.IsEnvTrue("SNAP_DESTRUCTIVE_MODE")
+
+	// multipass cannot access files outside of snapcraft command working dir
+	var snapEffectiveOutput string
+	if isDestructiveMode {
+		snapEffectiveOutput = *options.output
+	} else {
+		snapEffectiveOutput = "out.snap"
+	}
+
 	var args []string
-	args = append(args, "snap", "--output", *options.output)
+	args = append(args, "snap", "--output", snapEffectiveOutput)
 	if len(*options.arch) != 0 {
 		args = append(args, "--target-arch", *options.arch)
 	}
-	if util.IsEnvTrue("SNAP_DESTRUCTIVE_MODE") {
+
+	if isDestructiveMode {
 		args = append(args, "--destructive-mode")
 	}
-	_, err = util.Execute(exec.Command("snapcraft", args...), stageDir)
+
+	command := exec.Command("snapcraft", args...)
+	command.Env = append(os.Environ(),
+		"SNAPCRAFT_HAS_TTY=false",
+	)
+	err = util.ExecuteAndPipeStdOutAndStdErr(command, stageDir)
 	if err != nil {
 		return err
+	}
+
+	if !isDestructiveMode {
+		err := os.Rename(filepath.Join(stageDir, snapEffectiveOutput), *options.output)
+		if err != nil {
+			return errors.WithStack(err)
+		}
 	}
 
 	return nil

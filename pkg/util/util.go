@@ -47,21 +47,6 @@ func WriteJsonToStdOut(v interface{}) error {
 	return errors.WithStack(err)
 }
 
-// useful for snap, where prime command took a lot of time and we need to read progress messages
-func ExecuteWithInheritedStdOutAndStdErr(command *exec.Cmd, currentWorkingDirectory string) error {
-	preCommandExecute(command, currentWorkingDirectory)
-
-	// not an error - command error output printed to out stdout (like logging)
-	command.Stdout = os.Stderr
-	command.Stderr = os.Stderr
-	err := command.Run()
-	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	return nil
-}
-
 func Execute(command *exec.Cmd, currentWorkingDirectory string) ([]byte, error) {
 	preCommandExecute(command, currentWorkingDirectory)
 
