@@ -2,6 +2,7 @@ package util
 
 import (
 	"crypto/sha512"
+	"encoding/base64"
 	"encoding/hex"
 	"io"
 	"os"
@@ -166,4 +167,16 @@ func ContainsString(list []string, s string) bool {
 		}
 	}
 	return false
+}
+
+func DecodeBase64IfNeeded(data string, v interface{}) error {
+	if strings.HasPrefix(data, "{") || strings.HasPrefix(data, "[") {
+		return jsoniter.UnmarshalFromString(data, v)
+	} else {
+		decodedData, err := base64.StdEncoding.DecodeString(data)
+		if err != nil {
+			return errors.WithStack(err)
+		}
+		return jsoniter.Unmarshal(decodedData, v)
+	}
 }

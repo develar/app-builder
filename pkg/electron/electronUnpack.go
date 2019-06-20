@@ -11,7 +11,6 @@ import (
 	"github.com/develar/app-builder/pkg/archive/zipx"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/go-fs-util"
-	"github.com/json-iterator/go"
 )
 
 func ConfigureUnpackCommand(app *kingpin.Application) {
@@ -22,11 +21,10 @@ func ConfigureUnpackCommand(app *kingpin.Application) {
 
 	command.Action(func(context *kingpin.ParseContext) error {
 		var configs []ElectronDownloadOptions
-		err := jsoniter.UnmarshalFromString(*jsonConfig, &configs)
+		err := util.DecodeBase64IfNeeded(*jsonConfig, &configs)
 		if err != nil {
 			return err
 		}
-
 		return unpackElectron(configs, *outputDir, *distMacOsAppName, true)
 	})
 }

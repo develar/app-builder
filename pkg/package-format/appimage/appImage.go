@@ -1,13 +1,11 @@
 package appimage
 
 import (
-	"encoding/base64"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/alecthomas/kingpin"
@@ -17,7 +15,6 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
-	"github.com/json-iterator/go"
 )
 
 type AppImageOptions struct {
@@ -54,22 +51,9 @@ func ConfigureCommand(app *kingpin.Application) {
 	isRemoveStage := util.ConfigureIsRemoveStageParam(command)
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		var err error
-		if strings.HasPrefix(*configuration, "{") {
-			err = jsoniter.UnmarshalFromString(*configuration, &options.configuration)
-			if err != nil {
-				return err
-			}
-		} else {
-			data, err := base64.StdEncoding.DecodeString(*configuration)
-			if err != nil {
-				return err
-			}
-
-			err = jsoniter.Unmarshal(data, &options.configuration)
-			if err != nil {
-				return err
-			}
+		err := util.DecodeBase64IfNeeded(*configuration, &options.configuration)
+		if err != nil {
+			return err
 		}
 
 		err = AppImage(options)

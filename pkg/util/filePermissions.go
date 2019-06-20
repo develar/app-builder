@@ -9,8 +9,8 @@ import (
 
 // https://github.com/electron-userland/electron-builder/issues/3452#issuecomment-438619535
 // quite a lot sources don't have proper permissions to be distributed
-func FixPermissions(filePath string, fileMode os.FileMode) error {
-	original, fixed, err := fsutil.FixPermissions(filePath, fileMode)
+func FixPermissions(filePath string, fileMode os.FileMode, isForceSetIfExecutable bool) error {
+	original, fixed, err := fsutil.FixPermissions(filePath, fileMode, isForceSetIfExecutable)
 	if err != nil {
 		return err
 	}

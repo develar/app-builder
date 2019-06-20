@@ -218,7 +218,7 @@ func (t *Extractor) extractDir(zipFile *zip.File) error {
 		return err
 	}
 
-	err = util.FixPermissions(filePath, zipFile.Mode())
+	err = util.FixPermissions(filePath, zipFile.Mode(), false)
 	if err != nil {
 		return err
 	}

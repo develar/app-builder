@@ -11,7 +11,7 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/develar/errors v0.9.0
-	github.com/develar/go-fs-util v0.0.0-20190620142700-070542c9dbf3
+	github.com/develar/go-fs-util v0.0.0-20190620175131-69a2d4542206
 	github.com/develar/go-pkcs12 v0.0.0-20181115143544-54baa4f32c6a
 	github.com/disintegration/imaging v1.6.0
 	github.com/dustin/go-humanize v1.0.0

@@ -260,7 +260,7 @@ func checkAndFixIconPermissions(icons []IconInfo) error {
 				return errors.WithStack(err)
 			}
 
-			err = util.FixPermissions(filePath, fileInfo.Mode())
+			err = util.FixPermissions(filePath, fileInfo.Mode(), false /* icon cannot be executable, so, doesn't matter */)
 			if err != nil {
 				return err
 			}

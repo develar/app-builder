@@ -82,7 +82,7 @@ func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bo
 			return errors.WithStack(err)
 		}
 
-		err = util.FixPermissions(to, fromInfo.Mode())
+		err = util.FixPermissions(to, fromInfo.Mode(), false)
 		if err != nil {
 			return errors.WithStack(err)
 		}
