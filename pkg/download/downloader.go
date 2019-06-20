@@ -19,8 +19,12 @@ import (
 const (
 	maxRedirects = 10
 	minPartSize  = 5 * 1024 * 1024
-	userAgent    = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_3) AppleWebKit/604.5.6 (KHTML, like Gecko) Version/11.0.3 Safari/604.5.6"
 )
+
+func getUserAgent() string {
+	//noinspection SpellCheckingInspection
+	return util.GetEnvOrDefault("DOWNLOADER_USER_AGENT", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36")
+}
 
 func getMaxPartCount() int {
 	const maxPartCount = 8
@@ -72,7 +76,7 @@ func NewDownloaderWithTransport(transport *http.Transport) *Downloader {
 func (t *Downloader) Download(url string, output string, sha512 string) error {
 	start := time.Now()
 
-	actualLocation, err := t.follow(url, userAgent, output)
+	actualLocation, err := t.follow(url, getUserAgent(), output)
 	if err != nil {
 		return errors.WithStack(err)
 	}
