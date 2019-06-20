@@ -2,6 +2,7 @@ package icons
 
 import (
 	"image"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/disintegration/imaging"
-	"github.com/phayes/permbits"
 )
 
 func ConfigureCommand(app *kingpin.Application) error {
@@ -255,12 +255,12 @@ func checkAndFixIconPermissions(icons []IconInfo) error {
 	return util.MapAsync(len(icons), func(taskIndex int) (func() error, error) {
 		filePath := icons[taskIndex].File
 		return func() error {
-			permissions, err := permbits.Stat(filePath)
+			fileInfo, err := os.Stat(filePath)
 			if err != nil {
 				return errors.WithStack(err)
 			}
 
-			_, err = util.FixPermissions(filePath, permissions)
+			err = util.FixPermissions(filePath, fileInfo.Mode())
 			if err != nil {
 				return err
 			}

@@ -6,6 +6,7 @@ import (
 	"runtime"
 
 	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 )
@@ -81,7 +82,7 @@ func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bo
 			return errors.WithStack(err)
 		}
 
-		err = SetDirPermsIfNeed(to, fromInfo.Mode())
+		err = util.FixPermissions(to, fromInfo.Mode())
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -101,17 +102,6 @@ func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bo
 	} else {
 		return t.CopyFile(from, to, isCreateParentDirs, fromInfo)
 	}
-}
-
-func SetDirPermsIfNeed(dir string, mode os.FileMode) error {
-	perm := mode.Perm()
-	if perm != 0755 {
-		err := os.Chmod(dir, perm)
-		if err != nil {
-			return errors.WithStack(err)
-		}
-	}
-	return nil
 }
 
 func (t *FileCopier) CopyFile(from string, to string, isCreateParentDirs bool, fromInfo os.FileInfo) error {

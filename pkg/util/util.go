@@ -151,7 +151,7 @@ func LogErrorAndExit(err error) {
 // http://www.blevesearch.com/news/Deferred-Cleanup,-Checking-Errors,-and-Potential-Problems/
 func Close(c io.Closer) {
 	err := c.Close()
-	if err != nil && err != os.ErrClosed {
+	if err != nil && err != os.ErrClosed && err != io.ErrClosedPipe {
 		if e, ok := err.(*os.PathError); ok && e.Err == os.ErrClosed {
 			return
 		}

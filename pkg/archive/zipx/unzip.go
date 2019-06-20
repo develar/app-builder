@@ -9,12 +9,10 @@ import (
 	"syscall"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 	"github.com/oxtoacart/bpool"
-	"github.com/phayes/permbits"
 )
 
 func ConfigureUnzipCommand(app *kingpin.Application) {
@@ -220,19 +218,9 @@ func (t *Extractor) extractDir(zipFile *zip.File) error {
 		return err
 	}
 
-	perm := zipFile.Mode()
-	if perm != 0755 {
-		isChanged, err := util.FixPermissions(filePath, permbits.FileMode(perm))
-		if err != nil {
-			return err
-		}
-
-		if !isChanged {
-			err = fs.SetDirPermsIfNeed(filePath, perm)
-			if err != nil {
-				return err
-			}
-		}
+	err = util.FixPermissions(filePath, zipFile.Mode())
+	if err != nil {
+		return err
 	}
 
 	t.addWithParentsToCreated(filePath)

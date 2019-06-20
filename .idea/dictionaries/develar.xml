@@ -5,11 +5,13 @@
       <w>KHTML</w>
       <w>appimage</w>
       <w>appimagekit</w>
+      <w>asar</w>
       <w>blockmap</w>
       <w>chunking</w>
       <w>geoip</w>
       <w>goreleaser</w>
       <w>hasher</w>
+      <w>htaccess</w>
       <w>icns</w>
       <w>ksuid</w>
       <w>launchui</w>

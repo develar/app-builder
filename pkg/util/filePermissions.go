@@ -1,36 +1,29 @@
 package util
 
 import (
+	"os"
+
 	"github.com/apex/log"
-	"github.com/develar/errors"
-	"github.com/phayes/permbits"
+	fsutil "github.com/develar/go-fs-util"
 )
 
 // https://github.com/electron-userland/electron-builder/issues/3452#issuecomment-438619535
 // quite a lot sources don't have proper permissions to be distributed
-func FixPermissions(filePath string, permissions permbits.PermissionBits) (bool, error) {
-	originalPermissions := permissions
-	if permissions.UserExecute() {
-		permissions.SetGroupExecute(true)
-		permissions.SetOtherExecute(true)
+func FixPermissions(filePath string, fileMode os.FileMode) error {
+	original, fixed, err := fsutil.FixPermissions(filePath, fileMode)
+	if err != nil {
+		return err
 	}
 
-	permissions.SetGroupRead(true)
-	permissions.SetOtherRead(true)
-
-	if originalPermissions == permissions {
-		return false, nil
+	if original == fixed {
+		return nil
 	}
 
 	log.WithFields(log.Fields{
 		"file":                filePath,
 		"reason":              "group or other cannot read",
-		"originalPermissions": originalPermissions.String(),
-		"newPermissions":      permissions.String(),
+		"originalPermissions": original.String(),
+		"newPermissions":      fixed.String(),
 	}).Debug("fix permissions")
-	err := permbits.Chmod(filePath, permissions)
-	if err != nil {
-		return false, errors.WithStack(err)
-	}
-	return true, nil
+	return nil
 }
