@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/apex/log"
+	"github.com/fatih/color"
+	"github.com/mattn/go-colorable"
 )
 
 func InitLogger() {
@@ -16,26 +19,25 @@ func InitLogger() {
 	if isDebugDefined && debugEnv != "false" {
 		log.SetLevel(log.DebugLevel)
 	}
+
+	forceColor := os.Getenv("FORCE_COLOR")
+	if forceColor == "0" {
+		color.NoColor = true
+	} else if forceColor == "1" || forceColor == "true" {
+		color.NoColor = false
+	}
 }
 
 // Default handler outputting to stderr.
 var Default = New(os.Stderr)
 
-// colors.
-const (
-	red    = 31
-	yellow = 33
-	blue   = 34
-	gray   = 37
-)
-
 // Colors mapping.
-var Colors = [...]int{
-	log.DebugLevel: gray,
-	log.InfoLevel:  blue,
-	log.WarnLevel:  yellow,
-	log.ErrorLevel: red,
-	log.FatalLevel: red,
+var Colors = [...]*color.Color{
+	log.DebugLevel: color.New(color.FgWhite),
+	log.InfoLevel:  color.New(color.FgBlue),
+	log.WarnLevel:  color.New(color.FgYellow),
+	log.ErrorLevel: color.New(color.FgRed),
+	log.FatalLevel: color.New(color.FgRed),
 }
 
 // Strings mapping.
@@ -56,36 +58,48 @@ type Handler struct {
 
 // New handler.
 func New(w io.Writer) *Handler {
+	if !color.NoColor {
+		if f, ok := w.(*os.File); ok {
+			return &Handler{
+				Writer:  colorable.NewColorable(f),
+				Padding: 2,
+			}
+		}
+	}
+
 	return &Handler{
-		Writer: w,
-		// change default padding from 3 to 2 (as electron-builder does, more compact)
+		Writer:  w,
 		Padding: 2,
 	}
 }
 
 // HandleLog implements log.Handler.
 func (h *Handler) HandleLog(e *log.Entry) error {
-	color := Colors[e.Level]
+	myColor := Colors[e.Level]
 	level := Strings[e.Level]
 	names := e.Fields.Names()
 
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	_, _ = fmt.Fprintf(h.Writer, "\033[%dm%*s\033[0m %-25s", color, h.Padding+1, level, e.Message)
+	_, _ = myColor.Fprintf(h.Writer, "%*s ", h.Padding+1, level)
+	_, _ = fmt.Fprintf(h.Writer, "%s%s", e.Message, strings.Repeat(" ", max(1, 15 /* because first field adds space before */ - len(e.Message))))
 
 	for _, name := range names {
 		if name == "source" {
 			continue
 		}
-
-		_, _ = fmt.Fprintf(h.Writer, " \033[%dm%s\033[0m=%v", color, name, e.Fields.Get(name))
+		_, _ = fmt.Fprintf(h.Writer, " %s=%v", myColor.Sprint(name), e.Fields.Get(name))
 	}
 
-	_, err := fmt.Fprintln(h.Writer)
-	if err != nil {
-		return err
-	}
+	_, _ = fmt.Fprintln(h.Writer)
 
 	return nil
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
 }

@@ -17,7 +17,7 @@ import (
 	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	fsutil "github.com/develar/go-fs-util"
+	"github.com/develar/go-fs-util"
 	"github.com/mcuadros/go-version"
 )
 
@@ -43,8 +43,6 @@ type SnapOptions struct {
 
 	extraAppArgs     *string
 	excludedAppFiles *[]string
-
-	dockerImage *string
 
 	arch   *string
 	output *string

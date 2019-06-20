@@ -38,7 +38,7 @@ func (part *Part) download(context context.Context, url string, index int, clien
 	}
 
 	request = request.WithContext(context)
-	request.Header.Set("User-Agent", userAgent)
+	request.Header.Set("User-Agent", getUserAgent())
 	if part.End > 0 {
 		request.Header.Set("Range", part.getRange())
 	}
