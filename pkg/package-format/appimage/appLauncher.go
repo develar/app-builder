@@ -94,6 +94,11 @@ func copyIcons(options *AppImageOptions) ([]IconTemplateInfo, error) {
 				if err != nil {
 					return errors.WithStack(err)
 				}
+
+				err = os.Symlink(iconRelativeToStageFile, filepath.Join(stageDir, ".DirIcon"))
+				if err != nil {
+					return errors.WithStack(err)
+				}
 			}
 
 			return nil
