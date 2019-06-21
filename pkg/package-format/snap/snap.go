@@ -74,12 +74,12 @@ func ConfigureCommand(app *kingpin.Application) {
 	isRemoveStage := util.ConfigureIsRemoveStageParam(command)
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		resolvedTemplateFile, err := ResolveTemplateFile(*templateFile, *templateUrl, *templateSha512)
+		resolvedTemplateDir, err := ResolveTemplateDir(*templateFile, *templateUrl, *templateSha512)
 		if err != nil {
 			return errors.WithStack(err)
 		}
 
-		err = Snap(resolvedTemplateFile, options)
+		err = Snap(resolvedTemplateDir, options)
 		if err != nil {
 			switch e := errors.Cause(err).(type) {
 			case util.MessageError:
@@ -101,7 +101,7 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
-func ResolveTemplateFile(templateFile string, templateUrl string, templateSha512 string) (string, error) {
+func ResolveTemplateDir(templateFile string, templateUrl string, templateSha512 string) (string, error) {
 	if len(templateFile) != 0 || len(templateUrl) == 0 {
 		return templateFile, nil
 	}
@@ -159,9 +159,9 @@ func doCheckSnapVersion(rawVersion string, installMessage string) error {
 	}
 }
 
-func Snap(templateFile string, options SnapOptions) error {
+func Snap(templateDir string, options SnapOptions) error {
 	stageDir := *options.stageDir
-	isUseTemplateApp := len(templateFile) != 0
+	isUseTemplateApp := len(templateDir) != 0
 	var snapMetaDir string
 	if isUseTemplateApp {
 		snapMetaDir = filepath.Join(stageDir, "meta")
@@ -202,7 +202,7 @@ func Snap(templateFile string, options SnapOptions) error {
 
 	switch {
 	case isUseTemplateApp:
-		return buildUsingTemplate(templateFile, options)
+		return buildUsingTemplate(templateDir, options)
 	default:
 		return buildWithoutTemplate(options, scriptDir)
 	}
@@ -240,7 +240,7 @@ func writeCommandWrapper(options SnapOptions, isUseTemplateApp bool, scriptDir s
 	return nil
 }
 
-func buildUsingTemplate(templateFile string, options SnapOptions) error {
+func buildUsingTemplate(templateDir string, options SnapOptions) error {
 	stageDir := *options.stageDir
 
 	mksquashfsPath, err := linuxTools.GetMksquashfs()
@@ -250,12 +250,31 @@ func buildUsingTemplate(templateFile string, options SnapOptions) error {
 
 	var args []string
 
-	args, err = linuxTools.ReadDirContentTo(templateFile, args, nil)
+	args, err = linuxTools.ReadDirContentTo(templateDir, args, nil)
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
 	args, err = linuxTools.ReadDirContentTo(stageDir, args, nil)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	// https://github.com/electron-userland/electron-builder/issues/3608
+	// even if electron-builder will correctly unset setgid/setuid, still, quite a lot of possibilities for user to create such incorrect permissions,
+	// so, just unset it using chmod right before packaging
+	dirs := []string{stageDir, *options.appDir, templateDir}
+	err = util.MapAsync(len(dirs), func(taskIndex int) (func() error, error) {
+		dir := dirs[taskIndex]
+		return func() error {
+			_, err := util.Execute(exec.Command("chmod", "-R", "g-s", dir), dir)
+			if err != nil {
+				log.WithError(err).Warn("cannot execute chmod")
+			}
+			return nil
+		}, nil
+	})
+
 	if err != nil {
 		return errors.WithStack(err)
 	}
