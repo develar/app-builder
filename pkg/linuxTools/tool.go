@@ -12,11 +12,11 @@ import (
 )
 
 func GetAppImageToolDir() (string, error) {
-	dirName := "appimage-9.1.0"
+	dirName := "appimage-12.0.0"
 	//noinspection SpellCheckingInspection
 	result, err := download.DownloadArtifact("",
 		"https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z",
-		"/9ipJexioCIFK+aQ/LktAHEieFFWxwkikxXZZlKXzm3fY5tFs+xUKv2m4OymD6ITRGiA4zzAKmlWyhVOjCxXuw==")
+		"1XG416Q2cxMGrr4SByMUkjDadqrFrDDPGcKx7jEI0isqkUEc3b/I4lcCsDuylXQTU2V2iG8RAdxzBiMFF2EYow==")
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
