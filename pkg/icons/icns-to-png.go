@@ -36,7 +36,7 @@ func ConvertIcnsToPng(inFile string, outDir string) ([]IconInfo, error) {
 		return nil, errors.WithStack(err)
 	}
 
-	sizeList := []int{24, 96}
+	var sizeList []int
 	var result []IconInfo
 	if runtime.GOOS == "darwin" && os.Getenv("FORCE_ICNS2PNG") == "" {
 		result, err = ConvertIcnsToPngUsingIconUtil(inFile, outDir, &sizeList)

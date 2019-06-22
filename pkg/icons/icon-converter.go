@@ -276,7 +276,7 @@ func resizePngForLinux(inputInfo *InputFileInfo, iconFileName string, outDir str
 		Size: inputInfo.MaxIconSize,
 	})
 
-	sizeList := []int{24, 96}
+	var sizeList []int
 	for _, item := range icnsTypeToSize {
 		if item.Size < inputInfo.MaxIconSize {
 			sizeList = append(sizeList, item.Size)
