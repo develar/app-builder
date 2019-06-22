@@ -21,41 +21,34 @@ const iconDirRelativePath = "usr/share/icons/hicolor"
 const mimeTypeDirRelativePath = "usr/share/mime"
 
 type TemplateConfiguration struct {
-	EulaFile          string
-	SystemIntegration string
-	ExecutableName    string
-	ProductName       string
-	ResourceName      string
-	DesktopFileName   string
+	EulaFile        string
+	ExecutableName  string
+	ProductName     string
+	ProductFilename string
+	ResourceName    string
+	DesktopFileName string
 
 	MimeTypeFile string
-	Icons        []IconTemplateInfo
 }
 
 func (t *TemplateConfiguration) IsHtmlEula() bool {
 	return strings.HasSuffix(t.EulaFile, ".html")
 }
 
-type IconTemplateInfo struct {
-	File string
-	Size int
-}
-
 // https://github.com/AppImage/AppImageKit/issues/438#issuecomment-319094239
 // expects icons in the /usr/share/icons/hicolor
-func copyIcons(options *AppImageOptions) ([]IconTemplateInfo, error) {
+func copyIcons(options *AppImageOptions) error {
 	stageDir := *options.stageDir
 
 	iconCommonDir := filepath.Join(stageDir, iconDirRelativePath)
 	err := fsutil.EnsureDir(iconCommonDir)
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
 	icons := options.configuration.Icons
 	iconExtWithDot := filepath.Ext(icons[0].File)
 	iconFileName := options.configuration.ExecutableName + iconExtWithDot
-	templateIcons := make([]IconTemplateInfo, len(icons))
 	maxIconIndex := len(icons) - 1
 	var fileCopier fs.FileCopier
 	fileCopier.IsUseHardLinks = true
@@ -69,11 +62,6 @@ func copyIcons(options *AppImageOptions) ([]IconTemplateInfo, error) {
 			iconSizeDir = fmt.Sprintf("%dx%d/apps", icon.Size, icon.Size)
 		}
 		iconRelativeToStageFile := iconDirRelativePath + "/" + iconSizeDir + "/" + iconFileName
-		templateInfo := IconTemplateInfo{
-			Size: icon.Size,
-			File: iconRelativeToStageFile,
-		}
-		templateIcons[taskIndex] = templateInfo
 
 		return func() error {
 			iconDir := filepath.Join(iconCommonDir, iconSizeDir)
@@ -106,10 +94,10 @@ func copyIcons(options *AppImageOptions) ([]IconTemplateInfo, error) {
 	})
 
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return errors.WithStack(err)
 	}
 
-	return templateIcons, nil
+	return nil
 }
 
 type fakeFileInfo struct {
@@ -209,15 +197,11 @@ func writeAppLauncherAndRelatedFiles(options *AppImageOptions) error {
 	configuration := options.configuration
 	executableName := configuration.ExecutableName
 	templateConfiguration := &TemplateConfiguration{
-		DesktopFileName:   desktopFileName,
-		ExecutableName:    executableName,
-		ProductName:       configuration.ProductName,
-		ResourceName:      "appimagekit-" + executableName,
-		SystemIntegration: configuration.SystemIntegration,
-	}
-
-	if templateConfiguration.SystemIntegration == "" {
-		templateConfiguration.SystemIntegration = "ask"
+		DesktopFileName: desktopFileName,
+		ExecutableName:  executableName,
+		ProductName:     configuration.ProductName,
+		ProductFilename: configuration.ProductFilename,
+		ResourceName:    "appimagekit-" + executableName,
 	}
 
 	licenseFile := *options.license
@@ -229,12 +213,10 @@ func writeAppLauncherAndRelatedFiles(options *AppImageOptions) error {
 		}
 	}
 
-	icons, err := copyIcons(options)
+	err = copyIcons(options)
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	templateConfiguration.Icons = icons
 
 	mimeTypeFile, err := copyMimeTypes(options)
 	if err != nil {

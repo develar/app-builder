@@ -21,13 +21,13 @@ endif
 
 # ln -sf ~/Documents/app-builder/dist/app-builder_darwin_amd64/app-builder ~/Documents/electron-builder/node_modules/app-builder-bin/mac/app-builder
 # cp ~/Documents/app-builder/dist/app-builder_linux_amd64/app-builder ~/Documents/electron-builder/node_modules/app-builder-bin/linux/x64/app-builder
-build:
+build: assets
 	go build -ldflags='-s -w' -o dist/app-builder_$(OS_ARCH)/app-builder
 
 # see https://goreleaser.com/#installing-goreleaser
 # mac: brew install goreleaser
 # linux: snap install goreleaser
-build-all:
+build-all: assets
 	goreleaser --skip-validate --skip-sign --skip-publish --rm-dist --snapshot
 
 # brew install golangci/tap/golangci-lint && brew upgrade golangci/tap/golangci-lint

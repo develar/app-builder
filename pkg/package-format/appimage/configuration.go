@@ -2,6 +2,7 @@ package appimage
 
 type AppImageConfiguration struct {
 	ProductName       string `json:"productName"`
+	ProductFilename   string `json:"productFilename"`
 	ExecutableName    string `json:"executableName"`
 	SystemIntegration string `json:"systemIntegration"`
 
