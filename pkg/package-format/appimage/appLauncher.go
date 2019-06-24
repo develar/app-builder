@@ -14,7 +14,6 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
-	"github.com/segmentio/ksuid"
 )
 
 const iconDirRelativePath = "usr/share/icons/hicolor"
@@ -160,8 +159,7 @@ func copyMimeTypes(options *AppImageOptions) (string, error) {
 
 func writeDesktopFile(options *AppImageOptions) (string, error) {
 	fileName := options.configuration.ExecutableName + ".desktop"
-	// we add X-AppImage-BuildId to ensure that new desktop file will be installed
-	err := ioutil.WriteFile(filepath.Join(*options.stageDir, fileName), []byte(options.configuration.DesktopEntry+"X-AppImage-BuildId="+ksuid.New().String()+"\n"), 0666)
+	err := ioutil.WriteFile(filepath.Join(*options.stageDir, fileName), []byte(options.configuration.DesktopEntry), 0666)
 	if err != nil {
 		return "", errors.WithStack(err)
 	}
