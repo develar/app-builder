@@ -25,11 +25,11 @@ func ConfigureUnpackCommand(app *kingpin.Application) {
 		if err != nil {
 			return err
 		}
-		return unpackElectron(configs, *outputDir, *distMacOsAppName, true)
+		return UnpackElectron(configs, *outputDir, *distMacOsAppName, true)
 	})
 }
 
-func unpackElectron(configs []ElectronDownloadOptions, outputDir string, distMacOsAppName string, isReDownloadOnFileReadError bool) error {
+func UnpackElectron(configs []ElectronDownloadOptions, outputDir string, distMacOsAppName string, isReDownloadOnFileReadError bool) error {
 	cachedElectronZip := make(chan string, 1)
 	err := util.MapAsync(2, func(taskIndex int) (func() error, error) {
 		if taskIndex == 0 {
@@ -48,8 +48,13 @@ func unpackElectron(configs []ElectronDownloadOptions, outputDir string, distMac
 			}, nil
 		}
 	})
+
 	if err != nil {
 		return err
+	}
+
+	if len(distMacOsAppName) == 0 {
+		distMacOsAppName = "Electron"
 	}
 
 	excludedFiles := make(map[string]bool)
@@ -72,7 +77,7 @@ func unpackElectron(configs []ElectronDownloadOptions, outputDir string, distMac
 				log.WithError(err).WithField("file", zipFile).Warn("cannot delete")
 			}
 
-			return unpackElectron(configs, outputDir, distMacOsAppName, false)
+			return UnpackElectron(configs, outputDir, distMacOsAppName, false)
 		} else {
 			return err
 		}
