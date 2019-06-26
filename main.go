@@ -23,6 +23,7 @@ import (
 	"github.com/develar/app-builder/pkg/package-format/fpm"
 	"github.com/develar/app-builder/pkg/package-format/proton-native"
 	"github.com/develar/app-builder/pkg/package-format/snap"
+	"github.com/develar/app-builder/pkg/plist"
 	"github.com/develar/app-builder/pkg/publisher"
 	"github.com/develar/app-builder/pkg/remoteBuild"
 	"github.com/develar/app-builder/pkg/util"
@@ -42,7 +43,7 @@ func main() {
 		return
 	}
 
-	var app = kingpin.New("app-builder", "app-builder").Version("3.0.1")
+	var app = kingpin.New("app-builder", "app-builder").Version("3.0.3")
 
 	node_modules.ConfigureCommand(app)
 	//codesign.ConfigureCommand(app)
@@ -76,6 +77,8 @@ func main() {
 
 	wine.ConfigureCommand(app)
 	configureKsUidCommand(app)
+
+	plist.ConfigurePlistCommand(app)
 
 	_, err = app.Parse(os.Args[1:])
 	if err != nil {

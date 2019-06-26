@@ -96,11 +96,6 @@ func ConfigureCommand(app *kingpin.Application) {
 
 func configureTargetSpecific(target string, args []string, compression string) []string {
 	if target == "rpm" {
-		_, err := exec.Command("rpmbuild", "--version").Output()
-		if err != nil {
-
-		}
-
 		args = append(args, "--rpm-os", "linux")
 		if compression == "xz" {
 			args = append(args, "--rpm-compression", "xzmt")
