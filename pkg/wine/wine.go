@@ -66,7 +66,7 @@ func execWine(ia32Name string, args []string) error {
 			)
 			command.Env = env
 
-			if _, err := util.Execute(command, ""); err != nil {
+			if _, err := util.Execute(command); err != nil {
 				return err
 			}
 
@@ -89,7 +89,7 @@ func execWine(ia32Name string, args []string) error {
 			fmt.Sprintf("DYLD_FALLBACK_LIBRARY_PATH=%s", filepath.Join(wineDir, "lib")+":"+os.Getenv("DYLD_FALLBACK_LIBRARY_PATH")),
 		)
 		command.Env = env
-		_, err = util.Execute(command, "")
+		_, err = util.Execute(command)
 		if err != nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func execWine(ia32Name string, args []string) error {
 		return err
 	}
 
-	_, err = util.Execute(exec.CommandContext(ctx, "wine", args...), "")
+	_, err = util.Execute(exec.CommandContext(ctx, "wine", args...))
 	if err != nil {
 		return err
 	}

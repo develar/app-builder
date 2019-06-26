@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
@@ -13,6 +14,7 @@ import (
 	"github.com/apex/log"
 	"github.com/develar/errors"
 	"github.com/json-iterator/go"
+	"gopkg.in/alessio/shellescape.v1"
 )
 
 func ConfigureIsRemoveStageParam(command *kingpin.CmdClause) *bool {
@@ -48,26 +50,29 @@ func WriteJsonToStdOut(v interface{}) error {
 	return errors.WithStack(err)
 }
 
-func Execute(command *exec.Cmd, currentWorkingDirectory string) ([]byte, error) {
-	preCommandExecute(command, currentWorkingDirectory)
+func Execute(command *exec.Cmd) ([]byte, error) {
+	preCommandExecute(command)
 
-	output, err := command.Output()
+	var output bytes.Buffer
+	command.Stdout = &output
+
+	var errorOutput bytes.Buffer
+	command.Stderr = &errorOutput
+
+	err := command.Run()
 	if err != nil {
-		errorOut := ""
-		if exitError, ok := err.(*exec.ExitError); ok {
-			errorOut = string(exitError.Stderr)
-		}
+		return output.Bytes(), &ExecError{
+			Cause:          err,
+			CommandAndArgs: command.Args,
 
-		return nil, errors.New("error: " + err.Error() +
-			"\npath: " + command.Path +
-			"\nargs: " + argListToSafeString(command.Args) +
-			"\noutput: " + string(output) +
-			"\nerror output:" + errorOut)
-	} else if IsDebugEnabled() && len(output) != 0 && !(strings.HasSuffix(command.Path, "openssl") || strings.HasSuffix(command.Path, "openssl.exe")) {
-		log.Debug(string(output))
+			Output:      output.Bytes(),
+			ErrorOutput: errorOutput.Bytes(),
+		}
+	} else if IsDebugEnabled() && output.Len() != 0 && !(strings.HasSuffix(command.Path, "openssl") || strings.HasSuffix(command.Path, "openssl.exe")) {
+		log.Debug(output.String())
 	}
 
-	return output, nil
+	return output.Bytes(), nil
 }
 
 func argListToSafeString(args []string) string {
@@ -82,7 +87,10 @@ func argListToSafeString(args []string) string {
 				log.WithError(err).Warn("cannot compute sha512 hash of password to log")
 				value = "<hidden>"
 			}
+		} else {
+			value = shellescape.Quote(value)
 		}
+
 		if index > 0 {
 			result.WriteRune(' ')
 		}
@@ -134,19 +142,25 @@ func WaitPipedCommand(producer *exec.Cmd, consumer *exec.Cmd) error {
 	return nil
 }
 
-func preCommandExecute(command *exec.Cmd, currentWorkingDirectory string) {
-	if currentWorkingDirectory != "" {
-		command.Dir = currentWorkingDirectory
-	}
-
+func preCommandExecute(command *exec.Cmd) {
 	log.WithFields(log.Fields{
-		"path": command.Path,
 		"args": argListToSafeString(command.Args),
 	}).Debug("execute command")
 }
 
 func LogErrorAndExit(err error) {
-	log.Fatalf("%+v\n", err)
+	if execError, ok := err.(*ExecError); ok {
+		entry := log.WithField("cause", execError.Cause)
+		if len(execError.Output) > 0 {
+			entry = entry.WithField("out", string(execError.Output))
+		}
+		if len(execError.ErrorOutput) > 0 {
+			entry = entry.WithField("errorOut", string(execError.ErrorOutput))
+		}
+		entry.WithField("command", argListToSafeString(execError.CommandAndArgs)).WithField("cause", execError.Cause).Fatal("cannot execute")
+	} else {
+		log.Fatalf("%+v\n", err)
+	}
 }
 
 // http://www.blevesearch.com/news/Deferred-Cleanup,-Checking-Errors,-and-Potential-Problems/

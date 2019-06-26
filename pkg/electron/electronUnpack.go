@@ -54,7 +54,7 @@ func UnpackElectron(configs []ElectronDownloadOptions, outputDir string, distMac
 	}
 
 	if len(distMacOsAppName) == 0 {
-		distMacOsAppName = "Electron"
+		distMacOsAppName = "Electron.app"
 	}
 
 	excludedFiles := make(map[string]bool)

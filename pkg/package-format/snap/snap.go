@@ -267,7 +267,9 @@ func buildUsingTemplate(templateDir string, options SnapOptions) error {
 	err = util.MapAsync(len(dirs), func(taskIndex int) (func() error, error) {
 		dir := dirs[taskIndex]
 		return func() error {
-			_, err := util.Execute(exec.Command("chmod", "-R", "g-s", dir), dir)
+			command := exec.Command("chmod", "-R", "g-s", dir)
+			command.Dir = dir
+			_, err := util.Execute(command)
 			if err != nil {
 				log.WithError(err).Warn("cannot execute chmod")
 			}
@@ -292,7 +294,7 @@ func buildUsingTemplate(templateDir string, options SnapOptions) error {
 
 	args = append(args, *options.output, "-no-progress", "-quiet", "-noappend", "-comp", "xz", "-no-xattrs", "-no-fragments", "-all-root")
 
-	_, err = util.Execute(exec.Command(mksquashfsPath, args...), "")
+	_, err = util.Execute(exec.Command(mksquashfsPath, args...))
 	if err != nil {
 		return err
 	}
@@ -346,7 +348,9 @@ func buildWithoutTemplate(options SnapOptions, scriptDir string) error {
 	command.Env = append(os.Environ(),
 		"SNAPCRAFT_HAS_TTY=false",
 	)
-	err = util.ExecuteAndPipeStdOutAndStdErr(command, stageDir)
+
+	command.Dir = stageDir
+	err = util.ExecuteAndPipeStdOutAndStdErr(command)
 	if err != nil {
 		return err
 	}

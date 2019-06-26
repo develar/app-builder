@@ -1,0 +1,150 @@
+package fpm
+
+import (
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+
+	"github.com/alecthomas/kingpin"
+	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/util"
+	"github.com/pkg/errors"
+)
+
+type FpmConfiguration struct {
+	Target string   `json:"target"`
+	Args   []string `json:"args"`
+
+	Compression string `json:"compression"`
+
+	CustomDepends []string `json:"customDepends"`
+}
+
+func ConfigureCommand(app *kingpin.Application) {
+	command := app.Command("fpm", "Build FPM targets.")
+
+	configurationJson := command.Flag("configuration", "").Required().String()
+	command.Action(func(context *kingpin.ParseContext) error {
+		var configuration FpmConfiguration
+		err := util.DecodeBase64IfNeeded(*configurationJson, &configuration)
+		if err != nil {
+			return err
+		}
+
+		var fpmPath string
+		if util.GetCurrentOs() == util.WINDOWS || util.IsEnvTrue("USE_SYSTEM_FPM") {
+			fpmPath = "fpm"
+		} else {
+			fpmDir, err := download.DownloadFpm()
+			if err != nil {
+				return err
+			}
+			fpmPath = filepath.Join(fpmDir, "fpm")
+		}
+
+		target := configuration.Target
+
+		// must be first
+		args := []string{"-s", "dir", "--force", "-t", target}
+		if util.IsEnvTrue("FPM_DEBUG") {
+			args = append(args, "--debug")
+		}
+		args = configureDependencies(&configuration, target, args)
+
+		compression := "xz"
+		if len(configuration.Compression) != 0 {
+			compression = configuration.Compression
+		}
+
+		args = configureTargetSpecific(target, args, compression)
+
+		args = append(args, configuration.Args...)
+
+		command := exec.Command(fpmPath, args...)
+
+		executablePath, err := os.Executable()
+		if err != nil {
+			return errors.WithStack(err)
+		}
+
+		env := os.Environ()
+		env = append(env,
+			"SZA_ARCHIVE_TYPE=xz",
+			"FPM_COMPRESS_PROGRAM="+executablePath,
+		)
+		command.Env = env
+
+		_, err = util.Execute(command)
+		if err != nil {
+			if execError, ok := err.(*util.ExecError); ok && strings.Contains(string(execError.Output), `"Need executable 'rpmbuild' to convert dir to rpm"`) {
+				var installHint string
+				if util.GetCurrentOs() == util.MAC {
+					installHint = "brew install rpm"
+				} else {
+					installHint = "sudo apt-get install rpm"
+				}
+				log.Fatal("to build rpm, executable rpmbuild is required, please install: " + installHint)
+			}
+			return err
+		}
+
+		return nil
+	})
+}
+
+func configureTargetSpecific(target string, args []string, compression string) []string {
+	if target == "rpm" {
+		_, err := exec.Command("rpmbuild", "--version").Output()
+		if err != nil {
+
+		}
+
+		args = append(args, "--rpm-os", "linux")
+		if compression == "xz" {
+			args = append(args, "--rpm-compression", "xzmt")
+		} else {
+			args = append(args, "--rpm-compression", compression)
+		}
+	} else if target == "deb" {
+		args = append(args, "--deb-compression", compression)
+	}
+	return args
+}
+
+func configureDependencies(configuration *FpmConfiguration, target string, args []string) []string {
+	depends := configuration.CustomDepends
+	if len(depends) == 0 {
+		depends = getDefaultDepends(target)
+	}
+	for _, value := range depends {
+		args = append(args, "-d", value)
+	}
+	return args
+}
+
+//noinspection SpellCheckingInspection
+func getDefaultDepends(target string) []string {
+	switch target {
+	case "deb":
+		return []string{
+			"libgtk-3-0", "libnotify4", "libnss3", "libxss1", "libxtst6", "xdg-utils", "libatspi2.0-0", "libuuid1", "libappindicator1",
+			"libgnome-keyring0", "gir1.2-gnomekeyring-1.0",
+		}
+
+	case "rpm":
+		return []string{
+			"gtk3" /* for electron 2+ (electron 1 uses gtk2, but this old version is not supported anymore) */,
+			"libnotify", "nss", "libXScrnSaver", "libXtst", "xdg-utils",
+			"at-spi2-core" /* since 5.0.0 */,
+			"libuuid"      /* since 4.0.0 */,
+		}
+
+	case "pacman":
+		return []string{"c-ares", "ffmpeg", "gtk3", "http-parser", "libevent", "libvpx", "libxslt", "libxss", "minizip", "nss", "re2", "snappy", "libnotify", "libappindicator-gtk3", "libappindicator-sharp"}
+
+	default:
+		return nil
+	}
+}

@@ -5,8 +5,9 @@ require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc // indirect
 	github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf // indirect
-	github.com/apex/log v1.1.0
-	github.com/aws/aws-sdk-go v1.20.6
+	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053 // indirect
+	github.com/apex/log v1.1.1
+	github.com/aws/aws-sdk-go v1.20.8
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -29,13 +30,14 @@ require (
 	github.com/onsi/ginkgo v1.8.0
 	github.com/onsi/gomega v1.5.0
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c
+	github.com/pkg/errors v0.8.1
 	github.com/pkg/xattr v0.4.1
 	github.com/segmentio/ksuid v1.0.2
 	github.com/zieckey/goini v0.0.0-20180118150432-0da17d361d26
 	golang.org/x/image v0.0.0-20190622003408-7e034cad6442 // indirect
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
-	golang.org/x/sys v0.0.0-20190621203818-d432491b9138 // indirect
+	golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0 // indirect
 	golang.org/x/text v0.3.2 // indirect
+	gopkg.in/alessio/shellescape.v1 v1.0.0-20170105083845-52074bc9df61
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/yaml.v2 v2.2.2 // indirect
 )

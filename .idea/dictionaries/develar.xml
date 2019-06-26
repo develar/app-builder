@@ -26,6 +26,7 @@
       <w>multipass</w>
       <w>noappend</w>
       <w>ostype</w>
+      <w>rpmbuild</w>
       <w>snapcore</w>
       <w>snapcraft</w>
       <w>tiffutil</w>
@@ -33,6 +34,7 @@
       <w>userland</w>
       <w>virtualgo</w>
       <w>xattrs</w>
+      <w>xzmt</w>
       <w>zstd</w>
     </words>
   </dictionary>

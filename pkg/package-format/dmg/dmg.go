@@ -89,7 +89,7 @@ func GetEffectiveBackgroundPath(path string) (string, error) {
 	}
 
 	//noinspection SpellCheckingInspection
-	_, err = util.Execute(exec.Command("tiffutil", "-cathidpicheck", path, retinaFile, "-out", tiffFile), "")
+	_, err = util.Execute(exec.Command("tiffutil", "-cathidpicheck", path, retinaFile, "-out", tiffFile))
 	if err != nil {
 		return "", err
 	}

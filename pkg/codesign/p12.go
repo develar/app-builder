@@ -114,9 +114,9 @@ func readUsingOpenssl(inFile string, password string) ([]*x509.Certificate, erro
 		opensslPath = filepath.Join(vendor, "openssl", "openssl.exe")
 	}
 
-	pemData, err := util.Execute(exec.Command(opensslPath, "pkcs12", "-in", inFile, "-passin", "pass:"+password, "-nokeys"), "")
+	pemData, err := util.Execute(exec.Command(opensslPath, "pkcs12", "-in", inFile, "-passin", "pass:"+password, "-nokeys"))
 	if err != nil {
-		return nil, errors.WithStack(err)
+		return nil, err
 	}
 
 	var blocks []byte

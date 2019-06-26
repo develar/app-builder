@@ -20,6 +20,7 @@ import (
 	"github.com/develar/app-builder/pkg/node-modules"
 	"github.com/develar/app-builder/pkg/package-format/appimage"
 	"github.com/develar/app-builder/pkg/package-format/dmg"
+	"github.com/develar/app-builder/pkg/package-format/fpm"
 	"github.com/develar/app-builder/pkg/package-format/proton-native"
 	"github.com/develar/app-builder/pkg/package-format/snap"
 	"github.com/develar/app-builder/pkg/publisher"
@@ -62,6 +63,7 @@ func main() {
 	ConfigureCopyCommand(app)
 	appimage.ConfigureCommand(app)
 	snap.ConfigureCommand(app)
+	fpm.ConfigureCommand(app)
 
 	err := icons.ConfigureCommand(app)
 	if err != nil {

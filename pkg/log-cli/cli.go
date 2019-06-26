@@ -83,13 +83,58 @@ func (h *Handler) HandleLog(e *log.Entry) error {
 	defer h.mu.Unlock()
 
 	_, _ = myColor.Fprintf(h.Writer, "%*s ", h.Padding+1, level)
-	_, _ = fmt.Fprintf(h.Writer, "%s%s", e.Message, strings.Repeat(" ", max(1, 15 /* because first field adds space before */ - len(e.Message))))
+	fieldOffset := h.Padding + 1 + 1
 
-	for _, name := range names {
+	if e.Level >= log.ErrorLevel {
+		_, _ = myColor.Fprint(h.Writer, e.Message)
+	} else {
+		_, _ = h.Writer.Write([]byte(e.Message))
+	}
+
+	fieldOffset += len(e.Message)
+
+	n, _ := h.Writer.Write([]byte(strings.Repeat(" ", max(2, 16-len(e.Message)))))
+	// n can be used because ASCII only (so, byte count equals to char count)
+	fieldOffset += n
+
+	fieldNameAndValueList := make([]string, len(names))
+
+	totalLength := 0
+	for index, name := range names {
 		if name == "source" {
 			continue
 		}
-		_, _ = fmt.Fprintf(h.Writer, " %s=%v", myColor.Sprint(name), e.Fields.Get(name))
+
+		v := fmt.Sprintf("%s=%v", myColor.Sprint(name), e.Fields.Get(name))
+		fieldNameAndValueList[index] = v
+		totalLength += len(v)
+	}
+
+	stacked := totalLength > 160
+	var fieldPrefix []byte
+	if stacked {
+		fieldPrefix = make([]byte, fieldOffset + 1)
+		fieldPrefix[0] = 10
+		for i := 1; i < len(fieldPrefix); i++ {
+			fieldPrefix[i] = 32
+		}
+	} else {
+		fieldPrefix = []byte(" ")
+	}
+
+	writtenIndex := 0
+	for _, v := range fieldNameAndValueList {
+		if len(v) == 0 {
+			continue
+		}
+
+		if writtenIndex > 0 {
+			_, _ = h.Writer.Write(fieldPrefix)
+		}
+
+		_, _ = h.Writer.Write([]byte(v))
+
+		writtenIndex++
 	}
 
 	_, _ = fmt.Fprintln(h.Writer)
