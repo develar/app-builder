@@ -2,6 +2,7 @@ package plist
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 
 	"github.com/alecthomas/kingpin"
@@ -17,6 +18,51 @@ func ConfigurePlistCommand(app *kingpin.Application) {
 	command.Action(func(context *kingpin.ParseContext) error {
 		return decode(*files)
 	})
+
+	encodeCommand := app.Command("encode-plist", "")
+	encodeCommand.Action(func(context *kingpin.ParseContext) error {
+		return encode()
+	})
+}
+
+func encode() error {
+	var fileToData map[string]interface{}
+	err := jsoniter.NewDecoder(os.Stdin).Decode(&fileToData)
+	if err != nil {
+		return err
+	}
+
+	files := make([]string, len(fileToData))
+	i := 0
+	for file := range fileToData {
+		files[i] = file
+		i++
+	}
+
+	err = util.MapAsync(len(files), func(index int) (func() error, error) {
+		file := files[index]
+		data := fileToData[file]
+		return func() error {
+			var out bytes.Buffer
+			err := plist.NewEncoderForFormat(&out, plist.BinaryFormat).Encode(data)
+			if err != nil {
+				return err
+			}
+
+			err = ioutil.WriteFile(file, out.Bytes(), 0666)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}, nil
+	})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func decode(files []string) error {
