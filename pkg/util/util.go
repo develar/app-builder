@@ -60,16 +60,28 @@ func Execute(command *exec.Cmd) ([]byte, error) {
 	command.Stderr = &errorOutput
 
 	err := command.Run()
+	exitCode := 0
 	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			exitCode = exitError.ExitCode()
+		}
 		return output.Bytes(), &ExecError{
-			Cause:          err,
-			CommandAndArgs: command.Args,
+			Cause:            err,
+			CommandAndArgs:   command.Args,
+			WorkingDirectory: command.Dir,
 
 			Output:      output.Bytes(),
 			ErrorOutput: errorOutput.Bytes(),
 		}
-	} else if IsDebugEnabled() && output.Len() != 0 && !(strings.HasSuffix(command.Path, "openssl") || strings.HasSuffix(command.Path, "openssl.exe")) {
-		log.Debug(output.String())
+	} else if IsDebugEnabled() && !(strings.HasSuffix(command.Path, "openssl") || strings.HasSuffix(command.Path, "openssl.exe")) {
+		entry := log.WithField("command", command.Args[0]).WithField("exitCode", exitCode)
+		if output.Len() > 0 {
+			entry = entry.WithField("out", output.String())
+		}
+		if errorOutput.Len() > 0 {
+			entry = entry.WithField("errorOut", errorOutput.String())
+		}
+		entry.Debug("command executed")
 	}
 
 	return output.Bytes(), nil
@@ -150,17 +162,21 @@ func preCommandExecute(command *exec.Cmd) {
 
 func LogErrorAndExit(err error) {
 	if execError, ok := err.(*ExecError); ok {
-		entry := log.WithField("cause", execError.Cause)
-		if len(execError.Output) > 0 {
-			entry = entry.WithField("out", string(execError.Output))
-		}
-		if len(execError.ErrorOutput) > 0 {
-			entry = entry.WithField("errorOut", string(execError.ErrorOutput))
-		}
-		entry.WithField("command", argListToSafeString(execError.CommandAndArgs)).WithField("cause", execError.Cause).Fatal("cannot execute")
+		CreateExecErrorLogEntry(execError).Fatal("cannot execute")
 	} else {
 		log.Fatalf("%+v\n", err)
 	}
+}
+
+func CreateExecErrorLogEntry(execError *ExecError) *log.Entry {
+	entry := log.WithField("cause", execError.Cause)
+	if len(execError.Output) > 0 {
+		entry = entry.WithField("out", string(execError.Output))
+	}
+	if len(execError.ErrorOutput) > 0 {
+		entry = entry.WithField("errorOut", string(execError.ErrorOutput))
+	}
+	return entry.WithField("command", argListToSafeString(execError.CommandAndArgs)).WithField("workingDir", execError.WorkingDirectory).WithField("cause", execError.Cause)
 }
 
 // http://www.blevesearch.com/news/Deferred-Cleanup,-Checking-Errors,-and-Potential-Problems/

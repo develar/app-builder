@@ -135,9 +135,10 @@ func readUsingOpenssl(inFile string, password string) ([]*x509.Certificate, erro
 		}
 	}
 
-	result, err := x509.ParseCertificates(blocks)
-	if err != nil {
-		return nil, errors.WithStack(err)
+
+	result, err2 := x509.ParseCertificates(blocks)
+	if err2 != nil {
+		return nil, errors.WithStack(err2)
 	}
 	return result, nil
 }

@@ -23,8 +23,9 @@ func ExecuteAndPipeStdOutAndStdErr(command *exec.Cmd) error {
 }
 
 type ExecError struct {
-	Cause          error
-	CommandAndArgs []string
+	Cause            error
+	CommandAndArgs   []string
+	WorkingDirectory string
 
 	Output      []byte
 	ErrorOutput []byte

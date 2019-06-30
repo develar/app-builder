@@ -46,6 +46,7 @@ func main() {
 	var app = kingpin.New("app-builder", "app-builder").Version("3.1.0")
 
 	node_modules.ConfigureCommand(app)
+	node_modules.ConfigureRebuildCommand(app)
 	//codesign.ConfigureCommand(app)
 	publisher.ConfigurePublishToS3Command(app)
 	remoteBuild.ConfigureBuildCommand(app)

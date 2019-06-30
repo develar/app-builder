@@ -213,7 +213,7 @@ func writeAppLauncherAndRelatedFiles(options *AppImageOptions) error {
 
 	err = copyIcons(options)
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	mimeTypeFile, err := copyMimeTypes(options)

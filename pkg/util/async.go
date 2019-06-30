@@ -66,7 +66,8 @@ func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskI
 			default:
 				err := task()
 				if err != nil {
-					errorChannel <- errors.WithStack(err)
+					// do not wrap - up to client to wrap if needed (to avoid later to discover cause)
+					errorChannel <- err
 				}
 			}
 		}(task)

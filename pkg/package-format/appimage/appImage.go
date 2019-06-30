@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/blockmap"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/linuxTools"
@@ -58,7 +59,7 @@ func ConfigureCommand(app *kingpin.Application) {
 
 		err = AppImage(options)
 		if err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 
 		if *isRemoveStage {
@@ -77,7 +78,7 @@ func AppImage(options *AppImageOptions) error {
 
 	err := writeAppLauncherAndRelatedFiles(options)
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	outputFile := *options.output
@@ -88,21 +89,21 @@ func AppImage(options *AppImageOptions) error {
 
 	appImageToolDir, err := linuxTools.GetAppImageToolDir()
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	arch := *options.arch
 	if arch == "x64" || arch == "ia32" {
 		err = fs.CopyUsingHardlink(filepath.Join(appImageToolDir, "lib", arch), filepath.Join(stageDir, "usr", "lib"))
 		if err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 	}
 
 	// mksquashfs doesn't support merging, our stage contains resources dir and mksquashfs will use resources_1 name for app resources dir
 	err = fs.CopyUsingHardlink(*options.appDir, stageDir)
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	runtimeData, err := ioutil.ReadFile(filepath.Join(appImageToolDir, "runtime-"+arch))
@@ -111,13 +112,17 @@ func AppImage(options *AppImageOptions) error {
 	}
 
 	err = createSquashFs(options, len(runtimeData))
+	log.WithField("err", err).Info("Hi!!")
 	if err != nil {
-		return errors.WithStack(err)
+		log.Info("Hi??? WTF?")
+		return err
 	}
+
+	log.Info("Hi???")
 
 	err = writeRuntimeData(outputFile, runtimeData)
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	err = os.Chmod(outputFile, 0755)
@@ -127,12 +132,12 @@ func AppImage(options *AppImageOptions) error {
 
 	updateInfo, err := blockmap.BuildBlockMap(outputFile, blockmap.DefaultChunkerConfiguration, blockmap.DEFLATE, "")
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	err = util.WriteJsonToStdOut(updateInfo)
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	return nil
@@ -151,7 +156,7 @@ func writeRuntimeData(filePath string, runtimeData []byte) error {
 func createSquashFs(options *AppImageOptions, offset int) error {
 	mksquashfsPath, err := linuxTools.GetMksquashfs()
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	var args []string
