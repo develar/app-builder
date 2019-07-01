@@ -116,7 +116,7 @@ func writeDependencyList(jsonWriter *jsoniter.Stream, dependencyMap *map[string]
 			jsonWriter.WriteBool(true)
 		}
 
-		for name, _ := range info.Dependencies {
+		for name := range info.Dependencies {
 			if name == "prebuild-install" {
 				jsonWriter.WriteMore()
 				jsonWriter.WriteObjectField("hasPrebuildInstall")
@@ -160,18 +160,4 @@ func pathSorter(a []string, b []string) bool {
 	}
 
 	return false
-}
-
-func writeArray(names []string, jsonWriter *jsoniter.Stream) {
-	isComma := false
-	jsonWriter.WriteArrayStart()
-	for _, depName := range names {
-		if isComma {
-			jsonWriter.WriteMore()
-		} else {
-			isComma = true
-		}
-		jsonWriter.WriteString(depName)
-	}
-	jsonWriter.WriteArrayEnd()
 }

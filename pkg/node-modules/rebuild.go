@@ -29,11 +29,6 @@ type DependencyList struct {
 	Dependencies []DepInfo `json:"deps"`
 }
 
-type NativeDependencyList struct {
-	dir          string
-	dependencies []*DepInfo
-}
-
 type DepInfo struct {
 	Name     string `json:"name"`
 	Version  string `json:"version"`
@@ -194,10 +189,13 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 			isRebuildPossible := checkRebuildPossible(configuration)
 
 			var extraArg string
-			if configuration.BuildFromSource {
-				nameLog.WithField("reason", "platform or arch not compatible").Warn("buildFromSource option is ignored")
+			if configuration.BuildFromSource && isRebuildPossible {
 				extraArg = "--build-from-source"
 			} else {
+				if configuration.BuildFromSource {
+					nameLog.WithField("reason", "platform or arch not compatible").Warn("buildFromSource option is ignored")
+				}
+
 				extraArg = "--force"
 			}
 
@@ -210,15 +208,16 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 					// ok, just build from sources
 					logEntry.WithField("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)").Warn("rebuild native dependency from sources")
 					_, err = util.Execute(createPrebuildInstallCommand(bin, "--build-from-source", dependency, configuration))
-					return nil
 				}
 
-				if dependency.Optional {
-					execError, _ := err.(*util.ExecError)
-					util.CreateExecErrorLogEntry(execError).WithField("name", dependency.Name).Warn("cannot build optional native dependency")
-				} else {
-					logEntry.WithField("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)").Error("cannot rebuild native dependency")
-					return err
+				if err != nil {
+					if dependency.Optional {
+						execError, _ := err.(*util.ExecError)
+						util.CreateExecErrorLogEntry(execError).WithFields(nameLog.Fields).Warn("cannot build optional native dependency")
+					} else {
+						logEntry.WithField("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)").Error("cannot rebuild native dependency")
+						return err
+					}
 				}
 			}
 
@@ -245,12 +244,14 @@ func createPrebuildInstallCommand(bin string, extraFlag string, dependency *DepI
 
 func checkRebuildPossible(configuration *RebuildConfiguration) bool {
 	currentOs := util.GetCurrentOs()
-	if currentOs == util.WINDOWS {
-		return configuration.Platform == "win32"
-	} else if currentOs == util.MAC {
-		return configuration.Platform == "darwin"
-	} else {
-		return configuration.Platform != "win32" && configuration.Platform != "darwin"
+	nodePlatform := configuration.Platform
+	switch {
+	case currentOs == util.WINDOWS:
+		return nodePlatform == "win32"
+	case currentOs == util.MAC:
+		return nodePlatform == "darwin"
+	default:
+		return nodePlatform != "win32" && nodePlatform != "darwin"
 	}
 }
 
@@ -273,16 +274,12 @@ func computeNativeDependencies(configuration *RebuildConfiguration) ([]*DepInfo,
 		return nil, err
 	}
 
-	nativeDependencies := make([]*DepInfo, 0, (len(result) / 2) + 1)
+	var nativeDependencies []*DepInfo
 	for _, list := range result {
 		if len(list) == 0 {
 			continue
 		}
-		for _, item := range list {
-			if item != nil {
-				nativeDependencies = append(nativeDependencies, item)
-			}
-		}
+		nativeDependencies = append(nativeDependencies, list...)
 	}
 	return nativeDependencies, nil
 }
@@ -308,9 +305,11 @@ func computeNativeDependenciesFromNameList(dirInfo *DependencyList) ([]*DepInfo,
 		return nil, err
 	}
 
-	nativeDependencies := make([]*DepInfo, 0, (len(result) / 2) + 1)
+	var nativeDependencies []*DepInfo
 	for _, dependency := range result {
-		nativeDependencies = append(nativeDependencies, dependency)
+		if dependency != nil {
+			nativeDependencies = append(nativeDependencies, dependency)
+		}
 	}
 	return nativeDependencies, nil
 }

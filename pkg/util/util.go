@@ -60,11 +60,7 @@ func Execute(command *exec.Cmd) ([]byte, error) {
 	command.Stderr = &errorOutput
 
 	err := command.Run()
-	exitCode := 0
 	if err != nil {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			exitCode = exitError.ExitCode()
-		}
 		return output.Bytes(), &ExecError{
 			Cause:            err,
 			CommandAndArgs:   command.Args,
@@ -74,7 +70,7 @@ func Execute(command *exec.Cmd) ([]byte, error) {
 			ErrorOutput: errorOutput.Bytes(),
 		}
 	} else if IsDebugEnabled() && !(strings.HasSuffix(command.Path, "openssl") || strings.HasSuffix(command.Path, "openssl.exe")) {
-		entry := log.WithField("command", command.Args[0]).WithField("exitCode", exitCode)
+		entry := log.WithField("command", command.Args[0])
 		if output.Len() > 0 {
 			entry = entry.WithField("out", output.String())
 		}
