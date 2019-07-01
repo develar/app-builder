@@ -81,7 +81,7 @@ func decode(files []string) error {
 
 			defer util.Close(file)
 			decoder := plist.NewDecoder(file)
-			value := make(map[string]interface{})
+			var value interface{}
 			err = decoder.Decode(&value)
 			if err != nil {
 				return errors.WithStack(err)
