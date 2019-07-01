@@ -43,7 +43,7 @@ func main() {
 		return
 	}
 
-	var app = kingpin.New("app-builder", "app-builder").Version("3.1.0")
+	var app = kingpin.New("app-builder", "app-builder").Version("3.1.2")
 
 	node_modules.ConfigureCommand(app)
 	node_modules.ConfigureRebuildCommand(app)

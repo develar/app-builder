@@ -94,7 +94,22 @@ func writeResult(jsonWriter *jsoniter.Stream, collector *Collector) {
 func writeDependencyList(jsonWriter *jsoniter.Stream, dependencyMap *map[string]*Dependency) {
 	jsonWriter.WriteArrayStart()
 	isFirst := true
-	for name, info := range *dependencyMap {
+
+	// names must be sorted for consistent result
+	names := make([]string, len(*dependencyMap))
+	index := 0
+	for name := range *dependencyMap {
+		names[index] = name
+		index++
+	}
+
+	if len(names) > 1 {
+		sort.Strings(names)
+	}
+
+	for _, name := range names {
+		info := (*dependencyMap)[name]
+
 		if isFirst {
 			isFirst = false
 		} else {
