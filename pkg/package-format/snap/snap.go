@@ -26,12 +26,6 @@ type TemplateInfo struct {
 	Sha512 string
 }
 
-//noinspection SpellCheckingInspection
-var electronTemplate4 = TemplateInfo{
-	Url:    "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-4.0/snap-template-electron-4.0.tar.7z",
-	Sha512: "bkh/IjSmCcR/QR01ed/TPDn0yKlteCREDbMyqEYGmLp/bYNp2eUaK+XDPeDF94o6MgzQv1Ugp8sqRQBcI4YCtg==",
-}
-
 // --enable-geoip leads to very slow fetching - it seems local sources are more slow.
 
 type SnapOptions struct {
@@ -101,26 +95,20 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
+//noinspection SpellCheckingInspection
 func ResolveTemplateDir(templateFile string, templateUrl string, templateSha512 string) (string, error) {
 	if len(templateFile) != 0 || len(templateUrl) == 0 {
 		return templateFile, nil
 	}
 
-	var templateInfo TemplateInfo
-	if templateUrl == "electron4" {
-		templateInfo = electronTemplate4
-	} else {
-		templateInfo = TemplateInfo{
-			Url:    templateUrl,
-			Sha512: templateSha512,
-		}
+	switch templateUrl {
+	case "electron4", "electron4:amd64":
+		return download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-4.0-1/snap-template-electron-4.0-1-amd64.tar.7z", "tt15k/jGR5IxhcsHuApOE80JxPL3RAfyqIbU7p+h5bt2sXYI5YmECbGZGzn7Fe6vmBZCDujPmAokGME/hEkf/w==")
+	case "electron4:armhf":
+		return download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-4.0-1/snap-template-electron-4.0-1-armhf.tar.7z", "jK+E0d0kyzBEsFmTEUIsumtikH4XZp8NVs6DBtIBJqXAmVCuNHcmvDa0wcaigk8foU4uGZXsLlJtNj11X100Bg==")
+	default:
+		return download.DownloadArtifact("", templateUrl, templateSha512)
 	}
-
-	result, err := download.DownloadArtifact("", templateInfo.Url, templateInfo.Sha512)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-	return result, nil
 }
 
 func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {

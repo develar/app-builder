@@ -161,18 +161,23 @@ func configurePrefetchToolsCommand(app *kingpin.Application) {
 			return errors.WithStack(err)
 		}
 
-		_, err = snap.ResolveTemplateDir("", "electron4", "")
+		_, err = snap.ResolveTemplateDir("", "electron4:amd64", "")
 		if err != nil {
-			return errors.WithStack(err)
+			return err
+		}
+
+		_, err = snap.ResolveTemplateDir("", "electron4:arm", "")
+		if err != nil {
+			return err
 		}
 
 		_, err = download.DownloadFpm()
 		if err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 		_, err = download.DownloadZstd(util.ToOsName(*osName))
 		if err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 		return nil
 	})
