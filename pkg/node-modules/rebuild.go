@@ -63,38 +63,37 @@ func rebuild(configuration *RebuildConfiguration) error {
 	}
 
 	if len(dependencies) == 0 {
-		log.Info("no native production dependencies")
+		log.Debug("no native dependencies")
 		return nil
 	}
 
-	log.WithField("platform", configuration.Platform).WithField("arch", configuration.Arch).Info("rebuilding native production dependencies")
+	names := make([]string, len(dependencies))
+	for index, item := range dependencies {
+		names[index] = item.Name + "@" + item.Version
+	}
 
-	err = installUsingPrebuild(dependencies, configuration)
+	log.WithFields(log.Fields{
+		"dependencies": strings.Join(names, ","),
+		"platform": configuration.Platform,
+		"arch": configuration.Arch,
+	}).Info("rebuilding native dependencies")
+
+	dependencies, err = installUsingPrebuild(dependencies, configuration)
 	if err != nil {
 		return err
 	}
 
+	if len(dependencies) == 0 {
+		log.Debug("all native deps were installed using prebuild-install")
+		return nil
+	}
+
 	execPath, execArgs, isRunningYarn := computeExecPath(configuration)
 	if isRunningYarn {
-		execArgs = append(execArgs, "run", "install")
-		if configuration.AdditionalArgs != nil {
-			execArgs = append(execArgs, configuration.AdditionalArgs...)
-		}
-
-		err := util.MapAsyncConcurrency(len(dependencies), getRebuildConcurrency(), func(index int) (func() error, error) {
-			return func() error {
-				err := rebuildUsingYarn(dependencies, execPath, execArgs)
-				if err != nil {
-					return err
-				}
-
-				return nil
-			}, nil
-		})
+		err := rebuildUsingYarn(dependencies, execPath, execArgs, configuration)
 		if err != nil {
 			return err
 		}
-
 	} else {
 		execArgs = append(execArgs, "rebuild")
 		if util.IsDebugEnabled() {
@@ -118,7 +117,12 @@ func rebuild(configuration *RebuildConfiguration) error {
 	return nil
 }
 
-func rebuildUsingYarn(dependencies []*DepInfo, execPath string, execArgs []string) error {
+func rebuildUsingYarn(dependencies []*DepInfo, execPath string, execArgs []string, configuration *RebuildConfiguration) error {
+	execArgs = append(execArgs, "run", "install")
+	if configuration.AdditionalArgs != nil {
+		execArgs = append(execArgs, configuration.AdditionalArgs...)
+	}
+
 	err := util.MapAsyncConcurrency(len(dependencies), getRebuildConcurrency(), func(index int) (func() error, error) {
 		dependency := dependencies[index]
 		if dependency == nil {
@@ -126,7 +130,7 @@ func rebuildUsingYarn(dependencies []*DepInfo, execPath string, execArgs []strin
 		}
 
 		return func() error {
-			log.WithField("name", dependency).Info("rebuilding native dependency")
+			log.WithField("name", dependency.Name).WithField("version", dependency.Version).Info("rebuilding native dependency")
 
 			command := exec.Command(execPath, execArgs...)
 			command.Dir = dependency.dir
@@ -134,7 +138,7 @@ func rebuildUsingYarn(dependencies []*DepInfo, execPath string, execArgs []strin
 			if err != nil {
 				if dependency.Optional {
 					execError, _ := err.(*util.ExecError)
-					util.CreateExecErrorLogEntry(execError).WithField("name", dependency).Warn("cannot build optional native dependency")
+					util.CreateExecErrorLogEntry(execError).WithField("name", dependency.Name).WithField("version", dependency.Version).Warn("cannot build optional native dependency")
 				} else {
 					return err
 				}
@@ -154,8 +158,8 @@ func getRebuildConcurrency() int {
 	}
 }
 
-func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfiguration) error {
-	return util.MapAsyncConcurrency(len(dependencies), getRebuildConcurrency(), func(index int) (func() error, error) {
+func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfiguration) ([]*DepInfo, error) {
+	err := util.MapAsyncConcurrency(len(dependencies), getRebuildConcurrency(), func(index int) (func() error, error) {
 		dependency := dependencies[index]
 		if !dependency.HasPrebuildInstall {
 			return nil, nil
@@ -163,7 +167,7 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 
 		return func() error {
 			nameLog := log.WithField("name", dependency.Name).WithField("platform", configuration.Platform).WithField("arch", configuration.Arch)
-			nameLog.Info("rebuilding native dependency")
+			nameLog.Info("install prebuilt binary")
 
 			parentDir := dependency.parentDir
 			bin := filepath.Join(parentDir, "prebuild-install", "bin.js")
@@ -183,8 +187,6 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 				}
 				bin = filepath.Join(parentDir, "prebuild-install", "bin.js")
 			}
-
-			dependencies[index] = nil
 
 			isRebuildPossible := checkRebuildPossible(configuration)
 
@@ -221,10 +223,23 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 				}
 			}
 
+			dependencies[index] = nil
 			return nil
 		}, nil
 	})
 
+	if err != nil {
+		return nil, err
+	}
+
+	var result []*DepInfo
+	for _, item := range dependencies {
+		if item == nil {
+			continue
+		}
+		result = append(result, item)
+	}
+	return result, nil
 }
 
 func createPrebuildInstallCommand(bin string, extraFlag string, dependency *DepInfo, configuration *RebuildConfiguration) *exec.Cmd {

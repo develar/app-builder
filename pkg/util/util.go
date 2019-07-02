@@ -153,6 +153,7 @@ func WaitPipedCommand(producer *exec.Cmd, consumer *exec.Cmd) error {
 func preCommandExecute(command *exec.Cmd) {
 	log.WithFields(log.Fields{
 		"args": argListToSafeString(command.Args),
+		"workingDirectory": command.Dir,
 	}).Debug("execute command")
 }
 
