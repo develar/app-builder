@@ -93,7 +93,7 @@ func DecodeImageAndClose(reader io.Reader, closer io.Closer) (image.Image, error
 func SaveImage(image image.Image, outFileName string, format int) error {
 	outFile, err := fsutil.CreateFile(outFileName)
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	return SaveImage2(image, outFile, format)

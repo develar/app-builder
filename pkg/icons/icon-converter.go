@@ -2,7 +2,6 @@ package icons
 
 import (
 	"image"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -253,16 +252,7 @@ func checkAndFixIconPermissions(icons []IconInfo) error {
 	return util.MapAsync(len(icons), func(taskIndex int) (func() error, error) {
 		filePath := icons[taskIndex].File
 		return func() error {
-			fileInfo, err := os.Stat(filePath)
-			if err != nil {
-				return errors.WithStack(err)
-			}
-
-			err = util.FixPermissions(filePath, fileInfo.Mode(), false /* icon cannot be executable, so, doesn't matter */)
-			if err != nil {
-				return err
-			}
-			return nil
+			return fs.SetNormalFilePermissions(filePath)
 		}, nil
 	})
 }

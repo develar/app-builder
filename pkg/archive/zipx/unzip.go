@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
@@ -218,7 +219,7 @@ func (t *Extractor) extractDir(zipFile *zip.File) error {
 		return err
 	}
 
-	err = util.FixPermissions(filePath, zipFile.Mode(), false)
+	err = fs.SetNormalDirPermissions(filePath)
 	if err != nil {
 		return err
 	}
@@ -240,7 +241,7 @@ func (t *Extractor) extractAndWriteFile(zipFile *zip.File, filePath string) erro
 	}
 
 	buffer := t.bufferPool.Get()
-	err = fsutil.WriteFile(file, filePath, zipFile.Mode(), buffer)
+	err = fs.WriteFileAndRestoreNormalPermissions(file, filePath, zipFile.Mode(), buffer)
 	t.bufferPool.Put(buffer)
 	if err != nil {
 		return err

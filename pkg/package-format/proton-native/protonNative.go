@@ -11,7 +11,6 @@ import (
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	"github.com/develar/go-fs-util"
 	"go.uber.org/zap"
 )
 
@@ -67,7 +66,7 @@ func pack(options ProtonNativeOptions) error {
 			return errors.WithStack(err)
 		}
 		executableName := toNodeJsExecutableName(options.platform)
-		err = fsutil.CopyFile(filepath.Join(nodeDir, executableName), filepath.Join(stageDir, executableName), 0755)
+		err = fs.CopyFileAndRestoreNormalPermissions(filepath.Join(nodeDir, executableName), filepath.Join(stageDir, executableName), 0755)
 		if err != nil {
 			return errors.WithStack(err)
 		}

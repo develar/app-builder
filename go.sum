@@ -8,8 +8,8 @@ github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf h1:qet1QNfXsQxTZq
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053 h1:H/GMMKYPkEIC3DF/JWQz8Pdd+Feifov2EIgGfNpeogI=
 github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053/go.mod h1:xW8sBma2LE3QxFSzCnH9qe6gAE2yO9GvQaWwX89HxbE=
-github.com/aws/aws-sdk-go v1.20.13 h1:Ojyd/HWs30K03id7hpFN/wMVigk3PWvkQXhJgKZjfzs=
-github.com/aws/aws-sdk-go v1.20.13/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
+github.com/aws/aws-sdk-go v1.20.14 h1:ivPlTrZmHf4f4TvAG79yOyo2fRH0JW4dz+fsV8IQnbU=
+github.com/aws/aws-sdk-go v1.20.14/go.mod h1:KmX6BPdI08NWTb3/sm4ZGu5ShLoqVDhKgpiN924inxo=
 github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670 h1:FQPKKjDhzG0T4ew6dm6MGrXb4PRAi8ZmTuYuxcF62BM=
 github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670/go.mod h1:iRWAFbKXMMkVQyxZ1PfGlkBr1TjATx1zy2MRprV7A3Q=
 github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 h1:DDGfHa7BWjL4YnC6+E63dPcxHo2sUxDIu8g3QgEJdRY=

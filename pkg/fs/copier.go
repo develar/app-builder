@@ -9,8 +9,11 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
+	"github.com/oxtoacart/bpool"
 	"go.uber.org/zap"
 )
+
+var bufferPool = bpool.NewBytePool(runtime.NumCPU(), 64*1024)
 
 type FileCopier struct {
 	IsUseHardLinks bool
@@ -78,9 +81,9 @@ func (t *FileCopier) copyDirOrFile(from string, to string, isCreateParentDirs bo
 			return errors.WithStack(err)
 		}
 
-		err = util.FixPermissions(to, fromInfo.Mode(), false)
+		err = SetNormalDirPermissions(to)
 		if err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 
 		return t.copyDir(from, to)
@@ -111,7 +114,23 @@ func (t *FileCopier) CopyFile(from string, to string, isCreateParentDirs bool, f
 		log.Debug("cannot copy using hard link", zap.Error(err), zap.String("from", from), zap.String("to", to))
 	}
 
-	return fsutil.CopyFile(from, to, fromInfo.Mode())
+	return CopyFileAndRestoreNormalPermissions(from, to, fromInfo.Mode())
+}
+
+func CopyFileAndRestoreNormalPermissions(from string, to string, fileMode os.FileMode) error {
+	sourceFile, err := os.Open(from)
+	if err != nil {
+		return errors.WithStack(err)
+	}
+
+	defer util.Close(sourceFile)
+	buffer := bufferPool.Get()
+	err = WriteFileAndRestoreNormalPermissions(sourceFile, to, fileMode, buffer)
+	bufferPool.Put(buffer)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (t *FileCopier) createSymlink(from string, to string) error {
