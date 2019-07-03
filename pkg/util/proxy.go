@@ -6,10 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/errors"
 	"github.com/mitchellh/go-homedir"
 	"github.com/zieckey/goini"
+	"go.uber.org/zap"
 )
 
 func ProxyFromEnvironmentAndNpm(req *http.Request) (*url.URL, error) {
@@ -28,7 +29,7 @@ func ProxyFromEnvironmentAndNpm(req *http.Request) (*url.URL, error) {
 
 	result, err = proxyFromNpm()
 	if err != nil {
-		log.WithError(err).Error("cannot detect npm proxy")
+		log.Error("cannot detect npm proxy", zap.Error(err))
 		return nil, nil
 	}
 	return result, nil
@@ -41,6 +42,7 @@ func proxyFromNpm() (*url.URL, error) {
 	}
 
 	ini := goini.New()
+	//noinspection SpellCheckingInspection
 	err = ini.ParseFile(filepath.Join(userHomeDir, ".npmrc"))
 	if err != nil {
 		if os.IsNotExist(err) {

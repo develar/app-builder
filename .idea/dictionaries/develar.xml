@@ -21,6 +21,7 @@
       <w>libui</w>
       <w>lintian</w>
       <w>localappdata</w>
+      <w>marshaler</w>
       <w>mkfs</w>
       <w>mksquashfs</w>
       <w>multipass</w>
@@ -30,6 +31,7 @@
       <w>snapcore</w>
       <w>snapcraft</w>
       <w>tiffutil</w>
+      <w>uintptr</w>
       <w>umask</w>
       <w>userland</w>
       <w>virtualgo</w>

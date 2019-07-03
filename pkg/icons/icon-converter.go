@@ -7,11 +7,12 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/disintegration/imaging"
+	"go.uber.org/zap"
 )
 
 func ConfigureCommand(app *kingpin.Application) error {
@@ -34,11 +35,11 @@ func ConfigureCommand(app *kingpin.Application) error {
 		if err != nil {
 			switch t := errors.Cause(err).(type) {
 			case *ImageSizeError:
-				log.Debugf("%+v\n", err)
+				log.Debug("cannot convert icon", zap.Error(err))
 				return writeUserError(t)
 
 			case *ImageFormatError:
-				log.Debugf("%+v\n", err)
+				log.Debug("cannot convert icon", zap.Error(err))
 				return writeUserError(t)
 
 			default:
@@ -163,10 +164,7 @@ func doConvertIcon(sourceFiles []string, roots []string, outputFormat string, ou
 		return nil, nil
 	}
 
-	log.WithFields(log.Fields{
-		"path":         resolvedPath,
-		"outputFormat": outputFormat,
-	}).Debug("path resolved")
+	log.Debug("path resolved", zap.String("path", resolvedPath), zap.String("outputFormat", outputFormat))
 
 	var inputInfo InputFileInfo
 	inputInfo.SizeToPath = make(map[int]string)

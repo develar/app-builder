@@ -10,11 +10,12 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/pkg/xattr"
+	"go.uber.org/zap"
 )
 
 func ConfigureCommand(app *kingpin.Application) {
@@ -78,7 +79,7 @@ func GetEffectiveBackgroundPath(path string) (string, error) {
 	_, err := os.Stat(retinaFile)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			log.WithError(err).Debug("checking retina file")
+			log.Debug("checking retina file", zap.Error(err))
 		}
 		return path, nil
 	}

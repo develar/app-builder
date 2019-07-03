@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 	"github.com/dustin/go-humanize"
+	"go.uber.org/zap"
 )
 
 //noinspection SpellCheckingInspection
@@ -86,11 +87,7 @@ func (t *Downloader) Download(url string, output string, sha512 string) error {
 		return errors.WithStack(err)
 	}
 
-	log.WithFields(&log.Fields{
-		"url":      url,
-		"duration": fmt.Sprintf("%v", time.Since(start).Round(time.Millisecond)),
-	}).Info("downloaded")
-
+	log.Info("downloaded", zap.String("url", url), zap.Duration("duration", time.Since(start).Round(time.Millisecond)))
 	return err
 }
 
@@ -103,21 +100,14 @@ func (t *Downloader) DownloadResolved(location *ActualLocation, sha512 string, u
 	downloadContext, cancel := util.CreateContext()
 
 	location.computeParts(minPartSize)
-	log.WithFields(&log.Fields{
-		"url":   urlToLog,
-		"size":  humanize.Bytes(uint64(location.ContentLength)),
-		"parts": len(location.Parts),
-	}).Info("downloading")
+	log.Info("downloading", zap.String("url", urlToLog), zap.String("size", humanize.Bytes(uint64(location.ContentLength))), zap.Int("parts", len(location.Parts)))
 	err = util.MapAsyncConcurrency(len(location.Parts), getMaxPartCount(), func(index int) (func() error, error) {
 		part := location.Parts[index]
 		return func() error {
 			err := part.download(downloadContext, location.Url, index, t.client)
 			if err != nil {
 				part.isFail = true
-				log.WithFields(log.Fields{
-					"id":    index,
-					"error": err,
-				}).Debug("part download error")
+				log.Debug("part download error", zap.Int("id", index), zap.Error(err))
 			}
 			return err
 		}, nil
@@ -147,10 +137,7 @@ func (t *Downloader) follow(initialUrl, userAgent, outFileName string) (*ActualL
 	redirectsFollowed := 0
 	for {
 		if currentUrl != initialUrl {
-			log.WithFields(log.Fields{
-				"initialUrl": initialUrl,
-				"currentUrl": currentUrl,
-			}).Debug("computing effective URL")
+			log.Debug("computing effective URL", zap.String("initialUrl", initialUrl), zap.String("currentUrl", currentUrl))
 		}
 
 		// should use GET instead of HEAD because ContentLength maybe omitted for HEAD requests
@@ -191,12 +178,7 @@ func (t *Downloader) follow(initialUrl, userAgent, outFileName string) (*ActualL
 				length = fmt.Sprintf("%d", response.ContentLength)
 			}
 
-			log.WithFields(log.Fields{
-				"length":       length,
-				"content-type": response.Header.Get("Content-Type"),
-				"url":          initialUrl,
-			}).Debug("downloading")
-
+			log.Debug("downloading", zap.String("url", initialUrl), zap.String("length", length), zap.String("contentType", response.Header.Get("Content-Type")))
 			if !actualLocation.isAcceptRanges {
 				log.Warn("server doesn't support ranges")
 			}

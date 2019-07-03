@@ -5,12 +5,13 @@ import (
 	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 	"github.com/json-iterator/go"
+	"go.uber.org/zap"
 )
 
 type ElectronDownloadOptions struct {
@@ -182,18 +183,12 @@ func (t *ElectronDownloader) doDownload(url string, cachedFile string) error {
 		return errors.WithStack(err)
 	}
 
-	logFields := &log.Fields{
-		"url":  url,
-		"path": cachedFile,
-	}
-
 	downloader := download.NewDownloader()
 	err = downloader.Download(url, tempFile, "")
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	download.RenameToFinalFile(tempFile, cachedFile, logFields)
-
+	download.RenameToFinalFile(tempFile, cachedFile, log.LOG.With(zap.String("url", url), zap.String("path", cachedFile)))
 	return nil
 }

@@ -9,11 +9,12 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 	"github.com/mitchellh/go-homedir"
+	"go.uber.org/zap"
 )
 
 func ConfigureArtifactCommand(app *kingpin.Application) {
@@ -85,46 +86,41 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	}
 
 	filePath := filepath.Join(cacheDir, dirName)
-
-	logFields := &log.Fields{
-		"path": filePath,
-	}
+	logFields := log.LOG.With(zap.String("path", filePath))
 
 	isFound, err := CheckCache(filePath, cacheDir, logFields)
 	if isFound {
 		return filePath, nil
 	}
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", err
 	}
 
 	// 7z cannot be extracted from the input stream, temp file is required
 	tempUnpackDir, err := util.TempDir(cacheDir, "")
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", err
 	}
 
 	archiveName := tempUnpackDir + ".7z"
 
 	err = NewDownloader().Download(url, archiveName, checksum)
 	if err != nil {
-		return "", errors.WithStack(err)
+		return "", err
 	}
 
 	if strings.HasSuffix(url, ".tar.7z") {
 		err = unpackTar7z(archiveName, tempUnpackDir)
 		if err != nil {
-			return "", errors.WithStack(err)
+			return "", err
 		}
 	} else {
 		command := exec.Command(util.Get7zPath(), "x", "-bd", archiveName, "-o"+tempUnpackDir)
 		command.Dir = cacheDir
-		output, err := command.CombinedOutput()
+		_, err := util.Execute(command)
 		if err != nil {
-			return "", errors.WithStack(err)
+			return "", err
 		}
-
-		log.Debug(string(output))
 	}
 
 	RemoveArchiveFile(archiveName, tempUnpackDir, logFields)
@@ -133,20 +129,17 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 	return filePath, nil
 }
 
-func RemoveArchiveFile(archiveName string, tempUnpackDir string, logFields log.Fielder) {
+func RemoveArchiveFile(archiveName string, tempUnpackDir string, logger *zap.Logger) {
 	err := os.Remove(archiveName)
 	if err != nil {
-		log.WithFields(logFields).WithFields(log.Fields{
-			"tempUnpackDir": tempUnpackDir,
-			"error":         err,
-		}).Warn("cannot remove downloaded archive (another process downloaded faster?)")
+		logger.Warn("cannot remove downloaded archive (another process downloaded faster?)", zap.String("tempUnpackDir", tempUnpackDir), zap.Error(err))
 	}
 }
 
-func CheckCache(filePath string, cacheDir string, logFields log.Fielder) (bool, error) {
+func CheckCache(filePath string, cacheDir string, logger *zap.Logger) (bool, error) {
 	dirStat, err := os.Stat(filePath)
 	if err == nil && dirStat.IsDir() {
-		log.WithFields(logFields).Debug("found existing")
+		logger.Debug("found existing")
 		return true, nil
 	}
 
@@ -156,19 +149,16 @@ func CheckCache(filePath string, cacheDir string, logFields log.Fielder) (bool, 
 
 	err = fsutil.EnsureDir(cacheDir)
 	if err != nil {
-		return false, errors.WithStack(err)
+		return false, err
 	}
 
 	return false, nil
 }
 
-func RenameToFinalFile(tempFile string, filePath string, logFields log.Fielder) {
+func RenameToFinalFile(tempFile string, filePath string, logger *zap.Logger) {
 	err := os.Rename(tempFile, filePath)
 	if err != nil {
-		log.WithFields(logFields).WithFields(log.Fields{
-			"tempFile": tempFile,
-			"error":    err,
-		}).Warn("cannot move downloaded into final location (another process downloaded faster?)")
+		logger.Warn("cannot move downloaded into final location (another process downloaded faster?)", zap.String("tempFile", tempFile), zap.Error(err))
 	}
 }
 

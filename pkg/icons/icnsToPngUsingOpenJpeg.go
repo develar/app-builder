@@ -11,11 +11,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/linuxTools"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
+	"go.uber.org/zap"
 )
 
 var sameSize = map[string]string{
@@ -64,10 +65,7 @@ func ConvertIcnsToPngUsingOpenJpeg(icnsPath string, outDir string) ([]IconInfo, 
 	outFileNamePrefix := filepath.Join(outDir, strings.TrimSuffix(filepath.Base(icnsPath), filepath.Ext(icnsPath))) + "_"
 	for imageType, subImage := range subImageInfoList {
 		if isIgnoredType(imageType) {
-			log.WithFields(log.Fields{
-				"type": imageType,
-				"file": icnsPath,
-			}).Debug("skip unsupported icns sub image format")
+			log.Debug("skip unsupported icns sub image format", zap.String("type", imageType), zap.String("file", icnsPath))
 			continue
 		}
 

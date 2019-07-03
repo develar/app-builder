@@ -4,8 +4,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/errors"
+	"go.uber.org/zap"
 )
 
 // returns file if exists, null if file not exists, or error if unknown error
@@ -26,14 +27,9 @@ func resolveSourceFileOrNull(sourceFile string, roots []string) (string, os.File
 		case err == nil:
 			return resolvedPath, fileInfo, nil
 		case os.IsNotExist(err):
-			log.WithFields(log.Fields{
-				"path": resolvedPath,
-			}).Debug("path doesn't exist")
+			log.Debug("path doesn't exist", zap.String("path", resolvedPath))
 		default:
-			log.WithFields(log.Fields{
-				"path":  resolvedPath,
-				"error": err,
-			}).Debug("tried resolved path, but got error")
+			log.Debug("tried resolved path, but got error", zap.String("path", resolvedPath), zap.Error(err))
 		}
 	}
 

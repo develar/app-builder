@@ -13,12 +13,13 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/dustin/go-humanize"
 	"github.com/json-iterator/go"
+	"go.uber.org/zap"
 )
 
 func ConfigureBuildCommand(app *kingpin.Application) {
@@ -112,8 +113,8 @@ func readEvents(response *http.Response) (*Event, []byte, error) {
 		// exclude last \n
 		encodedEvent = encodedEvent[0 : len(encodedEvent)-1]
 
-		if util.IsDebugEnabled() {
-			log.WithField("event", string(encodedEvent)).Debug("remote builder event")
+		if log.IsDebugEnabled() {
+			log.Debug("remote builder event", zap.ByteString("event", encodedEvent))
 		}
 
 		var event Event
@@ -124,13 +125,13 @@ func readEvents(response *http.Response) (*Event, []byte, error) {
 
 		switch {
 		case event.Status != "":
-			log.WithField("status", strings.TrimSuffix(event.Status, "\n")).Info("remote building")
+			log.Info("remote building", zap.String("status", strings.TrimSuffix(event.Status, "\n")))
 		case event.Error != "":
 			return nil, encodedEvent, nil
 		case event.Files != nil:
 			return &event, encodedEvent, nil
 		default:
-			log.WithField("event", string(encodedEvent)).Warn("unknown builder event")
+			log.Warn("unknown builder event", zap.ByteString("event", encodedEvent))
 		}
 	}
 }
@@ -147,11 +148,11 @@ func (t *RemoteBuilder) downloadArtifacts(resultEvent *Event, outDir string) err
 			return errors.WithStack(err)
 		}
 
-		log.WithFields(&log.Fields{
-			"file":     file.File,
-			"size":     humanize.Bytes(uint64(size)),
-			"duration": fmt.Sprintf("%v", time.Since(start).Round(time.Millisecond)),
-		}).Info("file downloaded")
+		log.Info("file downloaded",
+			zap.String("file", file.File),
+			zap.String("size", humanize.Bytes(uint64(size))),
+			zap.Duration("duration", time.Since(start).Round(time.Millisecond)),
+		)
 	}
 	return nil
 }
@@ -254,10 +255,7 @@ func (t *RemoteBuilder) upload(buildRequest string, filesToPack []string, buildR
 		return nil, err
 	}
 
-	log.WithFields(&log.Fields{
-		"duration": fmt.Sprintf("%v", time.Since(startTime).Round(time.Millisecond)),
-	}).Info("uploaded to remote builder")
-
+	log.Info("uploaded to remote builder", zap.Duration("duration", time.Since(startTime).Round(time.Millisecond)))
 	return response, nil
 }
 

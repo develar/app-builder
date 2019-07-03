@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
+	"go.uber.org/zap"
 )
 
 func CollectIcons(sourceDir string) ([]IconInfo, string, error) {
@@ -72,7 +73,7 @@ func CollectIcons(sourceDir string) ([]IconInfo, string, error) {
 			return nil, "", errors.Errorf("icon directory %s doesn't contain icons", sourceDir)
 		}
 
-		log.WithField("iconDir", sourceDir).Debug("icon directory doesn't contain icons ([0-9]+.png), but icon.png exists")
+		log.Debug("icon directory doesn't contain icons ([0-9]+.png), but icon.png exists", zap.String("iconDir", sourceDir))
 		return nil, filepath.Join(sourceDir, iconFilename), nil
 	}
 

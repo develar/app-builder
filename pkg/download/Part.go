@@ -8,10 +8,11 @@ import (
 	"os"
 	"time"
 
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
+	"go.uber.org/zap"
 )
 
 const maxAttemptNumber = 3
@@ -62,7 +63,7 @@ func (part *Part) download(context context.Context, url string, index int, clien
 	for attemptNumber := 0; ; attemptNumber++ {
 		if attemptNumber != 0 {
 			time.Sleep(2 * time.Second)
-			log.Infof("retrying (%d)", attemptNumber)
+			log.Info("retrying", zap.Int("attempt", attemptNumber))
 			response, err = part.doRequest(request, client, index)
 			if err != nil {
 				if response != nil {
@@ -101,10 +102,7 @@ func (part *Part) download(context context.Context, url string, index int, clien
 }
 
 func (part *Part) doRequest(request *http.Request, client *http.Client, index int) (*http.Response, error) {
-	log.WithFields(&log.Fields{
-		"range": request.Header.Get("Range"),
-		"index": index,
-	}).Debug("download part")
+	log.Debug("download part", zap.String("range", request.Header.Get("Range")), zap.Int("index", index))
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, errors.WithStack(err)

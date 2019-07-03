@@ -16,7 +16,7 @@ import (
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/icons"
 	"github.com/develar/app-builder/pkg/linuxTools"
-	"github.com/develar/app-builder/pkg/log-cli"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/node-modules"
 	"github.com/develar/app-builder/pkg/package-format/appimage"
 	"github.com/develar/app-builder/pkg/package-format/dmg"
@@ -33,7 +33,10 @@ import (
 )
 
 func main() {
-	log_cli.InitLogger()
+	log.InitLogger()
+	defer func() {
+		_ = log.LOG.Sync()
+	}()
 
 	if os.Getenv("SZA_ARCHIVE_TYPE") != "" {
 		err := compress()

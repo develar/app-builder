@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/archive/zipx"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/go-fs-util"
+	"go.uber.org/zap"
 )
 
 func ConfigureUnpackCommand(app *kingpin.Application) {
@@ -70,11 +71,11 @@ func UnpackElectron(configs []ElectronDownloadOptions, outputDir string, distMac
 	err = zipx.Unzip(zipFile, outputDir, excludedFiles)
 	if err != nil {
 		if isReDownloadOnFileReadError && (err == zip.ErrFormat || err == io.ErrUnexpectedEOF) {
-			log.WithError(err).Warn("cannot unpack electron zip file, will be re-downloaded")
+			log.Warn("cannot unpack electron zip file, will be re-downloaded", zap.Error(err))
 			// not just download and unzip, but full - including clearing of output dir
 			err = os.Remove(zipFile)
 			if err != nil && !os.IsNotExist(err) {
-				log.WithError(err).WithField("file", zipFile).Warn("cannot delete")
+				log.Warn("cannot delete", zap.Error(err), zap.String("file", zipFile))
 			}
 
 			return UnpackElectron(configs, outputDir, distMacOsAppName, false)

@@ -14,12 +14,13 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-pkcs12"
 	"github.com/json-iterator/go"
+	"go.uber.org/zap"
 )
 
 func ConfigureCertificateInfoCommand(app *kingpin.Application) {
@@ -47,7 +48,7 @@ func readInfo(inFile string, password string) error {
 			return writeError("password incorrect")
 		}
 
-		log.Warn("cannot decode PKCS 12 data using Go pure implementation, openssl will be used: " + err.Error())
+		log.Warn("cannot decode PKCS 12 data using Go pure implementation, openssl will be used", zap.Error(err))
 		certificates, err = readUsingOpenssl(inFile, password)
 		if err != nil {
 			if strings.Contains(err.Error(), "Mac verify error: invalid password?") {
@@ -114,6 +115,7 @@ func readUsingOpenssl(inFile string, password string) ([]*x509.Certificate, erro
 		opensslPath = filepath.Join(vendor, "openssl", "openssl.exe")
 	}
 
+	//noinspection SpellCheckingInspection
 	pemData, err := util.Execute(exec.Command(opensslPath, "pkcs12", "-in", inFile, "-passin", "pass:"+password, "-nokeys"))
 	if err != nil {
 		return nil, err

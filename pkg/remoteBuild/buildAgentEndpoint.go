@@ -8,16 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/json-iterator/go"
+	"go.uber.org/zap"
 )
 
 func findBuildAgent(transport http.RoundTripper) (string, error) {
 	result := os.Getenv("BUILD_AGENT_HOST")
 	if result != "" {
-		log.WithField("host", result).Debug("build agent host is set explicitly")
+		log.Debug("build agent host is set explicitly", zap.String("host", result))
 		return addHttpsIfNeed(result), nil
 	}
 
@@ -38,7 +39,7 @@ func findBuildAgent(transport http.RoundTripper) (string, error) {
 			}
 
 			waitTime := 2 * (attemptNumber + 1)
-			log.WithError(err).WithField("attempt", attemptNumber).WithField("waitTime", waitTime).Warn("cannot get, wait")
+			log.Warn("cannot get, wait", zap.Error(err), zap.Int("attempt", attemptNumber), zap.Int("waitTime", waitTime))
 			time.Sleep(time.Duration(waitTime) * time.Second)
 			continue
 		}

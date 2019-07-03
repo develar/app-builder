@@ -7,8 +7,8 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/pkg/errors"
 )
@@ -85,7 +85,7 @@ func ConfigureCommand(app *kingpin.Application) {
 				} else {
 					installHint = "sudo apt-get install rpm"
 				}
-				log.Fatal("to build rpm, executable rpmbuild is required, please install: " + installHint)
+				log.LOG.Fatal("to build rpm, executable rpmbuild is required, please install: " + installHint)
 			}
 			return err
 		}

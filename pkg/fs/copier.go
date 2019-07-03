@@ -5,10 +5,11 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
+	"go.uber.org/zap"
 )
 
 type FileCopier struct {
@@ -52,12 +53,7 @@ func (t *FileCopier) CopyDirOrFile(from string, to string) error {
 		t.IsUseHardLinks = false
 	}
 
-	log.WithFields(log.Fields{
-		"from":           from,
-		"to":             to,
-		"isUseHardLinks": t.IsUseHardLinks,
-	}).Debug("copy files")
-
+	log.Debug("copy files", zap.String("from", from), zap.String("to", to), zap.Bool("isUseHardLinks", t.IsUseHardLinks))
 	err := t.copyDirOrFile(from, to, true)
 	if err != nil {
 		return errors.WithStack(err)
@@ -112,7 +108,7 @@ func (t *FileCopier) CopyFile(from string, to string, isCreateParentDirs bool, f
 		}
 
 		t.IsUseHardLinks = false
-		log.WithError(err).WithField("from", from).WithField("to", to).Debug("cannot copy using hard link")
+		log.Debug("cannot copy using hard link", zap.Error(err), zap.String("from", from), zap.String("to", to))
 	}
 
 	return fsutil.CopyFile(from, to, fromInfo.Mode())

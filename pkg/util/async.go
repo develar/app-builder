@@ -3,8 +3,9 @@ package util
 import (
 	"runtime"
 
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/errors"
+	"go.uber.org/zap"
 )
 
 func MapAsync(taskCount int, taskProducer func(taskIndex int) (func() error, error)) error {
@@ -16,7 +17,7 @@ func MapAsyncConcurrency(taskCount int, concurrency int, taskProducer func(taskI
 		return nil
 	}
 
-	log.WithField("taskCount", taskCount).Debug("map async")
+	log.Debug("map async", zap.Int("taskCount", taskCount))
 
 	errorChannel := make(chan error, concurrency)
 	doneChannel := make(chan bool, taskCount)

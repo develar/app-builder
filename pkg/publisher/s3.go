@@ -55,7 +55,7 @@ func ConfigurePublishToS3Command(app *kingpin.Application) {
 	command.Action(func(context *kingpin.ParseContext) error {
 		err := upload(&options)
 		if err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 		return nil
 	})
@@ -70,7 +70,7 @@ func configureResolveBucketLocationCommand(app *kingpin.Application) {
 		requestContext, _ := util.CreateContext()
 		result, err := getBucketRegion(aws.NewConfig(), bucket, requestContext, createHttpClient())
 		if err != nil {
-			return errors.WithStack(err)
+			return err
 		}
 
 		_, err = os.Stdout.WriteString(result)

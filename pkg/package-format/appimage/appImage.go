@@ -9,7 +9,6 @@ import (
 	"syscall"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/blockmap"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/linuxTools"
@@ -112,13 +111,9 @@ func AppImage(options *AppImageOptions) error {
 	}
 
 	err = createSquashFs(options, len(runtimeData))
-	log.WithField("err", err).Info("Hi!!")
 	if err != nil {
-		log.Info("Hi??? WTF?")
 		return err
 	}
-
-	log.Info("Hi???")
 
 	err = writeRuntimeData(outputFile, runtimeData)
 	if err != nil {

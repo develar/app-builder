@@ -72,14 +72,14 @@ func Unzip(src string, outputDir string, excludedFiles map[string]bool) error {
 			// create dir (not async)
 			err := extractor.extractDir(zipFile)
 			if err != nil {
-				return nil, errors.WithStack(err)
+				return nil, err
 			}
 			return nil, nil
 		}
 
 		filePath, err := extractor.computeExtractPath(zipFile)
 		if err != nil {
-			return nil, errors.WithStack(err)
+			return nil, err
 		}
 
 		if extractor.excludedFiles != nil {
@@ -93,7 +93,7 @@ func Unzip(src string, outputDir string, excludedFiles map[string]bool) error {
 		if fileDir != lastCreatedDir {
 			err = extractor.createDirIfNeed(fileDir)
 			if err != nil {
-				return nil, errors.WithStack(err)
+				return nil, err
 			}
 
 			lastCreatedDir = fileDir
@@ -104,7 +104,7 @@ func Unzip(src string, outputDir string, excludedFiles map[string]bool) error {
 		}, nil
 	})
 	if err != nil {
-		return errors.WithStack(err)
+		return err
 	}
 
 	return nil

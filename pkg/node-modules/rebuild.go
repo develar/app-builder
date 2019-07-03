@@ -7,9 +7,10 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/json-iterator/go"
+	"go.uber.org/zap"
 )
 
 type RebuildConfiguration struct {
@@ -72,11 +73,11 @@ func rebuild(configuration *RebuildConfiguration) error {
 		names[index] = item.Name + "@" + item.Version
 	}
 
-	log.WithFields(log.Fields{
-		"dependencies": strings.Join(names, ","),
-		"platform": configuration.Platform,
-		"arch": configuration.Arch,
-	}).Info("rebuilding native dependencies")
+	log.Info("rebuilding native dependencies",
+		zap.String("dependencies", strings.Join(names, ",")),
+		zap.String("platform", configuration.Platform),
+		zap.String("arch", configuration.Arch),
+	)
 
 	dependencies, err = installUsingPrebuild(dependencies, configuration)
 	if err != nil {
@@ -96,7 +97,7 @@ func rebuild(configuration *RebuildConfiguration) error {
 		}
 	} else {
 		execArgs = append(execArgs, "rebuild")
-		if util.IsDebugEnabled() {
+		if log.IsDebugEnabled() {
 			execArgs = append(execArgs, "--verbose")
 		}
 		if configuration.AdditionalArgs != nil {
@@ -130,7 +131,8 @@ func rebuildUsingYarn(dependencies []*DepInfo, execPath string, execArgs []strin
 		}
 
 		return func() error {
-			log.WithField("name", dependency.Name).WithField("version", dependency.Version).Info("rebuilding native dependency")
+			logger := log.LOG.With(zap.String("name", dependency.Name), zap.String("version", dependency.Version))
+			logger.Info("rebuilding native dependency")
 
 			command := exec.Command(execPath, execArgs...)
 			command.Dir = dependency.dir
@@ -138,7 +140,7 @@ func rebuildUsingYarn(dependencies []*DepInfo, execPath string, execArgs []strin
 			if err != nil {
 				if dependency.Optional {
 					execError, _ := err.(*util.ExecError)
-					util.CreateExecErrorLogEntry(execError).WithField("name", dependency.Name).WithField("version", dependency.Version).Warn("cannot build optional native dependency")
+					logger.Warn("cannot build optional native dependency", util.CreateExecErrorLogEntry(execError)...)
 				} else {
 					return err
 				}
@@ -166,8 +168,8 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 		}
 
 		return func() error {
-			nameLog := log.WithField("name", dependency.Name).WithField("platform", configuration.Platform).WithField("arch", configuration.Arch)
-			nameLog.Info("install prebuilt binary")
+			logger := log.LOG.With(zap.String("name", dependency.Name), zap.String("version", dependency.Version), zap.String("platform", configuration.Platform), zap.String("arch", configuration.Arch),)
+			logger.Info("install prebuilt binary")
 
 			parentDir := dependency.parentDir
 			bin := filepath.Join(parentDir, "prebuild-install", "bin.js")
@@ -195,7 +197,7 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 				extraArg = "--build-from-source"
 			} else {
 				if configuration.BuildFromSource {
-					nameLog.WithField("reason", "platform or arch not compatible").Warn("buildFromSource option is ignored")
+					logger.Warn("buildFromSource option is ignored", zap.String("reason", "platform or arch not compatible"))
 				}
 
 				extraArg = "--force"
@@ -204,20 +206,20 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 			_, err := util.Execute(createPrebuildInstallCommand(bin, extraArg, dependency, configuration))
 			if err != nil {
 				execError, _ := err.(*util.ExecError)
-				logEntry := nameLog.WithField("error", string(execError.ErrorOutput))
+				loggerWithBuildError := logger.With(zap.ByteString("error", execError.ErrorOutput))
 
 				if extraArg == "--force" && isRebuildPossible {
 					// ok, just build from sources
-					logEntry.WithField("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)").Warn("rebuild native dependency from sources")
+					loggerWithBuildError.Warn("rebuild native dependency from sources", zap.String("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)"))
 					_, err = util.Execute(createPrebuildInstallCommand(bin, "--build-from-source", dependency, configuration))
 				}
 
 				if err != nil {
 					if dependency.Optional {
 						execError, _ := err.(*util.ExecError)
-						util.CreateExecErrorLogEntry(execError).WithFields(nameLog.Fields).Warn("cannot build optional native dependency")
+						logger.Warn("cannot build optional native dependency", util.CreateExecErrorLogEntry(execError)...)
 					} else {
-						logEntry.WithField("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)").Error("cannot rebuild native dependency")
+						loggerWithBuildError.Error("cannot rebuild native dependency", zap.String("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)"))
 						return err
 					}
 				}

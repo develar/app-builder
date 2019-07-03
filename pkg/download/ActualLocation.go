@@ -7,10 +7,11 @@ import (
 	"io"
 	"os"
 
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
+	"go.uber.org/zap"
 )
 
 // ActualLocation represents server's status 200 or 206 response meta data. It never holds redirect responses
@@ -34,7 +35,7 @@ func NewResolvedLocation(url string, contentLength int64, outFileName string, is
 
 func (actualLocation *ActualLocation) computeParts(minPartSize int64) {
 	if actualLocation.ContentLength < 0 {
-		log.WithField("length", actualLocation.ContentLength).Warn("invalid content length, will be downloaded as one part")
+		log.Warn("invalid content length, will be downloaded as one part", zap.Int64("length", actualLocation.ContentLength))
 		actualLocation.Parts = make([]*Part, 1)
 		actualLocation.Parts[0] = &Part{
 			Name:  actualLocation.OutFileName,
@@ -147,10 +148,7 @@ func (actualLocation *ActualLocation) concatenateParts(expectedSha512 string) er
 
 		removeError := os.Remove(partFileName)
 		if removeError != nil {
-			log.WithFields(log.Fields{
-				"partFile": partFileName,
-				"error":    removeError,
-			}).Error("cannot delete part file")
+			log.Error("cannot delete part file", zap.String("partFile", partFileName), zap.Error(err))
 		}
 	}
 

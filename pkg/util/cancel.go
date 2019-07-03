@@ -6,7 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
+	"go.uber.org/zap"
 )
 
 func CreateContext() (context.Context, context.CancelFunc) {
@@ -20,5 +21,5 @@ func onCancelSignal(cancel context.CancelFunc) {
 	signals := make(chan os.Signal, 2)
 	signal.Notify(signals, syscall.SIGINT, syscall.SIGTERM)
 	sig := <-signals
-	log.Infof("%v: canceling...\n", sig)
+	log.Info("canceling", zap.String("signal", sig.String()))
 }

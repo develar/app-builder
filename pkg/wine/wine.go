@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/download"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/json-iterator/go"
 	"github.com/mcuadros/go-version"
+	"go.uber.org/zap"
 )
 
 func ConfigureCommand(app *kingpin.Application) {
@@ -74,6 +75,7 @@ func execWine(ia32Name string, args []string) error {
 		}
 
 		dirName := "wine-2.0.3-mac-10.13"
+		//noinspection SpellCheckingInspection
 		checksum := "dlEVCf0YKP5IEiOKPNE48Q8NKXbXVdhuaI9hG2oyDEay2c+93PE5qls7XUbIYq4Xi1gRK8fkWeCtzN2oLpVQtg=="
 		wineDir, err := download.DownloadArtifact(dirName, "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", checksum)
 		if err != nil {
@@ -82,6 +84,7 @@ func execWine(ia32Name string, args []string) error {
 
 		command := exec.CommandContext(ctx, filepath.Join(wineDir, "bin/wine"), args...)
 		env := os.Environ()
+		//noinspection SpellCheckingInspection
 		env = append(env,
 			fmt.Sprintf("WINEDEBUG=%s", "-all,err+all"),
 			fmt.Sprintf("WINEDLLOVERRIDES=%s", "winemenubuilder.exe=d"),
@@ -116,7 +119,7 @@ func checkWineVersion() error {
 
 	wineVersionResult, err := exec.CommandContext(ctx, "wine", "--version").Output()
 	if err != nil {
-		log.WithError(err).Debug("wine version check result")
+		log.Debug("wine version check result", zap.Error(err))
 		return util.NewMessageError("wine is required, please see https://electron.build/multi-platform-build#linux", "ERR_WINE_NOT_INSTALLED")
 	}
 	return doCheckWineVersion(strings.TrimPrefix(strings.TrimSpace(string(wineVersionResult)), "wine-"))

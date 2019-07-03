@@ -7,16 +7,16 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/biessek/golang-ico"
-	"github.com/develar/app-builder/pkg/log-cli"
 )
 
 func TestIcons(t *testing.T) {
-	log_cli.InitLogger()
+	log.InitLogger()
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Icons Suite")
 }

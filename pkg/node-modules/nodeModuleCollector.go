@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/apex/log"
-	"github.com/develar/app-builder/pkg/util"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/errors"
 	"github.com/json-iterator/go"
+	"go.uber.org/zap"
 )
 
 type Dependency struct {
@@ -125,8 +125,8 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 			return queueIndex, nil
 		}
 
-		if util.IsDebugEnabled() {
-			log.WithField("unresolved", strings.Join(unresolved, ", ")).WithField("nodeModuleDir", nodeModuleDir).WithField("round", guardCount).Debug("unresolved deps")
+		if log.IsDebugEnabled() {
+			log.Debug("unresolved deps", zap.Strings("unresolved", unresolved), zap.String("nodeModuleDir", nodeModuleDir), zap.Int("round", guardCount))
 		}
 
 		hasUnresolved := false

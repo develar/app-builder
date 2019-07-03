@@ -11,14 +11,15 @@ import (
 	"syscall"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/linuxTools"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 	"github.com/mcuadros/go-version"
+	"go.uber.org/zap"
 )
 
 type TemplateInfo struct {
@@ -77,7 +78,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		if err != nil {
 			switch e := errors.Cause(err).(type) {
 			case util.MessageError:
-				log.Fatal(e.Error())
+				log.LOG.Fatal(e.Error())
 
 			default:
 				return err
@@ -259,7 +260,7 @@ func buildUsingTemplate(templateDir string, options SnapOptions) error {
 			command.Dir = dir
 			_, err := util.Execute(command)
 			if err != nil {
-				log.WithError(err).Warn("cannot execute chmod")
+				log.Warn("cannot execute chmod", zap.Error(err))
 			}
 			return nil
 		}, nil

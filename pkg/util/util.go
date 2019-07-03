@@ -1,7 +1,6 @@
 package util
 
 import (
-	"bytes"
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
@@ -11,32 +10,22 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/errors"
 	"github.com/json-iterator/go"
+	"go.uber.org/zap"
 	"gopkg.in/alessio/shellescape.v1"
 )
 
 func ConfigureIsRemoveStageParam(command *kingpin.CmdClause) *bool {
 	var isRemoveStageDefaultValue string
-	if IsDebugEnabled() && !IsEnvTrue("BUILDER_REMOVE_STAGE_EVEN_IF_DEBUG") {
+	if log.IsDebugEnabled() && !IsEnvTrue("BUILDER_REMOVE_STAGE_EVEN_IF_DEBUG") {
 		isRemoveStageDefaultValue = "false"
 	} else {
 		isRemoveStageDefaultValue = "true"
 	}
 
 	return command.Flag("remove-stage", "Whether to remove stage after build.").Default(isRemoveStageDefaultValue).Bool()
-}
-
-func IsDebugEnabled() bool {
-	return getLevel() <= log.DebugLevel
-}
-
-func getLevel() log.Level {
-	if logger, ok := log.Log.(*log.Logger); ok {
-		return logger.Level
-	}
-	return log.InvalidLevel
 }
 
 func WriteJsonToStdOut(v interface{}) error {
@@ -50,39 +39,6 @@ func WriteJsonToStdOut(v interface{}) error {
 	return errors.WithStack(err)
 }
 
-func Execute(command *exec.Cmd) ([]byte, error) {
-	preCommandExecute(command)
-
-	var output bytes.Buffer
-	command.Stdout = &output
-
-	var errorOutput bytes.Buffer
-	command.Stderr = &errorOutput
-
-	err := command.Run()
-	if err != nil {
-		return output.Bytes(), &ExecError{
-			Cause:            err,
-			CommandAndArgs:   command.Args,
-			WorkingDirectory: command.Dir,
-
-			Output:      output.Bytes(),
-			ErrorOutput: errorOutput.Bytes(),
-		}
-	} else if IsDebugEnabled() && !(strings.HasSuffix(command.Path, "openssl") || strings.HasSuffix(command.Path, "openssl.exe")) {
-		entry := log.WithField("command", command.Args[0])
-		if output.Len() > 0 {
-			entry = entry.WithField("out", output.String())
-		}
-		if errorOutput.Len() > 0 {
-			entry = entry.WithField("errorOut", errorOutput.String())
-		}
-		entry.Debug("command executed")
-	}
-
-	return output.Bytes(), nil
-}
-
 func argListToSafeString(args []string) string {
 	var result strings.Builder
 	for index, value := range args {
@@ -92,7 +48,7 @@ func argListToSafeString(args []string) string {
 			if err == nil {
 				value = "sha512-first-8-chars-" + hex.EncodeToString(hasher.Sum(nil)[0:4])
 			} else {
-				log.WithError(err).Warn("cannot compute sha512 hash of password to log")
+				log.Warn("cannot compute sha512 hash of password to log", zap.Error(err))
 				value = "<hidden>"
 			}
 		} else {
@@ -150,30 +106,28 @@ func WaitPipedCommand(producer *exec.Cmd, consumer *exec.Cmd) error {
 	return nil
 }
 
-func preCommandExecute(command *exec.Cmd) {
-	log.WithFields(log.Fields{
-		"args": argListToSafeString(command.Args),
-		"workingDirectory": command.Dir,
-	}).Debug("execute command")
-}
-
 func LogErrorAndExit(err error) {
 	if execError, ok := err.(*ExecError); ok {
-		CreateExecErrorLogEntry(execError).Fatal("cannot execute")
+		log.LOG.Fatal("cannot execute", CreateExecErrorLogEntry(execError)...)
 	} else {
-		log.Fatalf("%+v\n", err)
+		log.LOG.Fatal("%+v", zap.Error(err))
 	}
 }
 
-func CreateExecErrorLogEntry(execError *ExecError) *log.Entry {
-	entry := log.WithField("cause", execError.Cause)
+func CreateExecErrorLogEntry(execError *ExecError) []zap.Field {
+	var fields []zap.Field
+	fields = append(fields, zap.NamedError("cause", execError.Cause))
 	if len(execError.Output) > 0 {
-		entry = entry.WithField("out", string(execError.Output))
+		fields = append(fields, zap.ByteString("out", execError.Output))
 	}
 	if len(execError.ErrorOutput) > 0 {
-		entry = entry.WithField("errorOut", string(execError.ErrorOutput))
+		fields = append(fields, zap.ByteString("errorOut", execError.ErrorOutput))
 	}
-	return entry.WithField("command", argListToSafeString(execError.CommandAndArgs)).WithField("workingDir", execError.WorkingDirectory).WithField("cause", execError.Cause)
+	fields = append(fields,
+		zap.String("command", argListToSafeString(execError.CommandAndArgs)),
+		zap.String("workingDir", execError.WorkingDirectory),
+	)
+	return fields
 }
 
 // http://www.blevesearch.com/news/Deferred-Cleanup,-Checking-Errors,-and-Potential-Problems/
@@ -183,7 +137,7 @@ func Close(c io.Closer) {
 		if e, ok := err.(*os.PathError); ok && e.Err == os.ErrClosed {
 			return
 		}
-		log.Errorf("%v", err)
+		log.Error("cannot close", zap.Error(err))
 	}
 }
 

@@ -6,12 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/apex/log"
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
+	"go.uber.org/zap"
 )
 
 type ProtonNativeOptions struct {
@@ -122,6 +123,7 @@ func downloadLaunchUi(version string, platform util.OsName, arch string) (string
 				//noinspection SpellCheckingInspection
 				checksum = "sBzi/o4sHajG5/TDZOzHcZ4V34SCekb6bm71fvzy+UbsPGQbOtKNFh2dEIgYgK9vxN+LVHbx1i5Xq7FbcaLnEQ=="
 			} else {
+				//noinspection SpellCheckingInspection
 				checksum = "Ip8zGEW3jBs2aRCTYqB44bFT5LkOYS2JghSEPvWar+0DEwibwhSVSiF0Uz+ONt0ug8jAtOuPQn43ZxYT6mKhbQ=="
 			}
 		}
@@ -183,11 +185,9 @@ func downloadNodeJs(version string, arch string, platform util.OsName) (string, 
 
 	dirPath := filepath.Join(cacheDir, version+"-"+toNodeJsDownloadPlatform(platform)+"-"+arch)
 
-	logFields := &log.Fields{
-		"path": dirPath,
-	}
+	logger := log.LOG.With(zap.String("path", dirPath))
 
-	isFound, err := download.CheckCache(dirPath, cacheDir, logFields)
+	isFound, err := download.CheckCache(dirPath, cacheDir, logger)
 	if isFound {
 		return dirPath, nil
 	}
@@ -226,8 +226,8 @@ func downloadNodeJs(version string, arch string, platform util.OsName) (string, 
 		log.Debug(string(output))
 	}
 
-	download.RemoveArchiveFile(archiveName, tempUnpackDir, logFields)
-	download.RenameToFinalFile(tempUnpackDir, dirPath, logFields)
+	download.RemoveArchiveFile(archiveName, tempUnpackDir, logger)
+	download.RenameToFinalFile(tempUnpackDir, dirPath, logger)
 
 	return dirPath, nil
 }
