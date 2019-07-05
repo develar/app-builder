@@ -159,18 +159,7 @@ fieldLoop:
 	}
 
 	fieldOffset := levelIndicatorRuneCount + utf8.RuneCountInString(entry.Message) + paddingSizeAfterMessage
-
-	stacked := totalLength > 180
-	var fieldPrefix []byte
-	if stacked {
-		fieldPrefix = make([]byte, fieldOffset+1)
-		fieldPrefix[0] = 10
-		for i := 1; i < len(fieldPrefix); i++ {
-			fieldPrefix[i] = 32
-		}
-	} else {
-		fieldPrefix = spacePrefix
-	}
+	fieldPrefix := getFieldPrefix(totalLength > 180, fieldOffset)
 
 	writtenIndex := 0
 	for _, v := range fieldNameAndValueList {
@@ -190,6 +179,19 @@ fieldLoop:
 
 	line.AppendString("\n")
 	return line, nil
+}
+
+func getFieldPrefix(stacked bool, fieldOffset int) []byte {
+	if !stacked {
+		return spacePrefix
+	}
+
+	fieldPrefix := make([]byte, fieldOffset+1)
+	fieldPrefix[0] = 10
+	for i := 1; i < len(fieldPrefix); i++ {
+		fieldPrefix[i] = 32
+	}
+	return fieldPrefix
 }
 
 func appendPaddedString(v string, buf *buffer.Buffer) {

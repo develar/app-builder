@@ -212,16 +212,19 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 			_, err := util.Execute(createPrebuildInstallCommand(bin, "--force", dependency, configuration))
 			if err != nil {
 				execError, _ := err.(*util.ExecError)
-				if isRebuildPossible {
+				switch {
+				case isRebuildPossible:
 					logger.Warn("build native dependency from sources",
 						zap.String("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)"),
 						zap.ByteString("error", execError.ErrorOutput),
 					)
 					return nil
-				} else if dependency.Optional {
+
+				case dependency.Optional:
 					logger.Warn("cannot install prebuilt binaries for optional native dependency", util.CreateExecErrorLogEntry(execError)...)
 					return nil
-				} else {
+
+				default:
 					execError.Message = "cannot build native dependency"
 					execError.ExtraFields = append(execError.ExtraFields, zap.String("reason", "prebuild-install failed with error and build from sources not possible because platform or arch not compatible"))
 					return err
