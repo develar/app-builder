@@ -84,6 +84,18 @@ func (t *consoleEncoder) EncodeEntry(entry zapcore.Entry, fields []zapcore.Field
 
 fieldLoop:
 	for index, field := range fields {
+		if field.Type == zapcore.SkipType {
+			continue
+		}
+
+		buf := linePool.Get()
+		if t.colored {
+			_, _ = fmt.Fprintf(buf, "\x1b[%dm%s\x1b[0m", levelColor, field.Key)
+		} else {
+			buf.AppendString(field.Key)
+		}
+		buf.AppendString("=")
+
 		var v string
 
 		switch field.Type {
@@ -104,8 +116,6 @@ fieldLoop:
 			} else {
 				v = "false"
 			}
-		case zapcore.ByteStringType:
-			v = string(field.Interface.([]byte))
 		case zapcore.StringerType:
 			v = field.Interface.(fmt.Stringer).String()
 		case zapcore.DurationType:
@@ -118,6 +128,8 @@ fieldLoop:
 			v = strconv.FormatInt(field.Integer, 10)
 		case zapcore.Uint64Type, zapcore.Uint32Type, zapcore.Uint16Type, zapcore.Uint8Type:
 			v = strconv.FormatUint(uint64(field.Integer), 10)
+		case zapcore.ByteStringType:
+			v = string(field.Interface.([]byte))
 		case zapcore.StringType:
 			v = field.String
 		case zapcore.TimeType:
@@ -137,14 +149,11 @@ fieldLoop:
 
 		totalLength += len(field.Key) + 1 + len(v)
 
-		buf := linePool.Get()
-		if t.colored {
-			_, _ = fmt.Fprintf(buf, "\x1b[%dm%s\x1b[0m", levelColor, field.Key)
+		if totalLength > 180 {
+			appendPaddedString(v, buf)
 		} else {
-			buf.AppendString(field.Key)
+			buf.AppendString(v)
 		}
-		buf.AppendString("=")
-		buf.AppendString(v)
 
 		fieldNameAndValueList[index+extraFieldNumber] = buf
 	}
@@ -181,6 +190,24 @@ fieldLoop:
 
 	line.AppendString("\n")
 	return line, nil
+}
+
+func appendPaddedString(v string, buf *buffer.Buffer) {
+	index := 0
+	for {
+		index = strings.IndexByte(v, '\n')
+		if index < 0 {
+			buf.AppendString(v)
+			break
+		}
+
+		buf.AppendString(v[:index+1])
+		for i := 0; i < levelIndicatorRuneCount; i++ {
+			buf.AppendByte(' ')
+		}
+
+		v = v[index+1:]
+	}
 }
 
 func (t *consoleEncoder) encodeExtraFields(levelColor uint8, fieldNameAndValueList *[]*buffer.Buffer) int {

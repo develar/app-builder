@@ -108,7 +108,17 @@ func WaitPipedCommand(producer *exec.Cmd, consumer *exec.Cmd) error {
 
 func LogErrorAndExit(err error) {
 	if execError, ok := err.(*ExecError); ok {
-		log.LOG.Fatal("cannot execute", CreateExecErrorLogEntry(execError)...)
+		message := execError.Message
+		if len(message) == 0 {
+			message = "cannot execute"
+		}
+
+		fields := execError.ExtraFields
+		fields = append(fields, CreateExecErrorLogEntry(execError)...)
+		log.LOG.Error(message, fields...)
+		_ = log.LOG.Sync()
+		// electron-builder in this case doesn't report app-builder error
+		os.Exit(2)
 	} else {
 		log.LOG.Fatal("%+v", zap.Error(err))
 	}

@@ -11,6 +11,7 @@ import (
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/json-iterator/go"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type RebuildConfiguration struct {
@@ -68,13 +69,18 @@ func rebuild(configuration *RebuildConfiguration) error {
 		return nil
 	}
 
-	names := make([]string, len(dependencies))
-	for index, item := range dependencies {
-		names[index] = item.Name + "@" + item.Version
-	}
-
 	log.Info("rebuilding native dependencies",
-		zap.String("dependencies", strings.Join(names, ",")),
+		zap.Array("dependencies", zapcore.ArrayMarshalerFunc(func(encoder zapcore.ArrayEncoder) error {
+			for index, item := range dependencies {
+				if index != 0 {
+					encoder.AppendString(", ")
+				}
+				encoder.AppendString(item.Name)
+				encoder.AppendString("@")
+				encoder.AppendString(item.Version)
+			}
+			return nil
+		})),
 		zap.String("platform", configuration.Platform),
 		zap.String("arch", configuration.Arch),
 	)
@@ -206,20 +212,22 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 			_, err := util.Execute(createPrebuildInstallCommand(bin, extraArg, dependency, configuration))
 			if err != nil {
 				execError, _ := err.(*util.ExecError)
-				loggerWithBuildError := logger.With(zap.ByteString("error", execError.ErrorOutput))
-
 				if extraArg == "--force" && isRebuildPossible {
 					// ok, just build from sources
-					loggerWithBuildError.Warn("rebuild native dependency from sources", zap.String("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)"))
+					logger.Warn("build native dependency from sources",
+						zap.String("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)"),
+						zap.ByteString("error", execError.ErrorOutput),
+					)
 					_, err = util.Execute(createPrebuildInstallCommand(bin, "--build-from-source", dependency, configuration))
 				}
 
 				if err != nil {
+					execError, _ := err.(*util.ExecError)
 					if dependency.Optional {
-						execError, _ := err.(*util.ExecError)
 						logger.Warn("cannot build optional native dependency", util.CreateExecErrorLogEntry(execError)...)
 					} else {
-						loggerWithBuildError.Error("cannot rebuild native dependency", zap.String("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)"))
+						execError.Message = "cannot build native dependency"
+						execError.ExtraFields = append(execError.ExtraFields, zap.String("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)"))
 						return err
 					}
 				}

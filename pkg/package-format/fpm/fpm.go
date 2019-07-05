@@ -51,6 +51,9 @@ func ConfigureCommand(app *kingpin.Application) {
 		if util.IsEnvTrue("FPM_DEBUG") {
 			args = append(args, "--debug")
 		}
+		if log.IsDebugEnabled() {
+			args = append(args, "--log", "debug")
+		}
 		args = configureDependencies(&configuration, target, args)
 
 		compression := "xz"

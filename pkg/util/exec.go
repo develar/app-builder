@@ -33,6 +33,9 @@ type ExecError struct {
 
 	Output      []byte
 	ErrorOutput []byte
+
+	Message     string
+	ExtraFields []zap.Field
 }
 
 func (e *ExecError) Error() string {
