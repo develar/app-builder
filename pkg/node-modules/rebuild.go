@@ -167,6 +167,19 @@ func getRebuildConcurrency() int {
 }
 
 func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfiguration) ([]*DepInfo, error) {
+	isRebuildPossible := checkRebuildPossible(configuration)
+	if configuration.BuildFromSource {
+		if isRebuildPossible {
+			return dependencies, nil
+		}
+
+		log.Warn("buildFromSource option is ignored",
+			zap.String("reason", "platform or arch not compatible"),
+			zap.String("platform", configuration.Platform),
+			zap.String("arch", configuration.Arch),
+		)
+	}
+
 	err := util.MapAsyncConcurrency(len(dependencies), getRebuildConcurrency(), func(index int) (func() error, error) {
 		dependency := dependencies[index]
 		if !dependency.HasPrebuildInstall {
@@ -196,40 +209,22 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 				bin = filepath.Join(parentDir, "prebuild-install", "bin.js")
 			}
 
-			isRebuildPossible := checkRebuildPossible(configuration)
-
-			var extraArg string
-			if configuration.BuildFromSource && isRebuildPossible {
-				extraArg = "--build-from-source"
-			} else {
-				if configuration.BuildFromSource {
-					logger.Warn("buildFromSource option is ignored", zap.String("reason", "platform or arch not compatible"))
-				}
-
-				extraArg = "--force"
-			}
-
-			_, err := util.Execute(createPrebuildInstallCommand(bin, extraArg, dependency, configuration))
+			_, err := util.Execute(createPrebuildInstallCommand(bin, "--force", dependency, configuration))
 			if err != nil {
 				execError, _ := err.(*util.ExecError)
-				if extraArg == "--force" && isRebuildPossible {
-					// ok, just build from sources
+				if isRebuildPossible {
 					logger.Warn("build native dependency from sources",
 						zap.String("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)"),
 						zap.ByteString("error", execError.ErrorOutput),
 					)
-					_, err = util.Execute(createPrebuildInstallCommand(bin, "--build-from-source", dependency, configuration))
-				}
-
-				if err != nil {
-					execError, _ := err.(*util.ExecError)
-					if dependency.Optional {
-						logger.Warn("cannot build optional native dependency", util.CreateExecErrorLogEntry(execError)...)
-					} else {
-						execError.Message = "cannot build native dependency"
-						execError.ExtraFields = append(execError.ExtraFields, zap.String("reason", "prebuild-install failed with error (run with env DEBUG=electron-builder to get more information)"))
-						return err
-					}
+					return nil
+				} else if dependency.Optional {
+					logger.Warn("cannot install prebuilt binaries for optional native dependency", util.CreateExecErrorLogEntry(execError)...)
+					return nil
+				} else {
+					execError.Message = "cannot build native dependency"
+					execError.ExtraFields = append(execError.ExtraFields, zap.String("reason", "prebuild-install failed with error and build from sources not possible because platform or arch not compatible"))
+					return err
 				}
 			}
 
