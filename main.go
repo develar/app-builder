@@ -25,6 +25,7 @@ import (
 	"github.com/develar/app-builder/pkg/package-format/snap"
 	"github.com/develar/app-builder/pkg/plist"
 	"github.com/develar/app-builder/pkg/publisher"
+	"github.com/develar/app-builder/pkg/rcedit"
 	"github.com/develar/app-builder/pkg/remoteBuild"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/app-builder/pkg/wine"
@@ -46,7 +47,7 @@ func main() {
 		return
 	}
 
-	var app = kingpin.New("app-builder", "app-builder").Version("3.1.6")
+	var app = kingpin.New("app-builder", "app-builder").Version("3.2.0")
 
 	node_modules.ConfigureCommand(app)
 	node_modules.ConfigureRebuildCommand(app)
@@ -80,6 +81,7 @@ func main() {
 	codesign.ConfigureCertificateInfoCommand(app)
 
 	wine.ConfigureCommand(app)
+	rcedit.ConfigureCommand(app)
 	configureKsUidCommand(app)
 
 	plist.ConfigurePlistCommand(app)

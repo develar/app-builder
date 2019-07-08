@@ -4,6 +4,7 @@ import (
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -120,7 +121,7 @@ func LogErrorAndExit(err error) {
 		// electron-builder in this case doesn't report app-builder error
 		os.Exit(2)
 	} else {
-		log.LOG.Fatal("%+v", zap.Error(err))
+		log.LOG.Fatal(fmt.Sprintf("%+v", err))
 	}
 }
 

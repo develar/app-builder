@@ -27,14 +27,17 @@
       <w>multipass</w>
       <w>noappend</w>
       <w>ostype</w>
+      <w>rcedit</w>
       <w>rpmbuild</w>
       <w>snapcore</w>
       <w>snapcraft</w>
       <w>tiffutil</w>
       <w>uintptr</w>
       <w>umask</w>
+      <w>uname</w>
       <w>userland</w>
       <w>virtualgo</w>
+      <w>wineprefix</w>
       <w>xattrs</w>
       <w>xzmt</w>
       <w>zstd</w>

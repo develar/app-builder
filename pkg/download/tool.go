@@ -54,7 +54,7 @@ func DownloadZstd(osName util.OsName) (string, error) {
 
 func DownloadWinCodeSign() (string, error) {
 	//noinspection SpellCheckingInspection
-	return downloadFromGithub("winCodeSign", "2.4.0", "HqyyMAtVH5VtDHV9jwhn36VfSL+JrxQpgNeT+vThDp2+7t9mnrzOjjbHoBEfcFAmd5xUIZSdMPmp63GlOpJYwg==")
+	return downloadFromGithub("winCodeSign", "2.4.1", "Kfw9mtrmdW+o31h7aoC4GgzZFTgvnuk1XMJJcD63rn0bXmVX8UjDQEuc8Kzb7iljDs5JlsmL4+T7Fo+cxDfErA==")
 }
 
 func downloadFromGithub(name string, version string, checksum string) (string, error) {
