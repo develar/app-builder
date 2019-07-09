@@ -11,11 +11,11 @@ import (
 )
 
 func GetAppImageToolDir() (string, error) {
-	dirName := "appimage-12.0.0"
+	dirName := "appimage-12.0.1"
 	//noinspection SpellCheckingInspection
 	result, err := download.DownloadArtifact("",
 		"https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z",
-		"1XG416Q2cxMGrr4SByMUkjDadqrFrDDPGcKx7jEI0isqkUEc3b/I4lcCsDuylXQTU2V2iG8RAdxzBiMFF2EYow==")
+		"3el6RUh6XoYJCI/ZOApyb0LLU/gSxDntVZ46R6+JNEANzfSo7/TfrzCRp5KlDo35c24r3ZOP7nnw4RqHwkMRLw==")
 	if err != nil {
 		return "", err
 	}
@@ -26,7 +26,7 @@ func GetAppImageToolBin(toolDir string) string {
 	if util.GetCurrentOs() == util.MAC {
 		return filepath.Join(toolDir, "darwin")
 	} else {
-		return filepath.Join(toolDir, "linux-"+goArchToNodeArch(runtime.GOARCH))
+		return filepath.Join(toolDir, "linux-"+goArchToArchSuffix())
 	}
 }
 
@@ -54,12 +54,15 @@ func GetMksquashfs() (string, error) {
 	return result, nil
 }
 
-func goArchToNodeArch(arch string) string {
+func goArchToArchSuffix() string {
+	arch := runtime.GOARCH
 	switch arch {
 	case "amd64":
 		return "x64"
 	case "386":
 		return "ia32"
+	case "arm":
+		return "arm32"
 	default:
 		return arch
 	}
