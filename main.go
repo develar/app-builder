@@ -47,7 +47,7 @@ func main() {
 		return
 	}
 
-	var app = kingpin.New("app-builder", "app-builder").Version("3.2.0")
+	var app = kingpin.New("app-builder", "app-builder").Version("3.3.0")
 
 	node_modules.ConfigureCommand(app)
 	node_modules.ConfigureRebuildCommand(app)
@@ -69,6 +69,7 @@ func main() {
 	ConfigureCopyCommand(app)
 	appimage.ConfigureCommand(app)
 	snap.ConfigureCommand(app)
+	snap.ConfigurePublishCommand(app)
 	fpm.ConfigureCommand(app)
 
 	err := icons.ConfigureCommand(app)

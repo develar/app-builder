@@ -104,7 +104,7 @@ func ResolveTemplateDir(templateFile string, templateUrl string, templateSha512 
 
 	switch templateUrl {
 	case "electron4", "electron4:amd64":
-		return download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-4.0-1/snap-template-electron-4.0-1-amd64.tar.7z", "tt15k/jGR5IxhcsHuApOE80JxPL3RAfyqIbU7p+h5bt2sXYI5YmECbGZGzn7Fe6vmBZCDujPmAokGME/hEkf/w==")
+		return download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-4.0-2/snap-template-electron-4.0-2-amd64.tar.7z", "PYhiQQ5KE4ezraLE7TOT2aFPGkBNjHLRN7C8qAPaC6VckHU3H+0m+JA/Wmx683fKUT2ZBwo9Mp82EuhmQo5WOQ==")
 	case "electron4:armhf":
 		return download.DownloadArtifact("", "https://github.com/electron-userland/electron-builder-binaries/releases/download/snap-template-4.0-1/snap-template-electron-4.0-1-armhf.tar.7z", "jK+E0d0kyzBEsFmTEUIsumtikH4XZp8NVs6DBtIBJqXAmVCuNHcmvDa0wcaigk8foU4uGZXsLlJtNj11X100Bg==")
 	default:
@@ -117,7 +117,7 @@ func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {
 
 	var installMessage string
 	if runtime.GOOS == "darwin" {
-		installMessage = "brew update snapcraft"
+		installMessage = "brew install snapcraft"
 	} else {
 		installMessage = "sudo snap install snapcraft --classic"
 	}
