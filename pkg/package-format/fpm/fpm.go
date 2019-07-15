@@ -107,6 +107,8 @@ func configureTargetSpecific(target string, args []string, compression string) [
 		}
 	} else if target == "deb" {
 		args = append(args, "--deb-compression", compression)
+	} else if target == "pacman" {
+		args = append(args, "--pacman-compression", compression)
 	}
 	return args
 }
