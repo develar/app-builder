@@ -98,16 +98,17 @@ func ConfigureCommand(app *kingpin.Application) {
 }
 
 func configureTargetSpecific(target string, args []string, compression string) []string {
-	if target == "rpm" {
+	switch target {
+	case "rpm":
 		args = append(args, "--rpm-os", "linux")
 		if compression == "xz" {
 			args = append(args, "--rpm-compression", "xzmt")
 		} else {
 			args = append(args, "--rpm-compression", compression)
 		}
-	} else if target == "deb" {
+	case "deb":
 		args = append(args, "--deb-compression", compression)
-	} else if target == "pacman" {
+	case "pacman":
 		args = append(args, "--pacman-compression", compression)
 	}
 	return args

@@ -27,6 +27,7 @@
       <w>multipass</w>
       <w>noappend</w>
       <w>ostype</w>
+      <w>pacman</w>
       <w>rcedit</w>
       <w>rpmbuild</w>
       <w>snapcore</w>
