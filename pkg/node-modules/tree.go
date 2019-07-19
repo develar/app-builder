@@ -43,7 +43,7 @@ func ConfigureCommand(app *kingpin.Application) {
 			return err
 		}
 
-		jsonWriter := jsoniter.NewStream(jsoniter.ConfigDefault, os.Stdout, 32*1024)
+		jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 32*1024)
 		writeResult(jsonWriter, collector)
 		err = jsonWriter.Flush()
 		if err != nil {
