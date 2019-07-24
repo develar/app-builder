@@ -112,7 +112,7 @@ func readUsingOpenssl(inFile string, password string) ([]*x509.Certificate, erro
 			return nil, err
 		}
 
-		opensslPath = filepath.Join(vendor, "openssl", "openssl.exe")
+		opensslPath = filepath.Join(vendor, "openssl-ia32", "openssl.exe")
 	}
 
 	//noinspection SpellCheckingInspection
