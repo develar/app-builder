@@ -6,17 +6,16 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4 // indirect
 	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053 // indirect
-	github.com/aws/aws-sdk-go v1.21.3
+	github.com/aws/aws-sdk-go v1.21.8
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
-	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/develar/errors v0.9.0
 	github.com/develar/go-fs-util v0.0.0-20190620175131-69a2d4542206
 	github.com/develar/go-pkcs12 v0.0.0-20181115143544-54baa4f32c6a
 	github.com/disintegration/imaging v1.6.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/golang/protobuf v1.3.2 // indirect
-	github.com/json-iterator/go v1.1.6
+	github.com/json-iterator/go v1.1.7
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
 	github.com/mattn/go-colorable v0.1.2
 	github.com/mattn/go-isatty v0.0.8
@@ -36,9 +35,9 @@ require (
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/multierr v1.1.0 // indirect
 	go.uber.org/zap v1.10.0
-	golang.org/x/image v0.0.0-20190703141733-d6a02ce849c9 // indirect
+	golang.org/x/image v0.0.0-20190729225735-1bd0cf576493 // indirect
 	golang.org/x/net v0.0.0-20190724013045-ca1201d0de80 // indirect
-	golang.org/x/sys v0.0.0-20190712062909-fae7ac547cb7 // indirect
+	golang.org/x/sys v0.0.0-20190730183949-1393eb018365 // indirect
 	golang.org/x/text v0.3.2 // indirect
 	gopkg.in/alessio/shellescape.v1 v1.0.0-20170105083845-52074bc9df61
 	gopkg.in/yaml.v2 v2.2.2 // indirect
