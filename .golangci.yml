@@ -8,4 +8,5 @@ linters:
     - lll
     - bodyclose
     - goimports
+    - funlen
     - goconst # todo
