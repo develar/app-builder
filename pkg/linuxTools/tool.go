@@ -14,7 +14,7 @@ func GetAppImageToolDir() (string, error) {
 	dirName := "appimage-12.0.1"
 	//noinspection SpellCheckingInspection
 	result, err := download.DownloadArtifact("",
-		"https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z",
+		download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z",
 		"3el6RUh6XoYJCI/ZOApyb0LLU/gSxDntVZ46R6+JNEANzfSo7/TfrzCRp5KlDo35c24r3ZOP7nnw4RqHwkMRLw==")
 	if err != nil {
 		return "", err

@@ -122,7 +122,7 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 		dirName := "wine-4.0.1-mac"
 		//noinspection SpellCheckingInspection
 		checksum := "aCUQOyuPGlEvLMp0lPzb54D96+8IcLwmKTMElrZZqVWtEL1LQC7L9XpPv4RqaLX3BOeSifneEi4j9DpYdC1DCA=="
-		wineDir, err = download.DownloadArtifact(dirName, "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", checksum)
+		wineDir, err = download.DownloadArtifact(dirName, download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z", checksum)
 		if err != nil {
 			return err
 		}
@@ -132,7 +132,7 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 		dirName := "wine-2.0.3-mac-10.13"
 		//noinspection SpellCheckingInspection
 		checksum := "dlEVCf0YKP5IEiOKPNE48Q8NKXbXVdhuaI9hG2oyDEay2c+93PE5qls7XUbIYq4Xi1gRK8fkWeCtzN2oLpVQtg=="
-		wineDir, err = download.DownloadArtifact(dirName, "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+dirName+"/"+dirName+".7z", checksum)
+		wineDir, err = download.DownloadArtifact(dirName, download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z", checksum)
 		if err != nil {
 			return err
 		}

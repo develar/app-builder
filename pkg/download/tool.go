@@ -1,6 +1,7 @@
 package download
 
 import (
+	"os"
 	"path/filepath"
 	"runtime"
 
@@ -27,7 +28,7 @@ func DownloadFpm() (string, error) {
 		name := "fpm-1.9.3-2.3.1-linux" + archSuffix
 		return DownloadArtifact(
 			name,
-			"https://github.com/electron-userland/electron-builder-binaries/releases/download/"+name+"/"+name+".7z",
+			GetGithubBaseUrl()+name+"/"+name+".7z",
 			checksum,
 		)
 	} else {
@@ -59,7 +60,24 @@ func DownloadWinCodeSign() (string, error) {
 
 func downloadFromGithub(name string, version string, checksum string) (string, error) {
 	id := name + "-" + version
-	return DownloadArtifact(id, "https://github.com/electron-userland/electron-builder-binaries/releases/download/"+id+"/"+id+".7z", checksum)
+	return DownloadArtifact(id, GetGithubBaseUrl()+id+"/"+id+".7z", checksum)
+}
+
+func GetGithubBaseUrl() string {
+	v := os.Getenv("NPM_CONFIG_ELECTRON_BUILDER_BINARIES_MIRROR")
+	if len(v) == 0 {
+		v = os.Getenv("npm_config_electron_builder_binaries_mirror")
+	}
+	if len(v) == 0 {
+		v = os.Getenv("npm_package_config_electron_builder_binaries_mirror")
+	}
+	if len(v) == 0 {
+		v = os.Getenv("ELECTRON_BUILDER_BINARIES_MIRROR")
+	}
+	if len(v) == 0 {
+		v = "https://github.com/electron-userland/electron-builder-binaries/releases/download/"
+	}
+	return v
 }
 
 func DownloadTool(descriptor ToolDescriptor, osName util.OsName) (string, error) {
