@@ -1,6 +1,7 @@
 package rcedit
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -31,7 +32,7 @@ func editResources(args []string) error {
 		return err
 	}
 
-	if util.GetCurrentOs() == util.WINDOWS {
+	if util.GetCurrentOs() == util.WINDOWS || util.IsWSL() {
 		var rcEditExecutable string
 		if runtime.GOARCH == "amd64" {
 			rcEditExecutable = "rcedit-x64.exe"
@@ -39,7 +40,13 @@ func editResources(args []string) error {
 			rcEditExecutable = "rcedit-ia32.exe"
 		}
 
-		command := exec.Command(filepath.Join(winCodeSignPath, rcEditExecutable), args...)
+		rcEditPath := filepath.Join(winCodeSignPath, rcEditExecutable)
+
+		if (util.IsWSL()) {
+			os.Chmod(rcEditPath, 0755)
+		}
+
+		command := exec.Command(rcEditPath, args...)
 		_, err = util.Execute(command)
 		if err != nil {
 			return err
