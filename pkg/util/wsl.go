@@ -12,7 +12,7 @@ func IsWSL() bool {
 		return false
 	}
 
-	err, release := getOSRelease()
+	release, err := getOSRelease()
 	if err != nil {
 		return false
 	}
@@ -21,7 +21,7 @@ func IsWSL() bool {
 		return true
 	}
 
-	err, version := getProcVersion()
+	version, err := getProcVersion()
 	if err != nil {
 		return false
 	}
@@ -33,7 +33,7 @@ func IsWSL() bool {
 	return false
 }
 
-func getOSRelease() (error, string) {
+func getOSRelease() (string, error) {
 	cmd := exec.Command("uname","-r")
 
 	var out bytes.Buffer
@@ -43,17 +43,17 @@ func getOSRelease() (error, string) {
 	
 	err := cmd.Run()
 	if err != nil {
-		return err, ""
+		return "", err
 	}
 
-	return nil, out.String()
+	return out.String(), nil
 }
 
-func getProcVersion() (error, string) {
+func getProcVersion() (string, error) {
 	content, err := ioutil.ReadFile("/proc/version")
 	if err != nil {
-		return err, ""
+		return "", err
 	}
 
-	return nil, string(content)
+	return string(content), nil
 }

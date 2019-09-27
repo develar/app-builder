@@ -42,8 +42,11 @@ func editResources(args []string) error {
 
 		rcEditPath := filepath.Join(winCodeSignPath, rcEditExecutable)
 
-		if (util.IsWSL()) {
-			os.Chmod(rcEditPath, 0755)
+		if util.IsWSL() {
+			err = os.Chmod(rcEditPath, 0755)
+			if err != nil {
+				return err
+			}
 		}
 
 		command := exec.Command(rcEditPath, args...)
