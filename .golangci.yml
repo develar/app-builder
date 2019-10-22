@@ -9,4 +9,8 @@ linters:
     - bodyclose
     - goimports
     - funlen
+    - stylecheck
+    - wsl
+    - gocognit
+    - godox
     - goconst # todo
