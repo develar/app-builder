@@ -13,4 +13,5 @@ linters:
     - wsl
     - gocognit
     - godox
+    - gosec
     - goconst # todo

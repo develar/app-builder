@@ -96,7 +96,6 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 
 		args = append([]string{ia64Name}, args...)
 	} else {
-
 		args = append([]string{ia32Name}, args...)
 	}
 
