@@ -41,14 +41,14 @@ func DownloadZstd(osName util.OsName) (string, error) {
 	//noinspection SpellCheckingInspection
 	return DownloadTool(ToolDescriptor{
 		Name:    "zstd",
-		Version: "1.4.0",
-		mac:     "CY+P8Egn6V14gcWFHz3hKnpKAn7/18PxzotcMXnM3CREBiveygAojJxlRJ9PsAqLlGFHiAd1SGOv/IhLwrKvHQ==",
+		Version: "1.4.4",
+		mac:     "PnLB95cEI4Gv2qWqjV3RuSy3LseEgERb8iPXZeoqMZt1CKrq+JUs8xp8BN6JVptnGI9Am4V0bF4tpbb1mj7D6A==",
 		linux: map[string]string{
-			"x64": "T09y1u1YwOp21/AdH4ojfBna6Xx2/IVk70nJEuTULFBULY84/WHub/19/c1+P7jr3HlXOVpUkOmnKp3BCBR00g==",
+			"x64": "HWJAwsbAsCqxksb28YJsZIpPOOK6G6j6N60FKv7pz1v25Q0GqyRgoFgaixTKG1yW9l6IztjeVPxbbf4g5OfGlg==",
 		},
 		win: map[string]string{
-			"ia32": "2/NjLk7LTZUl2mPczgv92dWM2gZjhkPuPBmFxDZvOJC20JmvKsiJj+e5afUazhIiKAMdWS0PmthvoCYJWFbdJg==",
-			"x64":  "Rj7thtr+5anAX2NKxbfvgohF4MEg6W1FVPahodfhby/BZU/7wHvq7GuHYZiaOguZB4ONJEBm/sI14ICaPYaNYg==",
+			"ia32": "i8Q1Cu6ayQSsWKf8xW1OSyooOS/wB20TeC4i4pcUi8rYtJRWMl/4y/xFD4w+cyhZKdTJHx3dd1JwRb0300F02g==",
+			"x64":  "Gfb8yC7+wyEb7aDAH/nP+r1MaU2mVyN7TpoyygPu7VFzXHzLllZJmkuJ4GTXFkZoK2vkRKLK6a8E9+xomEgILg==",
 		},
 	}, osName)
 }
