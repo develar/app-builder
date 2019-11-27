@@ -5,6 +5,8 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"strings"
+
+	"github.com/develar/errors"
 )
 
 func IsWSL() bool {
@@ -12,7 +14,7 @@ func IsWSL() bool {
 		return false
 	}
 
-	release, err := getOSRelease()
+	release, err := getOsRelease()
 	if err != nil {
 		return false
 	}
@@ -33,14 +35,14 @@ func IsWSL() bool {
 	return false
 }
 
-func getOSRelease() (string, error) {
-	cmd := exec.Command("uname","-r")
+func getOsRelease() (string, error) {
+	cmd := exec.Command("uname", "-r")
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &stderr
-	
+
 	err := cmd.Run()
 	if err != nil {
 		return "", err
@@ -52,7 +54,7 @@ func getOSRelease() (string, error) {
 func getProcVersion() (string, error) {
 	content, err := ioutil.ReadFile("/proc/version")
 	if err != nil {
-		return "", err
+		return "", errors.WithStack(err)
 	}
 
 	return string(content), nil
