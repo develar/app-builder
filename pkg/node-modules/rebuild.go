@@ -240,7 +240,7 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 		return nil, err
 	}
 
-	var result []*DepInfo
+	result := make([]*DepInfo, 0, len(dependencies))
 	for _, item := range dependencies {
 		if item == nil {
 			continue

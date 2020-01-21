@@ -18,8 +18,5 @@ builds:
       - goos: darwin
         goarch: 386
 
-archive:
-  format: binary
-
 snapshot:
   name_template: SNAPSHOT

@@ -3,6 +3,7 @@ package electron
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/develar/app-builder/pkg/download"
@@ -93,7 +94,11 @@ func getBaseUrl(config *ElectronDownloadOptions) string {
 		v = config.Mirror
 	}
 	if len(v) == 0 {
-		v = "https://github.com/electron/electron/releases/download/v"
+		if strings.Contains(config.Version, "-nightly.") {
+			return "https://github.com/electron/nightlies/releases/download/v"
+		} else {
+			return "https://github.com/electron/electron/releases/download/v"
+		}
 	}
 	return v
 }

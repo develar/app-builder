@@ -1,17 +1,12 @@
 linters:
-  enable-all: true
+  enable:
+#    - bodyclose
+    - gocritic
+    - gocyclo
+    - maligned
+#    - prealloc
+    - scopelint
+    - unconvert
+    - unparam
   disable:
-    - golint
-    - gochecknoglobals
-    - prealloc
-    - gofmt
-    - lll
-    - bodyclose
-    - goimports
-    - funlen
-    - stylecheck
-    - wsl
-    - gocognit
-    - godox
-    - gosec
-    - goconst # todo
+    - structcheck
