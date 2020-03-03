@@ -7,12 +7,13 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/alecthomas/kingpin"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
@@ -66,9 +67,9 @@ func ConfigurePublishToS3Command(app *kingpin.Application) {
 func configureResolveBucketLocationCommand(app *kingpin.Application) {
 	command := app.Command("get-bucket-location", "")
 	bucket := command.Flag("bucket", "").Required().String()
-	command.Action(func(context *kingpin.ParseContext) error {
-		requestContext, _ := util.CreateContext()
-		result, err := getBucketRegion(aws.NewConfig(), bucket, requestContext, createHttpClient())
+	command.Action(func(parseContext *kingpin.ParseContext) error {
+		requestContext, _ := util.CreateContextWithTimeout(30*time.Second)
+		result, err := getBucketRegion(aws.NewConfig(), *bucket, requestContext, createHttpClient())
 		if err != nil {
 			return err
 		}
@@ -81,7 +82,7 @@ func configureResolveBucketLocationCommand(app *kingpin.Application) {
 	})
 }
 
-func getBucketRegion(awsConfig *aws.Config, bucket *string, context context.Context, httpClient *http.Client) (string, error) {
+func getBucketRegion(awsConfig *aws.Config, bucket string, context context.Context, httpClient *http.Client) (string, error) {
 	awsSession, err := session.NewSession(awsConfig, &aws.Config{
 		// any region required
 		Region:     aws.String("us-east-1"),
@@ -91,17 +92,14 @@ func getBucketRegion(awsConfig *aws.Config, bucket *string, context context.Cont
 		return "", errors.WithStack(err)
 	}
 
-	client := s3.New(awsSession)
-	result, err := client.GetBucketLocationWithContext(context, &s3.GetBucketLocationInput{
-		Bucket: bucket,
-	})
+	result, err := s3manager.GetBucketRegion(context, awsSession, bucket, "")
 	if err != nil {
+		if awsError, ok := err.(awserr.Error); ok && awsError.Code() == "NotFound" {
+			return "", errors.Errorf("unable to find bucket %s's region not found", bucket)
+		}
 		return "", errors.WithStack(err)
 	}
-	if result == nil || result.LocationConstraint == nil || len(*result.LocationConstraint) == 0 {
-		return "us-east-1", nil
-	}
-	return *result.LocationConstraint, nil
+	return result, nil
 }
 
 func upload(options *ObjectOptions) error {
@@ -130,7 +128,7 @@ func upload(options *ObjectOptions) error {
 		awsConfig.Region = aws.String("us-east-1")
 	default:
 		// AWS SDK for Go requires region
-		region, err := getBucketRegion(awsConfig, options.bucket, publishContext, httpClient)
+		region, err := getBucketRegion(awsConfig, *options.bucket, publishContext, httpClient)
 		if err != nil {
 			return errors.WithStack(err)
 		}

@@ -5,15 +5,22 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/develar/app-builder/pkg/log"
 	"go.uber.org/zap"
 )
 
 func CreateContext() (context.Context, context.CancelFunc) {
-	downloadContext, cancel := context.WithCancel(context.Background())
+	c, cancel := context.WithCancel(context.Background())
 	go onCancelSignal(cancel)
-	return downloadContext, cancel
+	return c, cancel
+}
+
+func CreateContextWithTimeout(timeout time.Duration) (context.Context, context.CancelFunc) {
+	c, cancel := context.WithTimeout(context.Background(), timeout)
+	go onCancelSignal(cancel)
+	return c, cancel
 }
 
 func onCancelSignal(cancel context.CancelFunc) {
