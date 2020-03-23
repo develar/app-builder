@@ -143,7 +143,7 @@ func getDefaultDepends(target string) []string {
 		}
 
 	case "pacman":
-		return []string{"c-ares", "ffmpeg", "gtk3", "http-parser", "libevent", "libvpx", "libxslt", "libxss", "minizip", "nss", "re2", "snappy", "libnotify", "libappindicator-gtk3", "libappindicator-sharp"}
+		return []string{"c-ares", "ffmpeg", "gtk3", "http-parser", "libevent", "libvpx", "libxslt", "libxss", "minizip", "nss", "re2", "snappy", "libnotify", "libappindicator-gtk3"}
 
 	default:
 		return nil
