@@ -123,7 +123,7 @@ func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {
 	}
 
 	if err == nil {
-		return doCheckSnapVersion(string(out), installMessage)
+		return doCheckSnapVersion(strings.TrimSpace(string(out)), installMessage)
 	}
 
 	log.Debug(err.Error())
@@ -136,8 +136,11 @@ func CheckSnapcraftVersion(isRequireToBeInstalled bool) error {
 }
 
 func doCheckSnapVersion(rawVersion string, installMessage string) error {
-	s := strings.TrimSpace(rawVersion)
-	s = strings.TrimSpace(strings.TrimPrefix(s, "snapcraft"))
+	if rawVersion == "snapcraft, version edge" {
+		return nil
+	}
+
+	s := strings.TrimSpace(strings.TrimPrefix(rawVersion, "snapcraft"))
 	s = strings.TrimSpace(strings.TrimPrefix(s, ","))
 	s = strings.TrimSpace(strings.TrimPrefix(s, "version"))
 	s = strings.Trim(s, "'")

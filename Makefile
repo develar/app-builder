@@ -46,5 +46,5 @@ publish: build-all
 	./scripts/publish-npm.sh
 
 update-deps:
-	GOPROXY=https://proxy.golang.org go get -u
+	GOPROXY=https://proxy.golang.org go get -u -d
 	go mod tidy
