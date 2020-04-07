@@ -1,8 +1,12 @@
 package download
 
 import (
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -11,7 +15,7 @@ import (
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	"github.com/develar/go-fs-util"
+	fsutil "github.com/develar/go-fs-util"
 	"github.com/dustin/go-humanize"
 	"go.uber.org/zap"
 )
@@ -25,6 +29,35 @@ const (
 func getUserAgent() string {
 	//noinspection SpellCheckingInspection
 	return util.GetEnvOrDefault("DOWNLOADER_USER_AGENT", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/74.0.3729.169 Safari/537.36")
+}
+
+func getTlsConfig() *tls.Config {
+	localCertFile := os.Getenv("NODE_EXTRA_CA_CERTS")
+	if len(localCertFile) == 0 {
+		return &tls.Config{}
+	}
+
+	// Get the SystemCertPool, continue with an empty pool on error
+	rootCAs, _ := x509.SystemCertPool()
+	if rootCAs == nil {
+		rootCAs = x509.NewCertPool()
+	}
+
+	// Read in the cert file
+	certs, err := ioutil.ReadFile(localCertFile)
+	if err != nil {
+		log.Warn("Failed to append to root certificates", zap.String("extraCert", localCertFile), zap.Error(err))
+	}
+
+	// Append our cert to the system pool
+	if ok := rootCAs.AppendCertsFromPEM(certs); !ok {
+		log.Warn("No certs appended, using system certs only")
+	}
+
+	// Trust the augmented cert pool in our client
+	return &tls.Config{
+		RootCAs: rootCAs,
+	}
 }
 
 func getMaxPartCount() int {
@@ -56,6 +89,7 @@ type Downloader struct {
 func NewDownloader() *Downloader {
 	return NewDownloaderWithTransport(&http.Transport{
 		Proxy:               util.ProxyFromEnvironmentAndNpm,
+		TLSClientConfig:     getTlsConfig(),
 		MaxIdleConns:        64,
 		MaxIdleConnsPerHost: 64,
 		IdleConnTimeout:     30 * time.Second,
