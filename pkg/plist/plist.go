@@ -44,7 +44,7 @@ func encode() error {
 		data := fileToData[file]
 		return func() error {
 			var out bytes.Buffer
-			err := plist.NewEncoderForFormat(&out, plist.BinaryFormat).Encode(data)
+			err := plist.NewEncoderForFormat(&out, plist.XMLFormat).Encode(data)
 			if err != nil {
 				return err
 			}
