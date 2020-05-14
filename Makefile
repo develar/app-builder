@@ -24,11 +24,9 @@ endif
 build: assets
 	go build -ldflags='-s -w' -o dist/app-builder_$(OS_ARCH)/app-builder
 
-# see https://goreleaser.com/#installing-goreleaser
-# mac: brew install goreleaser
-# linux: snap install goreleaser
+
 build-all: assets
-	goreleaser --skip-validate --skip-sign --skip-publish --rm-dist --snapshot
+	./scripts/build.sh
 
 # brew install golangci/tap/golangci-lint && brew upgrade golangci/tap/golangci-lint
 lint:
@@ -43,7 +41,8 @@ assets:
 
 publish: build-all
 	make lint
-	./scripts/publish-npm.sh
+	ln -f readme.md readme.md
+	npm publish app-builder-bin
 
 update-deps:
 	GOPROXY=https://proxy.golang.org go get -u -d
