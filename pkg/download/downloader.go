@@ -109,6 +109,20 @@ func NewDownloaderWithTransport(transport *http.Transport) *Downloader {
 }
 
 func (t *Downloader) Download(url string, output string, sha512 string) error {
+	err := t.DownloadNoRetry(url, output, sha512)
+	if err != nil {
+		if t.Transport.TLSClientConfig != nil && t.Transport.TLSClientConfig.RootCAs != nil {
+			log.Warn("Failed to download using specified CAs, retrying with default System CAs only")
+			origRootCAs := t.Transport.TLSClientConfig.RootCAs
+			t.Transport.TLSClientConfig.RootCAs = nil
+			err = t.DownloadNoRetry(url, output, sha512)
+			t.Transport.TLSClientConfig.RootCAs = origRootCAs
+		}
+	}
+	return err
+}
+
+func (t *Downloader) DownloadNoRetry(url string, output string, sha512 string) error {
 	start := time.Now()
 
 	actualLocation, err := t.follow(url, getUserAgent(), output)
