@@ -41,7 +41,7 @@ assets:
 
 publish: build-all
 	make lint
-	ln -f readme.md readme.md
+	ln -f readme.md app-builder-bin/readme.md
 	npm publish app-builder-bin
 
 update-deps:
