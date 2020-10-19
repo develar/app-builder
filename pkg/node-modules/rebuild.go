@@ -1,6 +1,7 @@
 package node_modules
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -371,8 +372,12 @@ func computeExecPath(configuration *RebuildConfiguration) (string, []string, boo
 			execPath = "npm" + suffix
 		}
 	} else {
-		execArgs = append(execArgs, execPath)
-		execPath = getNodeExec(configuration)
+		// Wrap with `node` interpreter if needed
+		isJs, _ := isJavascriptFile(execPath)
+		if isJs {
+			execArgs = append(execArgs, execPath)
+			execPath = getNodeExec(configuration)
+		}
 	}
 
 	return execPath, execArgs, isRunningYarn
@@ -391,4 +396,66 @@ func getNodeExec(configuration *RebuildConfiguration) string {
 		}
 	}
 	return execPath
+}
+
+// Efficiently reads first few bytes from the given file in order to extract
+// the hashbang interpreter it's used
+func readHashBang(path string) (string, error) {
+	r, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	
+	defer r.Close()
+	
+	var header [128]byte
+	bytesRead, err := io.ReadFull(r, header[:])
+	if err != nil {
+		return "", err
+	}
+
+	if header[0] == '#' && header[1] == '!' {
+		str := string(header[:bytesRead])
+		end := strings.IndexAny(str, "\r\n\t ")
+		if end == -1 {
+			end = len(str)
+		}
+		return str[0:end], nil
+		} else {
+		return "", nil
+	}
+}
+
+func isJavascriptFile(path string) (bool, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	// Resolve path if this is a link
+	if info.Mode() & os.ModeSymlink != 0 {
+		linkPath, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			return false, err
+		}
+		path = linkPath
+	}
+
+	// Check if this is a '.js' file, in which case
+	// we should return `true` without further considerations
+	if strings.HasSuffix(strings.ToLower(path), ".js") {
+		return true, nil
+	}
+
+	// Otherwise read the hashbang contents and return true
+	// only if the target uses node interpreter
+	interpreter, err := readHashBang(path)
+	if err != nil {
+		return false, err
+	}
+	if strings.HasSuffix(interpreter, "node") {
+		return true, nil
+	}
+
+	return false, nil
 }
