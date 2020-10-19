@@ -409,8 +409,6 @@ func getNodeExec(configuration *RebuildConfiguration) string {
 // Efficiently reads first few bytes from the given file in order to extract
 // the hashbang interpreter it's used
 func readHashBang(path string) (string, error) {
-	logger := log.LOG.With(zap.String("place", "readHashbang"))
-
 	r, err := os.Open(path)
 	if err != nil {
 		return "", err
@@ -423,8 +421,6 @@ func readHashBang(path string) (string, error) {
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return "", err
 	}
-
-	logger.Info(fmt.Sprintf("header=%s, n=%d\n", string(header[:]), bytesRead))
 
 	if header[0] == '#' && header[1] == '!' {
 		str := string(header[2:bytesRead])
@@ -439,7 +435,6 @@ func readHashBang(path string) (string, error) {
 }
 
 func isJavascriptFile(path string) (bool, error) {
-	logger := log.LOG.With(zap.String("place", "isJavascriptFile"))
 	info, err := os.Stat(path)
 	if err != nil {
 		return false, fmt.Errorf("Could not get info of %s: %w", path, err)
@@ -457,14 +452,12 @@ func isJavascriptFile(path string) (bool, error) {
 	// Check if this is a '.js' file, in which case
 	// we should return `true` without further considerations
 	if strings.HasSuffix(strings.ToLower(path), ".js") {
-		logger.Info(fmt.Sprintf("has suffix=%s\n", path))
 		return true, nil
 	}
 
 	// Otherwise read the hashbang contents and return true
 	// only if the target uses node interpreter
 	interpreter, err := readHashBang(path)
-	logger.Info(fmt.Sprintf("interpreter=%s", interpreter))
 	if err != nil {
 		return false, fmt.Errorf("Could not read hash bang of %s: %w", path, err)
 	}
