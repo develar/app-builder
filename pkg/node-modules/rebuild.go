@@ -1,6 +1,8 @@
 package node_modules
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -96,7 +98,10 @@ func rebuild(configuration *RebuildConfiguration) error {
 		return nil
 	}
 
-	execPath, execArgs, isRunningYarn := computeExecPath(configuration)
+	execPath, execArgs, isRunningYarn, err := computeExecPath(configuration)
+	if err != nil {
+		return fmt.Errorf("Could not compute exec path: %w", err)
+	}
 	if isRunningYarn {
 		err := rebuildUsingYarn(dependencies, execPath, execArgs, configuration)
 		if err != nil {
@@ -338,7 +343,7 @@ func computeNativeDependenciesFromNameList(dirInfo *DependencyList) ([]*DepInfo,
 	return nativeDependencies, nil
 }
 
-func computeExecPath(configuration *RebuildConfiguration) (string, []string, bool) {
+func computeExecPath(configuration *RebuildConfiguration) (string, []string, bool, error) {
 	//noinspection SpellCheckingInspection
 	execPath := os.Getenv("npm_execpath")
 	if execPath == "" {
@@ -373,14 +378,17 @@ func computeExecPath(configuration *RebuildConfiguration) (string, []string, boo
 		}
 	} else {
 		// Wrap with `node` interpreter if needed
-		isJs, _ := isJavascriptFile(execPath)
+		isJs, err := isJavascriptFile(execPath)
+		if err != nil {
+			return execPath, execArgs, isRunningYarn, err
+		}
 		if isJs {
 			execArgs = append(execArgs, execPath)
 			execPath = getNodeExec(configuration)
 		}
 	}
 
-	return execPath, execArgs, isRunningYarn
+	return execPath, execArgs, isRunningYarn, nil
 }
 
 func getNodeExec(configuration *RebuildConfiguration) string {
@@ -410,12 +418,12 @@ func readHashBang(path string) (string, error) {
 	
 	var header [128]byte
 	bytesRead, err := io.ReadFull(r, header[:])
-	if err != nil {
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {
 		return "", err
 	}
 
 	if header[0] == '#' && header[1] == '!' {
-		str := string(header[:bytesRead])
+		str := string(header[2:bytesRead])
 		end := strings.IndexAny(str, "\r\n\t ")
 		if end == -1 {
 			end = len(str)
@@ -429,14 +437,14 @@ func readHashBang(path string) (string, error) {
 func isJavascriptFile(path string) (bool, error) {
 	info, err := os.Stat(path)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("Could not get info of %s: %w", path, err)
 	}
 
 	// Resolve path if this is a link
 	if info.Mode() & os.ModeSymlink != 0 {
 		linkPath, err := filepath.EvalSymlinks(path)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("Could not read link of %s: %w", path, err)
 		}
 		path = linkPath
 	}
@@ -451,7 +459,7 @@ func isJavascriptFile(path string) (bool, error) {
 	// only if the target uses node interpreter
 	interpreter, err := readHashBang(path)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("Could not read hash bang of %s: %w", path, err)
 	}
 	if strings.HasSuffix(interpreter, "node") {
 		return true, nil
