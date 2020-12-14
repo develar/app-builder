@@ -1,6 +1,7 @@
 package snap
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -329,7 +330,9 @@ func buildWithoutTemplate(options SnapOptions, scriptDir string) error {
 	var args []string
 	args = append(args, "snap", "--output", snapEffectiveOutput)
 	if len(*options.arch) != 0 {
-		args = append(args, "--target-arch", *options.arch)
+		if *options.arch != runtime.GOARCH {
+			return fmt.Errorf("snapcraft does not currently support building %s on %s", *options.arch, runtime.GOARCH)
+		}
 	}
 
 	if isDestructiveMode {
