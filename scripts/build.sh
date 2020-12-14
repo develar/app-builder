@@ -23,7 +23,9 @@ mkdir -p linux/arm64
 GOOS=linux GOARCH=arm64 go build -ldflags='-s -w' -o linux/arm64/app-builder ..
 
 mkdir -p win/ia32
+# set GOARCH=386
 GOOS=windows GOARCH=386 go build -o win/ia32/app-builder.exe ..
 
 mkdir -p win/x64
-GOOS=windows GOARCH=amd64 go build -ldflags='-s -w' -o win/x64/app-builder.exe ..
+# set GOARCH=amd64
+GOOS=windows GOARCH=amd64 go build -o win/x64/app-builder.exe ..
