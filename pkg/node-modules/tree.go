@@ -140,6 +140,18 @@ func writeDependencyList(jsonWriter *jsoniter.Stream, dependencyMap *map[string]
 			}
 		}
 
+		if info.Binary != nil {
+			jsonWriter.WriteMore()
+			jsonWriter.WriteObjectField("napiVersions")
+			jsonWriter.WriteArrayStart()
+
+			for _, v := range info.Binary.NapiVersions {
+				jsonWriter.WriteUint(v)
+			}
+
+			jsonWriter.WriteArrayEnd()
+		}
+
 		jsonWriter.WriteObjectEnd()
 	}
 	jsonWriter.WriteArrayEnd()
