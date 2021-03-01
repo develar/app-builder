@@ -45,5 +45,5 @@ publish:
 	npm publish app-builder-bin
 
 update-deps:
-	GOPROXY=https://proxy.golang.org go get -u -d
+	go get -u -d
 	go mod tidy

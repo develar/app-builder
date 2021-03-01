@@ -1,7 +1,6 @@
 linters:
   enable:
 #    - bodyclose
-    - gocritic
     - gocyclo
     - maligned
 #    - prealloc
