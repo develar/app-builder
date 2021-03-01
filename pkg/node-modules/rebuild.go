@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/alecthomas/kingpin"
@@ -39,6 +40,7 @@ type DepInfo struct {
 	Version  string `json:"version"`
 	Optional bool   `json:"optional"`
 	HasPrebuildInstall bool   `json:"hasPrebuildInstall"`
+	NapiVersions []uint `json:"napiVersions"`
 
 	parentDir string
 	dir string
@@ -193,7 +195,7 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 		}
 
 		return func() error {
-			logger := log.LOG.With(zap.String("name", dependency.Name), zap.String("version", dependency.Version), zap.String("platform", configuration.Platform), zap.String("arch", configuration.Arch),)
+			logger := log.LOG.With(zap.String("name", dependency.Name), zap.String("version", dependency.Version), zap.String("platform", configuration.Platform), zap.String("arch", configuration.Arch), zap.Uints("napi", dependency.NapiVersions),)
 			logger.Info("install prebuilt binary")
 
 			parentDir := dependency.parentDir
@@ -257,14 +259,27 @@ func installUsingPrebuild(dependencies []*DepInfo, configuration *RebuildConfigu
 }
 
 func createPrebuildInstallCommand(bin string, extraFlag string, dependency *DepInfo, configuration *RebuildConfiguration) *exec.Cmd {
-	args := []string{
-		bin,
-		"--platform="+configuration.Platform,
-		"--arch="+configuration.Arch,
-		"--target="+os.Getenv("npm_config_target"),
-		"--runtime="+os.Getenv("npm_config_runtime"),
-		"--verbose",
-		extraFlag,
+	var args []string
+	if len(dependency.NapiVersions) > 0 {
+		args = []string{
+			bin,
+			"--platform=" + configuration.Platform,
+			"--arch=" + configuration.Arch,
+			"--target=" + strconv.FormatUint(uint64(dependency.NapiVersions[0]), 10),
+			"--runtime=napi",
+			"--verbose",
+			extraFlag,
+		}
+	} else {
+		args = []string{
+			bin,
+			"--platform=" + configuration.Platform,
+			"--arch=" + configuration.Arch,
+			"--target=" + os.Getenv("npm_config_target"),
+			"--runtime=" + os.Getenv("npm_config_runtime"),
+			"--verbose",
+			extraFlag,
+		}
 	}
 	command := exec.Command(getNodeExec(configuration), args...)
 	command.Dir = dependency.dir
@@ -413,9 +428,9 @@ func readHashBang(path string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	
+
 	defer r.Close()
-	
+
 	var header [128]byte
 	bytesRead, err := io.ReadFull(r, header[:])
 	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) {

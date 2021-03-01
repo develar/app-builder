@@ -12,11 +12,16 @@ import (
 	"go.uber.org/zap"
 )
 
+type DependencyBinary struct {
+	NapiVersions []uint `json:"napi_versions"`
+}
+
 type Dependency struct {
 	Name                 string            `json:"name"`
 	Version              string            `json:"version"`
 	Dependencies         map[string]string `json:"dependencies"`
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
+	Binary*              DependencyBinary  `json:"binary`
 
 	dir string
 	isOptional int
