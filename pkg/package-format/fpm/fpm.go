@@ -20,6 +20,7 @@ type FpmConfiguration struct {
 	Compression string `json:"compression"`
 
 	CustomDepends []string `json:"customDepends"`
+	CustomRecommends []string `json:"customRecommends"`
 }
 
 func ConfigureCommand(app *kingpin.Application) {
@@ -55,6 +56,7 @@ func ConfigureCommand(app *kingpin.Application) {
 			args = append(args, "--log", "debug")
 		}
 		args = configureDependencies(&configuration, target, args)
+		args = configureRecommendations(&configuration, target, args)
 
 		compression := "xz"
 		if len(configuration.Compression) != 0 {
@@ -125,13 +127,25 @@ func configureDependencies(configuration *FpmConfiguration, target string, args 
 	return args
 }
 
+func configureRecommendations(configuration *FpmConfiguration, target string, args []string) []string {
+	if target == "deb" {
+		recommends := configuration.CustomRecommends
+		if len(recommends) == 0 {
+			recommends = getDefaultRecommends(target)
+		}
+		for _, value := range recommends {
+			args = append(args, "--deb-recommends", value)
+		}
+	}
+	return args
+}
+
 //noinspection SpellCheckingInspection
 func getDefaultDepends(target string) []string {
 	switch target {
 	case "deb":
 		return []string{
-			"libgtk-3-0", "libnotify4", "libnss3", "libxss1", "libxtst6", "xdg-utils", "libatspi2.0-0", "libuuid1", "libappindicator3-1",
-			"libsecret-1-0",
+			"libgtk-3-0", "libnotify4", "libnss3", "libxss1", "libxtst6", "xdg-utils", "libatspi2.0-0", "libuuid1", "libsecret-1-0",
 		}
 
 	case "rpm":
@@ -144,6 +158,18 @@ func getDefaultDepends(target string) []string {
 
 	case "pacman":
 		return []string{"c-ares", "ffmpeg", "gtk3", "http-parser", "libevent", "libvpx", "libxslt", "libxss", "minizip", "nss", "re2", "snappy", "libnotify", "libappindicator-gtk3"}
+
+	default:
+		return nil
+	}
+}
+
+func getDefaultRecommends(target string) []string {
+	switch target {
+	case "deb":
+		return []string{
+			"libappindicator3-1",
+		}
 
 	default:
 		return nil
