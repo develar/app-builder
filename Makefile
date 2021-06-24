@@ -15,7 +15,7 @@ else
 		OS_ARCH := linux_amd64
 	endif
 	ifeq ($(UNAME_S),Darwin)
-		OS_ARCH := darwin_amd64
+		OS_ARCH := darwin_$(shell uname -m)
 	endif
 endif
 

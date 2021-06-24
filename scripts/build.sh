@@ -8,7 +8,9 @@ rm -rf mac
 rm -rf linux
 
 mkdir mac
-GOOS=darwin GOARCH=amd64 go build -ldflags='-s -w' -o mac/app-builder ..
+GOOS=darwin GOARCH=amd64 go build -ldflags='-s -w' -o mac/app-builder_amd64 ..
+GOOS=darwin GOARCH=arm64 go build -ldflags='-s -w' -o mac/app-builder_arm64 ..
+ln -s app-builder_amd64 mac/app-builder
 
 mkdir -p linux/ia32
 GOOS=linux GOARCH=386 go build -ldflags='-s -w' -o linux/ia32/app-builder ..

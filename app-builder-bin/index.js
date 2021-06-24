@@ -9,7 +9,7 @@ function getPath() {
 
   const platform = process.platform;
   if (platform === "darwin") {
-    return path.join(__dirname, "mac", "app-builder")
+    return path.join(__dirname, "mac", `app-builder_${process.arch}`)
   }
   else if (platform === "win32" && process.arch == "arm64") {
     /**
