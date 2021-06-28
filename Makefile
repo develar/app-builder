@@ -24,7 +24,6 @@ endif
 build: assets
 	go build -ldflags='-s -w' -o dist/app-builder_$(OS_ARCH)/app-builder
 
-
 build-all: assets
 	./scripts/build.sh
 
