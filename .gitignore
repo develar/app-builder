@@ -4,7 +4,7 @@ dist/
 vendor/
 
 app-builder-bin/readme.md
-app-builder-bin/**/app-builder
+app-builder-bin/**/app-builder*
 app-builder-bin/win/**/app-builder.exe
 
 /.idea/shelf/
