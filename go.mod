@@ -6,7 +6,7 @@ require (
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
 	github.com/alecthomas/units v0.0.0-20210208195552-ff826a37aa15 // indirect
 	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053 // indirect
-	github.com/aws/aws-sdk-go v1.37.20
+	github.com/aws/aws-sdk-go v1.38.68
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/develar/errors v0.9.0
@@ -14,12 +14,11 @@ require (
 	github.com/develar/go-pkcs12 v0.0.0-20181115143544-54baa4f32c6a
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.0
-	github.com/go-bindata/go-bindata v3.1.2+incompatible // indirect
 	github.com/golang/protobuf v1.3.2 // indirect
-	github.com/json-iterator/go v1.1.10
+	github.com/json-iterator/go v1.1.11
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
 	github.com/mattn/go-colorable v0.1.8
-	github.com/mattn/go-isatty v0.0.12
+	github.com/mattn/go-isatty v0.0.13
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/mitchellh/go-homedir v1.1.0
@@ -32,16 +31,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/pkg/xattr v0.4.3
 	github.com/segmentio/ksuid v1.0.3
-	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/zieckey/goini v0.0.0-20180118150432-0da17d361d26
-	go.uber.org/multierr v1.6.0 // indirect
-	go.uber.org/zap v1.16.0
-	golang.org/x/image v0.0.0-20210220032944-ac19c3e999fb // indirect
-	golang.org/x/lint v0.0.0-20200302205851-738671d3881b // indirect
-	golang.org/x/sys v0.0.0-20210301091718-77cc2087c03b // indirect
-	golang.org/x/tools v0.0.0-20200331202046-9d5940d49312 // indirect
+	go.uber.org/atomic v1.8.0 // indirect
+	go.uber.org/multierr v1.7.0 // indirect
+	go.uber.org/zap v1.17.0
+	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
+	golang.org/x/sys v0.0.0-20210616094352-59db8d763f22 // indirect
 	gopkg.in/alessio/shellescape.v1 v1.0.0-20170105083845-52074bc9df61
-	honnef.co/go/tools v0.0.1-2020.1.3 // indirect
 	howett.net/plist v0.0.0-20201203080718-1454fab16a06
 )
 
