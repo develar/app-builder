@@ -152,7 +152,7 @@ func (t *Downloader) DownloadResolved(location *ActualLocation, sha512 string, u
 	err = util.MapAsyncConcurrency(len(location.Parts), getMaxPartCount(), func(index int) (func() error, error) {
 		part := location.Parts[index]
 		return func() error {
-			err := part.download(downloadContext, location.Url, index, t.client)
+			err = part.download(downloadContext, location.Url, index, t.client)
 			if err != nil {
 				part.isFail = true
 				log.Debug("part download error", zap.Int("id", index), zap.Error(err))

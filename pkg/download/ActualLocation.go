@@ -14,7 +14,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// ActualLocation represents server's status 200 or 206 response meta data. It never holds redirect responses
+// ActualLocation represents server's status 200 or 206 response metadata. It never holds redirect responses
 type ActualLocation struct {
 	Url            string
 	OutFileName    string
@@ -34,8 +34,16 @@ func NewResolvedLocation(url string, contentLength int64, outFileName string, is
 }
 
 func (actualLocation *ActualLocation) computeParts(minPartSize int64) {
-	if actualLocation.ContentLength < 0 {
+	downloadAsOnePart := false
+	if util.IsEnvTrue("DISABLE_MULTIPART_DOWNLOADING") {
+		log.Debug("DISABLE_MULTIPART_DOWNLOADING is set to true, will be downloaded as one part", zap.Int64("length", actualLocation.ContentLength))
+		downloadAsOnePart = true
+	} else if actualLocation.ContentLength < 0 {
 		log.Warn("invalid content length, will be downloaded as one part", zap.Int64("length", actualLocation.ContentLength))
+		downloadAsOnePart = true
+	}
+	
+	if downloadAsOnePart {
 		actualLocation.Parts = make([]*Part, 1)
 		actualLocation.Parts[0] = &Part{
 			Name:  actualLocation.OutFileName,
