@@ -63,7 +63,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		executableName:   command.Flag("executable", "The executable file name to create command wrapper.").String(),
 		extraAppArgs:     command.Flag("extraAppArgs", "The extra app launch arguments").String(),
 		excludedAppFiles: command.Flag("exclude", "The excluded app files.").Strings(),
-		compression:      command.Flag("compression", "The compression type when using template. Defaults to xz.").
+		compression:      command.Flag("compression", "The compression type when building from template.").
 			Short('c').Default("xz").Enum("xz", "lzo"),
 
 		arch: command.Flag("arch", "The arch.").Default("amd64").String(),
