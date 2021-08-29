@@ -2,9 +2,7 @@ linters:
   enable:
 #    - bodyclose
     - gocyclo
-    - maligned
 #    - prealloc
-    - scopelint
     - unconvert
     - unparam
   disable:
