@@ -42,6 +42,8 @@ type SnapOptions struct {
 
 	arch   *string
 	output *string
+
+	compression *string
 }
 
 func ConfigureCommand(app *kingpin.Application) {
@@ -61,6 +63,8 @@ func ConfigureCommand(app *kingpin.Application) {
 		executableName:   command.Flag("executable", "The executable file name to create command wrapper.").String(),
 		extraAppArgs:     command.Flag("extraAppArgs", "The extra app launch arguments").String(),
 		excludedAppFiles: command.Flag("exclude", "The excluded app files.").Strings(),
+		compression:      command.Flag("compression", "The compression type when using template. Defaults to xz.").
+			Short('c').Default("xz").Enum("xz", "lzo"),
 
 		arch: command.Flag("arch", "The arch.").Default("amd64").String(),
 
@@ -285,7 +289,7 @@ func buildUsingTemplate(templateDir string, options SnapOptions) error {
 		return errors.WithStack(err)
 	}
 
-	args = append(args, *options.output, "-no-progress", "-quiet", "-noappend", "-comp", "xz", "-no-xattrs", "-no-fragments", "-all-root")
+	args = append(args, *options.output, "-no-progress", "-quiet", "-noappend", "-comp", *options.compression, "-no-xattrs", "-no-fragments", "-all-root")
 
 	_, err = util.Execute(exec.Command(mksquashfsPath, args...))
 	if err != nil {
