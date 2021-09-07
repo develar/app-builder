@@ -442,6 +442,8 @@ func readHashBang(path string) (string, error) {
 		end := strings.IndexAny(str, "\r\n\t ")
 		if end == -1 {
 			end = len(str)
+		} else if str[0:end] == "/usr/bin/env" {
+			end = strings.IndexAny(str, "\r\n\t")
 		}
 		return str[0:end], nil
 		} else {
