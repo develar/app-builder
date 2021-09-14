@@ -41,7 +41,7 @@ assets:
 publish:
 	#make lint
 	ln -f readme.md app-builder-bin/readme.md
-	npm publish app-builder-bin
+	pnpm publish app-builder-bin
 
 update-deps:
 	go get -u -d
