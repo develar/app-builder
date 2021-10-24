@@ -118,30 +118,38 @@ func writeUserError(error util.MessageError) error {
 	return util.WriteJsonToStdOut(MisConfigurationError{Message: error.Error(), Code: error.ErrorCode()})
 }
 
-func validateImageSize(file string, recommendedMinSize int) error {
+func validateImageSize(file string, recommendedMinSize int) (int, error) {
 	firstFileBytes, err := fs.ReadFile(file, 512)
 	if err != nil {
-		return errors.WithStack(err)
+		return 0, errors.WithStack(err)
 	}
 
 	if IsIco(firstFileBytes) {
 		for _, size := range GetIcoSizes(firstFileBytes) {
 			if size.Width >= recommendedMinSize && size.Height >= recommendedMinSize {
-				return nil
+				if size.Width > size.Height {
+					return size.Width, nil
+				} else {
+					return size.Height, nil
+				}
 			}
 		}
 	} else {
 		config, err := DecodeImageConfig(file)
 		if err != nil {
-			return errors.WithStack(err)
+			return 0, errors.WithStack(err)
 		}
 
 		if config.Width >= recommendedMinSize && config.Height >= recommendedMinSize {
-			return nil
+			if config.Width > config.Height {
+				return config.Width, nil
+			} else {
+				return config.Height, nil
+			}
 		}
 	}
 
-	return NewImageSizeError(file, recommendedMinSize)
+	return 0, NewImageSizeError(file, recommendedMinSize)
 }
 
 func outputFormatToSingleFileExtension(outputFormat string) string {
@@ -177,14 +185,14 @@ func doConvertIcon(sourceFiles []string, roots []string, outputFormat string, ou
 	isOutputFormatIco := outputFormat == "ico"
 	if strings.HasSuffix(resolvedPath, outExt) {
 		if outputFormat != "icns" {
-			err = validateImageSize(resolvedPath, inputInfo.recommendedMinSize)
+			inputInfo.MaxIconSize, err = validateImageSize(resolvedPath, inputInfo.recommendedMinSize)
 			if err != nil {
 				return nil, errors.WithStack(err)
 			}
 		}
 
 		// size not required in this case
-		return []IconInfo{{File: resolvedPath}}, nil
+		return []IconInfo{{File: resolvedPath, Size: inputInfo.MaxIconSize}}, nil
 	}
 
 	if fileInfo.IsDir() {
@@ -287,7 +295,7 @@ func convertSingleFile(inputInfo *InputFileInfo, outFile string, outputFormat st
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		return []IconInfo{{File: outFile}}, err
+		return []IconInfo{{File: outFile, Size: inputInfo.MaxIconSize}}, err
 
 	case "ico":
 		maxImage, err := inputInfo.GetMaxImage()
@@ -299,7 +307,7 @@ func convertSingleFile(inputInfo *InputFileInfo, outFile string, outputFormat st
 		if err != nil {
 			return nil, errors.WithStack(err)
 		}
-		return []IconInfo{{File: outFile}}, nil
+		return []IconInfo{{File: outFile, Size: inputInfo.MaxIconSize}}, nil
 
 	default:
 		return nil, errors.Errorf("unknown output format %s", outputFormat)
