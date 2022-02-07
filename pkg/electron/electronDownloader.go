@@ -10,8 +10,8 @@ import (
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	"github.com/develar/go-fs-util"
-	"github.com/json-iterator/go"
+	fsutil "github.com/develar/go-fs-util"
+	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -95,12 +95,24 @@ func getBaseUrl(config *ElectronDownloadOptions) string {
 	}
 	if len(v) == 0 {
 		if strings.Contains(config.Version, "-nightly.") {
-			return "https://github.com/electron/nightlies/releases/download/v"
+			v = "https://github.com/electron/nightlies/releases/download/"
 		} else {
-			return "https://github.com/electron/electron/releases/download/v"
+			v = "https://github.com/electron/electron/releases/download/"
 		}
 	}
+	// Compatibility with previous code caused user who need to set mirror with a suffix `/v`
+	if strings.HasSuffix(v, "/v") {
+		v = v[:len(v)-1]
+	}
 	return v
+}
+
+func getVersionWithPrefixV(version string) string {
+	tmp := version
+	if !strings.HasPrefix(tmp, "v") {
+		tmp = "v" + tmp
+	}
+	return tmp
 }
 
 func getMiddleUrl(config *ElectronDownloadOptions) string {
@@ -109,7 +121,7 @@ func getMiddleUrl(config *ElectronDownloadOptions) string {
 		v = config.CustomDir
 	}
 	if len(v) == 0 {
-		v = config.Version
+		v = getVersionWithPrefixV(config.Version)
 	}
 	return v
 }
@@ -126,7 +138,7 @@ func getUrlSuffix(config *ElectronDownloadOptions) string {
 }
 
 func getFilename(config *ElectronDownloadOptions) string {
-	return "electron-v" + config.Version + "-" + config.Platform + "-" + config.Arch + ".zip"
+	return "electron-" + getVersionWithPrefixV(config.Version) + "-" + config.Platform + "-" + config.Arch + ".zip"
 }
 
 type ElectronDownloader struct {
