@@ -10,8 +10,8 @@ import (
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	fsutil "github.com/develar/go-fs-util"
-	jsoniter "github.com/json-iterator/go"
+	"github.com/develar/go-fs-util"
+	"github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -107,12 +107,11 @@ func getBaseUrl(config *ElectronDownloadOptions) string {
 	return v
 }
 
-func getVersionWithPrefixV(version string) string {
-	tmp := version
-	if !strings.HasPrefix(tmp, "v") {
-		tmp = "v" + tmp
+func normalizeVersion(version string) string {
+	if strings.HasPrefix(version, "v") {
+		return version
 	}
-	return tmp
+	return "v" + version
 }
 
 func getMiddleUrl(config *ElectronDownloadOptions) string {
@@ -121,7 +120,7 @@ func getMiddleUrl(config *ElectronDownloadOptions) string {
 		v = config.CustomDir
 	}
 	if len(v) == 0 {
-		v = getVersionWithPrefixV(config.Version)
+		v = normalizeVersion(config.Version)
 	}
 	return v
 }
@@ -138,7 +137,7 @@ func getUrlSuffix(config *ElectronDownloadOptions) string {
 }
 
 func getFilename(config *ElectronDownloadOptions) string {
-	return "electron-" + getVersionWithPrefixV(config.Version) + "-" + config.Platform + "-" + config.Arch + ".zip"
+	return "electron-" + normalizeVersion(config.Version) + "-" + config.Platform + "-" + config.Arch + ".zip"
 }
 
 type ElectronDownloader struct {
