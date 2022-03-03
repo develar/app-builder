@@ -6,9 +6,9 @@ require (
 	github.com/aclements/go-rabin v0.0.0-20170911142644-d0b643ea1a4c
 	github.com/alecthomas/kingpin v2.2.6+incompatible
 	github.com/alecthomas/template v0.0.0-20190718012654-fb15b899a751 // indirect
-	github.com/alecthomas/units v0.0.0-20210912230133-d1bdfacee922 // indirect
+	github.com/alecthomas/units v0.0.0-20211218093645-b94a6e3cc137 // indirect
 	github.com/alessio/shellescape v0.0.0-20190409004728-b115ca0f9053 // indirect
-	github.com/aws/aws-sdk-go v1.40.42
+	github.com/aws/aws-sdk-go v1.43.10
 	github.com/biessek/golang-ico v0.0.0-20180326222316-d348d9ea4670
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/develar/errors v0.9.0
@@ -19,7 +19,7 @@ require (
 	github.com/golang/protobuf v1.3.2 // indirect
 	github.com/json-iterator/go v1.1.12
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
-	github.com/mattn/go-colorable v0.1.8
+	github.com/mattn/go-colorable v0.1.12
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mcuadros/go-version v0.0.0-20190830083331-035f6764e8d2
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
@@ -31,23 +31,23 @@ require (
 	github.com/oxtoacart/bpool v0.0.0-20190530202638-03653db5a59c
 	github.com/phayes/permbits v0.0.0-20190612203442-39d7c581d2ee
 	github.com/pkg/errors v0.9.1
-	github.com/pkg/xattr v0.4.3
+	github.com/pkg/xattr v0.4.5
 	github.com/segmentio/ksuid v1.0.4
 	github.com/zieckey/goini v0.0.0-20180118150432-0da17d361d26
 	go.uber.org/atomic v1.9.0 // indirect
-	go.uber.org/multierr v1.7.0 // indirect
-	go.uber.org/zap v1.19.1
-	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
-	golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c // indirect
+	go.uber.org/multierr v1.8.0 // indirect
+	go.uber.org/zap v1.21.0
+	golang.org/x/image v0.0.0-20220302094943-723b81ca9867 // indirect
+	golang.org/x/sys v0.0.0-20220227234510-4e6760a101f9 // indirect
 	gopkg.in/alessio/shellescape.v1 v1.0.0-20170105083845-52074bc9df61
-	howett.net/plist v0.0.0-20201203080718-1454fab16a06
+	howett.net/plist v1.0.0
 )
 
 require (
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
-	golang.org/x/net v0.0.0-20210614182718-04defd469f4e // indirect
-	golang.org/x/text v0.3.6 // indirect
+	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
