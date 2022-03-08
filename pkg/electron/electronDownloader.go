@@ -97,7 +97,7 @@ func getBaseUrl(config *ElectronDownloadOptions) string {
 		if strings.Contains(config.Version, "-nightly.") {
 			return "https://github.com/electron/nightlies/releases/download/v"
 		} else {
-			return "https://github.com/electron/electron/releases/download/v"
+			return "https://github.com/electron/electron/releases/tag/v"
 		}
 	}
 	return v
