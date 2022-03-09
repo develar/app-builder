@@ -95,12 +95,23 @@ func getBaseUrl(config *ElectronDownloadOptions) string {
 	}
 	if len(v) == 0 {
 		if strings.Contains(config.Version, "-nightly.") {
-			return "https://github.com/electron/nightlies/releases/download/v"
+			v = "https://github.com/electron/nightlies/releases/download/"
 		} else {
-			return "https://github.com/electron/electron/releases/download/v"
+			v = "https://github.com/electron/electron/releases/download/"
 		}
 	}
+	// Compatibility with previous code caused user who need to set mirror with a suffix `/v`
+	if strings.HasSuffix(v, "/v") {
+		v = v[:len(v)-1]
+	}
 	return v
+}
+
+func normalizeVersion(version string) string {
+	if strings.HasPrefix(version, "v") {
+		return version
+	}
+	return "v" + version
 }
 
 func getMiddleUrl(config *ElectronDownloadOptions) string {
@@ -109,7 +120,7 @@ func getMiddleUrl(config *ElectronDownloadOptions) string {
 		v = config.CustomDir
 	}
 	if len(v) == 0 {
-		v = config.Version
+		v = normalizeVersion(config.Version)
 	}
 	return v
 }
@@ -126,7 +137,7 @@ func getUrlSuffix(config *ElectronDownloadOptions) string {
 }
 
 func getFilename(config *ElectronDownloadOptions) string {
-	return "electron-v" + config.Version + "-" + config.Platform + "-" + config.Arch + ".zip"
+	return "electron-" + normalizeVersion(config.Version) + "-" + config.Platform + "-" + config.Arch + ".zip"
 }
 
 type ElectronDownloader struct {
