@@ -149,8 +149,8 @@ func doCheckSnapVersion(rawVersion string, installMessage string) error {
 	s = strings.TrimSpace(strings.TrimPrefix(s, ","))
 	s = strings.TrimSpace(strings.TrimPrefix(s, "version"))
 	s = strings.Trim(s, "'")
-	if version.Compare(s, "3.1.0", "<") {
-		return util.NewMessageError("at least snapcraft 3.1.0 is required, but "+rawVersion+" installed, please: "+installMessage, "ERR_SNAPCRAFT_OUTDATED")
+	if version.Compare(s, "4.0.0", "<") {
+		return util.NewMessageError("at least snapcraft 4.0.0 is required, but "+rawVersion+" installed, please: "+installMessage, "ERR_SNAPCRAFT_OUTDATED")
 	} else {
 		return nil
 	}

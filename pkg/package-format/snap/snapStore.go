@@ -20,7 +20,7 @@ func ConfigurePublishCommand(app *kingpin.Application) {
 }
 
 func publishToStore(file string, channels []string) error {
-	args := []string{"push", file}
+	args := []string{"upload", file}
 	if len(channels) != 0 {
 		args = append(args, "--release")
 		args = append(args, strings.Join(channels, ","))
