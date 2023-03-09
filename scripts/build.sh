@@ -19,6 +19,9 @@ GOOS=linux GOARCH=amd64 go build -ldflags='-s -w' -o linux/x64/app-builder
 mkdir -p linux/riscv64
 GOOS=linux GOARCH=riscv64 go build -ldflags='-s -w' -o linux/riscv64/app-builder
 
+mkdir -p linux/ppc64
+GOOS=linux GOARCH=ppc64 go build -ldflags='-s -w' -o linux/ppc64/app-builder
+
 mkdir -p linux/arm
 GOOS=linux GOARCH=arm go build -ldflags='-s -w' -o linux/arm/app-builder
 
