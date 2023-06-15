@@ -6,9 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/errors"
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
 )
 
@@ -21,9 +22,9 @@ type Dependency struct {
 	Version              string            `json:"version"`
 	Dependencies         map[string]string `json:"dependencies"`
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
-	Binary*              DependencyBinary  `json:"binary`
+	Binary               *DependencyBinary `json:"binary`
 
-	dir string
+	dir        string
 	isOptional int
 }
 
@@ -188,7 +189,11 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 		}
 	}
 
-	dependencyDir := filepath.Join(parentNodeModuleDir, name)
+	realParentNodeModuleDir := fs.FindParent(parentNodeModuleDir, func(dir string) bool { return fs.PathExists(filepath.Join(dir, name)) })
+	if realParentNodeModuleDir == "" {
+		return nil, nil
+	}
+	dependencyDir := filepath.Join(realParentNodeModuleDir, name)
 	dependency, err := readPackageJson(dependencyDir)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -219,6 +224,12 @@ func findNearestNodeModuleDir(dir string) (string, error) {
 	if len(dir) == 0 {
 		return "", nil
 	}
+
+	realDir, err := filepath.EvalSymlinks(dir)
+	if err != nil {
+		return "", errors.WithStack(err)
+	}
+	dir = realDir
 
 	guardCount := 0
 	for {
