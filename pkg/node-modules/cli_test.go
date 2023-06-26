@@ -23,22 +23,16 @@ type NodeTreeItem struct {
 }
 
 func nodeDepTree(t *testing.T, dir string) {
-
 	g := NewGomegaWithT(t)
-
-	rootPath := fs.FindParent(fs.Dirname(), func(dir string) bool { return fs.PathExists(path.Join(dir, "go.mod")) })
-
+	rootPath := fs.FindParentWithFile(Dirname(), "go.mod")
 	cmd := exec.Command("go", "run", path.Join(rootPath, "main.go"), "node-dep-tree", "--dir", dir)
-
 	output, err := cmd.Output()
 	if err != nil {
 		fmt.Println("err", err)
 	}
 	g.Expect(err).NotTo(HaveOccurred())
-
 	var j []NodeTreeItem
 	json.Unmarshal(output, &j)
-
 	r := lo.FlatMap(j, func(it NodeTreeItem, i int) []string {
 		return lo.Map(it.Deps, func(it NodeTreeDepItem, i int) string {
 			return it.Name
@@ -50,6 +44,6 @@ func nodeDepTree(t *testing.T, dir string) {
 }
 
 func TestNodeDepTreeCmd(t *testing.T) {
-	nodeDepTree(t, path.Join(fs.Dirname(), "npm-demo"))
-	nodeDepTree(t, path.Join(fs.Dirname(), "pnpm-demo"))
+	nodeDepTree(t, path.Join(Dirname(), "npm-demo"))
+	nodeDepTree(t, path.Join(Dirname(), "pnpm-demo"))
 }

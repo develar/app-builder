@@ -1,20 +1,23 @@
 package fs
 
 import (
+	"os"
+	"path"
 	"path/filepath"
 )
 
-// Predicate is a function that takes a directory and returns a boolean.
-type Predicate func(dir string) bool
+func pathExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
 
-// FindParent recursively searches for a parent directory that satisfies the predicate.
-func FindParent(cwd string, predicate Predicate) string {
-	if predicate(cwd) {
+func FindParentWithFile(cwd string, file string) string {
+	if pathExists(path.Join(cwd, file)) {
 		return cwd
 	}
 	parent := filepath.Dir(cwd)
 	if parent == cwd {
 		return ""
 	}
-	return FindParent(parent, predicate)
+	return FindParentWithFile(parent, file)
 }

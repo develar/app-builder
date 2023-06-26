@@ -1,4 +1,4 @@
-package fs
+package node_modules
 
 import (
 	"path"

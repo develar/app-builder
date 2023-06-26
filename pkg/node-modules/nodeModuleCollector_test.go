@@ -4,7 +4,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/develar/app-builder/pkg/fs"
 	. "github.com/onsi/gomega"
 	"github.com/samber/lo"
 )
@@ -18,7 +17,7 @@ func TestReadDependencyTreeByNpm(t *testing.T) {
 		NodeModuleDirToDependencyMap: make(map[string]*map[string]*Dependency),
 	}
 
-	dir := path.Join(fs.Dirname(), "npm-demo")
+	dir := path.Join(Dirname(), "npm-demo")
 
 	dependency, err := readPackageJson(dir)
 	dependency.dir = dir
@@ -43,7 +42,7 @@ func TestReadDependencyTreeByPnpm(t *testing.T) {
 		NodeModuleDirToDependencyMap: make(map[string]*map[string]*Dependency),
 	}
 
-	dir := path.Join(fs.Dirname(), "pnpm-demo")
+	dir := path.Join(Dirname(), "pnpm-demo")
 
 	dependency, err := readPackageJson(dir)
 	dependency.dir = dir

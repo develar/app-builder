@@ -189,7 +189,7 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 		}
 	}
 
-	realParentNodeModuleDir := fs.FindParent(parentNodeModuleDir, func(dir string) bool { return fs.PathExists(filepath.Join(dir, name)) })
+	realParentNodeModuleDir := fs.FindParentWithFile(parentNodeModuleDir, name)
 	if realParentNodeModuleDir == "" {
 		return nil, nil
 	}
