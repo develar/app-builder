@@ -12,7 +12,11 @@ ifeq ($(OS),Windows_NT)
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
-		OS_ARCH := linux_amd64
+		ifeq ($(UNAME_M),riscv64)
+			OS_ARCH := linux_riscv64
+		else
+			OS_ARCH := linux_amd64
+		endif
 	endif
 	ifeq ($(UNAME_S),Darwin)
 		OS_ARCH := darwin_$(shell uname -m)
