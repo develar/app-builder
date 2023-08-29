@@ -103,7 +103,9 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 		}
 
 		if childDependency == nil {
-			unresolved = append(unresolved, name)
+			if !t.hasResolvedDependency(nodeModuleDir, name){
+				unresolved = append(unresolved, name)
+			}
 		} else {
 			(*queue)[queueIndex] = childDependency
 			correctOptionalState(isOptional, childDependency)
@@ -146,7 +148,7 @@ func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir s
 			}
 
 			if childDependency == nil {
-				hasUnresolved = true
+				hasUnresolved = !t.hasResolvedDependency(nodeModuleDir, name)
 			} else {
 				(*queue)[queueIndex] = childDependency
 				correctOptionalState(isOptional, childDependency)
@@ -176,6 +178,17 @@ func correctOptionalState(isOptional bool, childDependency *Dependency) {
 	} else {
 		childDependency.isOptional = 2
 	}
+}
+
+func (t *Collector) hasResolvedDependency(parentNodeModuleDir string, name string) bool {
+	dependencyNameToDependency := t.NodeModuleDirToDependencyMap[parentNodeModuleDir]
+	if dependencyNameToDependency != nil {
+		dependency := (*dependencyNameToDependency)[name]
+		if dependency != nil {
+			return true
+		}
+	}
+	return false
 }
 
 // nil if already handled
