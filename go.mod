@@ -1,6 +1,6 @@
 module github.com/develar/app-builder
 
-go 1.17
+go 1.18
 
 require (
 	github.com/aclements/go-rabin v0.0.0-20170911142644-d0b643ea1a4c
@@ -46,11 +46,14 @@ require (
 require (
 	github.com/hpcloud/tail v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/samber/lo v1.38.1
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
+
+require golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 
 //replace github.com/develar/go-pkcs12 => ../go-pkcs12
