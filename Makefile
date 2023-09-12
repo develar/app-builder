@@ -1,4 +1,4 @@
-# go get -u github.com/go-bindata/go-bindata/go-bindata (pack not used because cannot properly select dir to generate and no way to specify explicitly)
+# go install -a -v github.com/go-bindata/go-bindata/...@latest (pack not used because cannot properly select dir to generate and no way to specify explicitly)
 
 .PHONY: lint build publish assets
 
@@ -41,8 +41,8 @@ test:
 	go test -v ./pkg/...
 
 assets:
-	go-bindata -o ./pkg/package-format/bindata.go -pkg package_format -prefix ./pkg/package-format ./pkg/package-format/appimage/templates
-	go-bindata -o ./pkg/package-format/snap/snapScripts.go -pkg snap -prefix ./pkg/package-format/snap ./pkg/package-format/snap/desktop-scripts
+	~/go/bin/go-bindata -o ./pkg/package-format/bindata.go -pkg package_format -prefix ./pkg/package-format ./pkg/package-format/appimage/templates
+	~/go/bin/go-bindata -o ./pkg/package-format/snap/snapScripts.go -pkg snap -prefix ./pkg/package-format/snap ./pkg/package-format/snap/desktop-scripts
 
 publish:
 	#make lint
