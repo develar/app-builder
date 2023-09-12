@@ -34,3 +34,7 @@ GOOS=windows GOARCH=386 go build -o win/ia32/app-builder.exe ..
 mkdir -p win/x64
 # set GOARCH=amd64
 GOOS=windows GOARCH=amd64 go build -o win/x64/app-builder.exe ..
+
+mkdir -p win/arm64
+# set GOARCH=arm64
+GOOS=windows GOARCH=arm64 go build -o win/arm64/app-builder.exe ..

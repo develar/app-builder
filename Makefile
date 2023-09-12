@@ -6,6 +6,8 @@ OS_ARCH = ""
 ifeq ($(OS),Windows_NT)
 	ifeq ($(PROCESSOR_ARCHITEW6432),AMD64)
 		OS_ARCH := windows_amd64
+	else ifeq ($(PROCESSOR_ARCHITEW6432),ARM64)
+		OS_ARCH := windows_arm64
 	else
 		OS_ARCH := windows_386
 	endif
