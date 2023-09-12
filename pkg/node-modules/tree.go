@@ -145,7 +145,11 @@ func writeDependencyList(jsonWriter *jsoniter.Stream, dependencyMap *map[string]
 			jsonWriter.WriteObjectField("napiVersions")
 			jsonWriter.WriteArrayStart()
 
-			for _, v := range info.Binary.NapiVersions {
+			for i, v := range info.Binary.NapiVersions {
+				if i != 0 {
+					jsonWriter.WriteMore()
+				}
+
 				jsonWriter.WriteUint(v)
 			}
 
