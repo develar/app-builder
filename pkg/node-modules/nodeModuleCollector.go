@@ -258,10 +258,6 @@ func findNearestNodeModuleDir(dir string) (string, error) {
 }
 
 func fixNodeModuleDir(nodeModuleDir string, dependencies map[string]string) string {
-	if len(nodeModuleDir) == 0 {
-		return ""
-	}
-
 	result := nodeModuleDir
 	pathList := strings.Split(nodeModuleDir, string(os.PathSeparator))
 
