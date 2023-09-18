@@ -1,4 +1,4 @@
-# go get -u github.com/go-bindata/go-bindata/go-bindata (pack not used because cannot properly select dir to generate and no way to specify explicitly)
+# go install -a -v github.com/go-bindata/go-bindata/...@latest (pack not used because cannot properly select dir to generate and no way to specify explicitly)
 
 .PHONY: lint build publish assets
 
@@ -6,13 +6,19 @@ OS_ARCH = ""
 ifeq ($(OS),Windows_NT)
 	ifeq ($(PROCESSOR_ARCHITEW6432),AMD64)
 		OS_ARCH := windows_amd64
+	else ifeq ($(PROCESSOR_ARCHITEW6432),ARM64)
+		OS_ARCH := windows_arm64
 	else
 		OS_ARCH := windows_386
 	endif
 else
 	UNAME_S := $(shell uname -s)
 	ifeq ($(UNAME_S),Linux)
-		OS_ARCH := linux_amd64
+		ifeq ($(UNAME_M),riscv64)
+			OS_ARCH := linux_riscv64
+		else
+			OS_ARCH := linux_amd64
+		endif
 	endif
 	ifeq ($(UNAME_S),Darwin)
 		OS_ARCH := darwin_$(shell uname -m)
@@ -35,13 +41,13 @@ test:
 	go test -v ./pkg/...
 
 assets:
-	go-bindata -o ./pkg/package-format/bindata.go -pkg package_format -prefix ./pkg/package-format ./pkg/package-format/appimage/templates
-	go-bindata -o ./pkg/package-format/snap/snapScripts.go -pkg snap -prefix ./pkg/package-format/snap ./pkg/package-format/snap/desktop-scripts
+	~/go/bin/go-bindata -o ./pkg/package-format/bindata.go -pkg package_format -prefix ./pkg/package-format ./pkg/package-format/appimage/templates
+	~/go/bin/go-bindata -o ./pkg/package-format/snap/snapScripts.go -pkg snap -prefix ./pkg/package-format/snap ./pkg/package-format/snap/desktop-scripts
 
 publish:
 	#make lint
 	ln -f readme.md app-builder-bin/readme.md
-	npm publish app-builder-bin
+	pnpm publish app-builder-bin
 
 update-deps:
 	go get -u -d
