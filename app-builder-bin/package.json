@@ -1,5 +1,5 @@
 {
-  "name": "@julusian/app-builder-bin",
+  "name": "app-builder-bin",
   "description": "app-builder precompiled binaries",
   "version": "4.0.1",
   "files": [
