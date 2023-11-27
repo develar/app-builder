@@ -217,12 +217,13 @@ func writeCommandWrapper(options SnapOptions, isUseTemplateApp bool, scriptDir s
 	}
 
 	commandWrapperFile := filepath.Join(dir, "command.sh")
-	text := "#!/bin/bash -e\n" + `exec "$SNAP/desktop-init.sh" "$SNAP/desktop-common.sh" "$SNAP/desktop-gnome-specific.sh" "$SNAP/` + appPrefix + *options.executableName + `" "$@"`
+	text := "#!/bin/bash -e\n" + `exec "$SNAP/desktop-init.sh" "$SNAP/desktop-common.sh" "$SNAP/desktop-gnome-specific.sh" "$SNAP/` + appPrefix + *options.executableName + `"`
 
 	extraAppArgs := *options.extraAppArgs
 	if extraAppArgs != "" {
 		text += " " + extraAppArgs
 	}
+	text += ` "$@"`
 
 	err := ioutil.WriteFile(commandWrapperFile, []byte(text), 0755)
 	if err != nil {
