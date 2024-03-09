@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 )
 
 func ConfigureCommand(app *kingpin.Application) {
@@ -32,15 +32,26 @@ func ConfigureCommand(app *kingpin.Application) {
 			excludedDependencies:         excluded,
 			NodeModuleDirToDependencyMap: make(map[string]*map[string]*Dependency),
 		}
+		var dependencies []*Dependency
 		dependency, err := readPackageJson(*dir)
 		if err != nil {
 			return err
 		}
-
 		dependency.dir = *dir
-		err = collector.readDependencyTree(dependency)
-		if err != nil {
-			return err
+		dependencies = append(dependencies, dependency)
+
+		if len(dependency.Workspaces) > 0 {
+			workspaces := getAllWorkspaces(*dir, dependency.Workspaces)
+			if len(workspaces) > 0 {
+				dependencies = append(dependencies, workspaces...)
+			}
+		}
+
+		for _, dependency = range dependencies {
+			err = collector.readDependencyTree(dependency)
+			if err != nil {
+				return err
+			}
 		}
 
 		jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 32*1024)

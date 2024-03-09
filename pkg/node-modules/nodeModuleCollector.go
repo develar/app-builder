@@ -22,6 +22,7 @@ type Dependency struct {
 	Version              string            `json:"version"`
 	Dependencies         map[string]string `json:"dependencies"`
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
+	Workspaces           []string          `json:"workspaces"`
 	Binary               *DependencyBinary `json:"binary`
 
 	dir        string
@@ -283,4 +284,49 @@ func readPackageJson(dir string) (*Dependency, error) {
 	}
 
 	return &dependency, nil
+}
+
+func isDir(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return info.IsDir()
+}
+
+func getDirsbyGlobMatch(dir string, pattern string) ([]string, error) {
+	dirs := []string{}
+	matches, err := filepath.Glob(filepath.Join(dir, pattern))
+	if err != nil {
+		return dirs, err
+	}
+	for _, match := range matches {
+		if isDir(match) {
+			dirs = append(dirs, match)
+		}
+	}
+	return dirs, nil
+}
+
+func getAllWorkspaces(dir string, workspaces []string) []*Dependency {
+	matchedDirs := []string{}
+	for _, workspace := range workspaces {
+		dirs, _ := getDirsbyGlobMatch(dir, workspace)
+		if len(dirs) > 0 {
+			matchedDirs = append(matchedDirs, dirs...)
+		}
+	}
+	deps := []*Dependency{}
+	if len(matchedDirs) > 0 {
+		for _, matchedDir := range matchedDirs {
+			dep, err := readPackageJson(matchedDir)
+			if err == nil {
+				dep.dir = dir
+				deps = append(deps, dep)
+			}
+		}
+
+	}
+
+	return deps
 }
