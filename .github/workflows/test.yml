@@ -21,6 +21,26 @@ jobs:
       with:
         go-version: '1.20'
 
+    - name: Use Node.js 18
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+
+    - name: Install yarn
+      run: npm install -g yarn
+
+    - name: Install pnpm
+      run: npm install -g pnpm
+
+    - name: Install pnpm dependencies
+      run: cd pkg/node-modules/pnpm-demo/ && pnpm install
+
+    - name: Install npm dependencies
+      run: cd pkg/node-modules/npm-demo/ && npm install
+
+    - name: Install yarn dependencies
+      run: cd pkg/node-modules/yarn-demo/ && yarn install
+
     - name: Build
       run: go build -v ./...
 

@@ -22,7 +22,7 @@ type NodeTreeItem struct {
 	Deps []NodeTreeDepItem `json:"deps"`
 }
 
-func nodeDepTree(t *testing.T, dir string) {
+func nodeDepTree(t *testing.T, dir string, results []string) {
 	g := NewGomegaWithT(t)
 	rootPath := fs.FindParentWithFile(Dirname(), "go.mod")
 	cmd := exec.Command("go", "run", path.Join(rootPath, "main.go"), "node-dep-tree", "--dir", dir)
@@ -38,12 +38,19 @@ func nodeDepTree(t *testing.T, dir string) {
 			return it.Name
 		})
 	})
-	g.Expect(r).To(ConsistOf([]string{
-		"react", "js-tokens", "loose-envify",
-	}))
+	g.Expect(r).To(ConsistOf(results))
 }
 
 func TestNodeDepTreeCmd(t *testing.T) {
-	nodeDepTree(t, path.Join(Dirname(), "npm-demo"))
-	nodeDepTree(t, path.Join(Dirname(), "pnpm-demo"))
+	nodeDepTree(t, path.Join(Dirname(), "npm-demo"), []string{
+		"react", "js-tokens", "loose-envify",
+	})
+
+	nodeDepTree(t, path.Join(Dirname(), "pnpm-demo"), []string{
+		"react", "js-tokens", "loose-envify",
+	})
+
+	nodeDepTree(t, path.Join(Dirname(), "yarn-demo"), []string{
+		"ms", "foo", "ms",
+	})
 }
