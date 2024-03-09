@@ -321,7 +321,7 @@ func getAllWorkspaces(dir string, workspaces []string) []*Dependency {
 		for _, matchedDir := range matchedDirs {
 			dep, err := readPackageJson(matchedDir)
 			if err == nil {
-				dep.dir = dir
+				dep.dir = matchedDir
 				deps = append(deps, dep)
 			}
 		}

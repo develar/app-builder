@@ -37,14 +37,11 @@ func TestReadDependencyTreeByYarn(t *testing.T) {
 		}
 	}
 	g.Expect(err).NotTo(HaveOccurred())
-
-	err = collector.readDependencyTree(dependency)
-	g.Expect(err).NotTo(HaveOccurred())
 	r := lo.FlatMap(lo.Values(collector.NodeModuleDirToDependencyMap), func(it *map[string]*Dependency, i int) []string {
 		return lo.Keys(*it)
 	})
 	g.Expect(r).To(ConsistOf([]string{
-		"foo", "ms",
+		"ms", "foo", "ms",
 	}))
 }
 

@@ -51,6 +51,6 @@ func TestNodeDepTreeCmd(t *testing.T) {
 	})
 
 	nodeDepTree(t, path.Join(Dirname(), "yarn-demo"), []string{
-		"ms", "foo",
+		"ms", "foo", "ms",
 	})
 }
