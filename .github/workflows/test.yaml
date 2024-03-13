@@ -27,10 +27,7 @@ jobs:
 
     - name: Install npm dependencies for npm-demo test
       run: cd pkg/node-modules/npm-demo/ && npm install
-
-    - name: Install yarn dependencies for yarn-demo test
-      run: cd pkg/node-modules/yarn-demo/ && yarn install
-
+      
     - name: Build
       run: make build-all
 
