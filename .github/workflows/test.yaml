@@ -15,7 +15,7 @@ permissions:
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest # use mac so dmg tests can run
     steps:
     - uses: actions/checkout@v3
 
