@@ -19,8 +19,8 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Install deps and audit
-      uses: ./.github/actions/pnpm
+    - name: Setup and install deps
+      uses: ./.github/actions/setup
 
     - name: Install pnpm dependencies for pnpm-demo test
       run: cd pkg/node-modules/pnpm-demo/ && pnpm install
