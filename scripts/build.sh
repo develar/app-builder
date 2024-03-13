@@ -36,3 +36,5 @@ GOOS=windows GOARCH=amd64 go build -o win/x64/app-builder.exe
 mkdir -p win/arm64
 # $env:GOARCH='arm64'; go build -o win/arm64/app-builder.exe
 GOOS=windows GOARCH=arm64 go build -o win/arm64/app-builder.exe
+
+find mac/ win/ linux/ -type f -exec chmod +x {} \;
