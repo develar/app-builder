@@ -1,0 +1,38 @@
+name: Test
+
+on:
+  push:
+    branches:
+      master
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install deps and audit
+      uses: ./.github/actions/pnpm
+
+    - name: Install pnpm dependencies for pnpm-demo test
+      run: cd pkg/node-modules/pnpm-demo/ && pnpm install
+
+    - name: Install npm dependencies for npm-demo test
+      run: cd pkg/node-modules/npm-demo/ && npm install
+
+    - name: Install yarn dependencies for yarn-demo test
+      run: cd pkg/node-modules/yarn-demo/ && yarn install
+
+    - name: Build
+      run: make build-all
+
+    - name: Test
+      run: make test

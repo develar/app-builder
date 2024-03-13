@@ -22,7 +22,7 @@
   },
   "scripts": {
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
-    "ci:version": "pnpm changelog && changeset version && git add .",
-    "ci:publish": "make build-all && pnpm publish && changeset tag"
+    "ci:version": "pnpm changelog && changeset version",
+    "ci:publish": "make build-all"
   }
 }
