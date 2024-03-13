@@ -9,9 +9,6 @@ import (
 )
 
 func TestAppend(t *testing.T) {
-	t.Skip("Skipping unstable test")
-	return
-
 	var linePool = buffer.NewPool()
 	buf := linePool.Get()
 	appendPaddedString("a\nb", buf)

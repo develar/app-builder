@@ -13,7 +13,7 @@ jobs:
       pull-requests: write # to create pull request (changesets/action)
 
     timeout-minutes: 15
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
