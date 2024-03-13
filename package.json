@@ -1,0 +1,28 @@
+{
+  "name": "app-builder-bin",
+  "description": "app-builder precompiled binaries",
+  "version": "5.0.0",
+  "files": [
+    "index.js",
+    "mac",
+    "linux",
+    "win",
+    "index.d.ts"
+  ],
+  "license": "MIT",
+  "repository": "develar/app-builder",
+  "keywords": [
+    "snap",
+    "appimage",
+    "icns"
+  ],
+  "devDependencies": {
+    "@changesets/cli": "^2.27.1",
+    "conventional-changelog-cli": "^4.1.0"
+  },
+  "scripts": {
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
+    "ci:version": "pnpm changelog && changeset version && git add .",
+    "ci:publish": "make build-all && pnpm publish && changeset tag"
+  }
+}
