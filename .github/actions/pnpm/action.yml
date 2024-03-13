@@ -27,6 +27,7 @@ runs:
 
     - name: Install yarn
       run: pnpm install -g yarn
+      shell: bash
 
     - name: Install dependencies
       run: pnpm install --frozen-lockfile
