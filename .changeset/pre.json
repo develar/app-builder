@@ -4,8 +4,5 @@
   "initialVersions": {
     "app-builder-bin": "4.2.0"
   },
-  "changesets": [
-    "orange-seahorses-listen",
-    "rotten-fireants-flow"
-  ]
+  "changesets": []
 }
