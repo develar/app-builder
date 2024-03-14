@@ -1,0 +1,29 @@
+name: Test
+
+on:
+  push:
+    branches:
+      master
+  pull_request:
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest # should switch to mac to run dmg test, but it's unstable atm
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup and install deps
+      uses: ./.github/actions/setup
+      
+    - name: Test
+      run: make test
+
+    - name: Build
+      run: make build-all
