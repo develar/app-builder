@@ -1,0 +1,44 @@
+name: 'pnpm installation'
+description: 'Install and audit dependencies via pnpm'
+inputs:
+  version: # id of input
+    description: 'The pnpm version to use'
+    required: false
+    default: 8.9.0
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup pnpm
+      uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3.0.0
+      with:
+        version: ${{ inputs.version }}
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Install go packages
+      run: go install && go install -a -v github.com/go-bindata/go-bindata/...@latest
+      shell: bash
+
+    - name: Setup node
+      uses: actions/setup-node@60edb5dd545a775178f52524783378180af0d1f8 # v4
+      with:
+        node-version: '18'
+        cache: 'pnpm'
+
+    - name: Install yarn
+      run: pnpm install -g yarn
+      shell: bash
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+      shell: bash
+
+## Usage
+# - name: install and audit
+#   uses: ./.github/actions/pnpm
+#   with:
+#     version: ${{ env.PNPM_VERSION }}
