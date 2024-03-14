@@ -48,9 +48,6 @@ assets:
 	~/go/bin/go-bindata -o ./pkg/package-format/bindata.go -pkg package_format -prefix ./pkg/package-format ./pkg/package-format/appimage/templates
 	~/go/bin/go-bindata -o ./pkg/package-format/snap/snapScripts.go -pkg snap -prefix ./pkg/package-format/snap ./pkg/package-format/snap/desktop-scripts
 
-publish:
-	pnpm publish
-
 update-deps:
 	go get -u -d
 	go mod tidy
