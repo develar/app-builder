@@ -16,6 +16,8 @@ else
 	ifeq ($(UNAME_S),Linux)
 		ifeq ($(UNAME_M),riscv64)
 			OS_ARCH := linux_riscv64
+		else ifeq ($(UNAME_M),loongarch64)
+			OS_ARCH := linux_loong64
 		else
 			OS_ARCH := linux_amd64
 		endif
