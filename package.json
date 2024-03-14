@@ -1,7 +1,7 @@
 {
   "name": "app-builder-bin",
   "description": "app-builder precompiled binaries",
-  "version": "5.0.0",
+  "version": "4.2.0",
   "files": [
     "index.js",
     "mac",
@@ -26,5 +26,8 @@
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
     "ci:version": "pnpm changelog && changeset version && make assets && git add .",
     "ci:publish": "make build-all && git add ."
+  },
+  "publishConfig": {
+    "tag": "next"
   }
 }

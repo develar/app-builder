@@ -2,4 +2,4 @@
 "app-builder-bin": major
 ---
 
-changing repo structure for release automation
+chore: changing repo structure for release automation

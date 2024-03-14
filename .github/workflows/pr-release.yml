@@ -22,7 +22,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install deps and audit
-        uses: ./.github/actions/pnpm
+        uses: ./.github/actions/setup
 
       - name: Set up NPM credentials
         run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
