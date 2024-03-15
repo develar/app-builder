@@ -1,0 +1,15 @@
+# app-builder-bin
+
+## 5.0.0-alpha.0
+
+### Major Changes
+
+- [#107](https://github.com/develar/app-builder/pull/107) [`f4642dd`](https://github.com/develar/app-builder/commit/f4642ddcd85b482d1a7ed49f14d27c509eb5aa6b) Thanks [@mmaietta](https://github.com/mmaietta)! - chore: changing repo structure for release automation
+
+### Minor Changes
+
+- [#98](https://github.com/develar/app-builder/pull/98) [`3ed22df`](https://github.com/develar/app-builder/commit/3ed22df75fcff132a5b794ce1a421bec263bc118) Thanks [@yzewei](https://github.com/yzewei)! - feat: Add loongarch64 support
+
+### Patch Changes
+
+- [#106](https://github.com/develar/app-builder/pull/106) [`9704964`](https://github.com/develar/app-builder/commit/970496449b0b02780d654d61af1e3277515a2545) Thanks [@theogravity](https://github.com/theogravity)! - fix: Use npm config.mirror first before env variables for download URL

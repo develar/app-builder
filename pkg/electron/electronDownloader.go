@@ -83,15 +83,15 @@ func downloadElectron(configs []ElectronDownloadOptions) ([]string, error) {
 }
 
 func getBaseUrl(config *ElectronDownloadOptions) string {
-	v := os.Getenv("NPM_CONFIG_ELECTRON_MIRROR")
+	v := config.Mirror
+	if len(v) == 0 {
+		v = os.Getenv("NPM_CONFIG_ELECTRON_MIRROR")
+	}
 	if len(v) == 0 {
 		v = os.Getenv("npm_config_electron_mirror")
 	}
 	if len(v) == 0 {
 		v = os.Getenv("ELECTRON_MIRROR")
-	}
-	if len(v) == 0 {
-		v = config.Mirror
 	}
 	if len(v) == 0 {
 		if strings.Contains(config.Version, "-nightly.") {

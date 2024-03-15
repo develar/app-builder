@@ -38,7 +38,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		appDir:   command.Flag("app", "The app dir.").Short('a').Required().String(),
 		stageDir: command.Flag("stage", "The stage dir.").Short('s').Required().String(),
 		output:   command.Flag("output", "The output file.").Short('o').Required().String(),
-		arch:     command.Flag("arch", "The arch.").Default("x64").Enum("x64", "ia32", "armv7l", "arm64", "riscv64"),
+		arch:     command.Flag("arch", "The arch.").Default("x64").Enum("x64", "ia32", "armv7l", "arm64", "riscv64", "loong64"),
 
 		template: command.Flag("template", "The template file.").String(),
 		license:  command.Flag("license", "The license file.").String(),
