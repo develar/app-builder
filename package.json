@@ -29,6 +29,20 @@
   },
   "publishConfig": {
     "tag": "next",
-    "git-checks": false
+    "git-checks": false,
+    "executableFiles": [
+      "linux/arm/app-builder",
+      "linux/arm64/app-builder",
+      "linux/ia32/app-builder",
+      "linux/loong64/app-builder",
+      "linux/riscv64/app-builder",
+      "linux/x64/app-builder",
+      "mac/app-builder",
+      "mac/app-builder_amd64",
+      "mac/app-builder_arm64",
+      "win/arm64/app-builder.exe",
+      "win/ia32/app-builder.exe",
+      "win/x64/app-builder.exe"
+    ]
   }
 }

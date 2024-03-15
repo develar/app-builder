@@ -7,8 +7,11 @@ function getPath() {
     return "app-builder"
   }
 
-  const platform = process.platform;
-  const arch = process.arch
+  if (!!process.env.CUSTOM_APP_BUILDER_PATH) {
+    return path.resolve(process.env.CUSTOM_APP_BUILDER_PATH)
+  }
+
+  const { platform, arch } = process;
   if (platform === "darwin") {
     return path.join(__dirname, "mac", `app-builder_${arch === "x64" ? "amd64" : arch}`)
   }
