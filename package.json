@@ -25,7 +25,7 @@
     "changeset": "changeset",
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s && git add CHANGELOG.md",
     "ci:version": "pnpm changelog && changeset version && make assets && git add .",
-    "ci:publish": "make build-all && pnpm publish --tag next && changeset tag"
+    "ci:publish": "make build-all && pnpm publish --no-git-checks --tag next && changeset tag"
   },
   "publishConfig": {
     "tag": "next",
