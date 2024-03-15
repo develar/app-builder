@@ -15,7 +15,7 @@ permissions:
 jobs:
 
   build:
-    runs-on: ubuntu-latest # should switch to mac to run dmg test, but it's unstable atm
+    runs-on: macos-latest
     steps:
     - uses: actions/checkout@v3
 
