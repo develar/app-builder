@@ -11,11 +11,11 @@ import (
 )
 
 func GetAppImageToolDir() (string, error) {
-	dirName := "appimage-13.0.1"
+	dirName := "appimage-12.0.0"
 	//noinspection SpellCheckingInspection
 	result, err := download.DownloadArtifact("",
 		download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z",
-		"ZG8U7K9Bk71cvP1VDlP+L7hO+HhRTJW6RO0kLgh5hbbJJHhPfoA/kw1hsFeq1pAyez6MxvoDyL/5/O45hX9Jaw==")
+		"3el6RUh6XoYJCI/ZOApyb0LLU/gSxDntVZ46R6+JNEANzfSo7/TfrzCRp5KlDo35c24r3ZOP7nnw4RqHwkMRLw==")
 	if err != nil {
 		return "", err
 	}
