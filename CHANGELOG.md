@@ -1,5 +1,11 @@
 # app-builder-bin
 
+## 5.0.0-alpha.2
+
+### Patch Changes
+
+- [#113](https://github.com/develar/app-builder/pull/113) [`43f7a34`](https://github.com/develar/app-builder/commit/43f7a3473cfbbefc5eba03f7fb04f88f54a1adf2) Thanks [@mmaietta](https://github.com/mmaietta)! - fix: revert appimage 13.0.1 to 13.0.0 due to mksquash arch compilation issues
+
 ## 5.0.0-alpha.1
 
 ### Minor Changes
