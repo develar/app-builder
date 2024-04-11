@@ -7,13 +7,14 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 )
 
 func ConfigureCommand(app *kingpin.Application) {
 	command := app.Command("node-dep-tree", "")
 
 	dir := command.Flag("dir", "").Required().String()
+	flatten := command.Flag("flatten", "").Bool()
 	excludedDependencies := command.Flag("exclude-dep", "").Strings()
 
 	command.Action(func(context *kingpin.ParseContext) error {
@@ -36,7 +37,6 @@ func ConfigureCommand(app *kingpin.Application) {
 		if err != nil {
 			return err
 		}
-
 		dependency.dir = *dir
 		err = collector.readDependencyTree(dependency)
 		if err != nil {
@@ -44,7 +44,12 @@ func ConfigureCommand(app *kingpin.Application) {
 		}
 
 		jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 32*1024)
-		writeResult(jsonWriter, collector)
+		if *flatten {
+			writeFlattenResult(jsonWriter, collector)
+		} else {
+			writeResult(jsonWriter, collector)
+
+		}
 		err = jsonWriter.Flush()
 		if err != nil {
 			return err
@@ -52,6 +57,106 @@ func ConfigureCommand(app *kingpin.Application) {
 
 		return nil
 	})
+}
+
+func writeConflictDependencyList(jsonWriter *jsoniter.Stream, dependencyMap map[string]*Dependency) {
+	dependencies := make([]*Dependency, len(dependencyMap))
+	index := 0
+	for _, v := range dependencyMap {
+		dependencies[index] = v
+		index++
+	}
+
+	if len(dependencies) > 1 {
+		sort.Slice(dependencies, func(i, j int) bool {
+			return dependencies[i].Name < dependencies[j].Name
+		})
+	}
+
+	jsonWriter.WriteArrayStart()
+	isFirst := true
+	for _, dependency := range dependencies {
+		if isFirst {
+			isFirst = false
+		} else {
+			jsonWriter.WriteMore()
+		}
+
+		jsonWriter.WriteObjectStart()
+
+		jsonWriter.WriteObjectField("name")
+		jsonWriter.WriteString(dependency.Name)
+
+		jsonWriter.WriteMore()
+		jsonWriter.WriteObjectField("version")
+		jsonWriter.WriteString(dependency.Version)
+
+		jsonWriter.WriteMore()
+		jsonWriter.WriteObjectField("dir")
+		jsonWriter.WriteString(dependency.dir)
+
+		if dependency.isOptional == 1 {
+			jsonWriter.WriteMore()
+			jsonWriter.WriteObjectField("optional")
+			jsonWriter.WriteBool(true)
+		}
+		jsonWriter.WriteObjectEnd()
+	}
+	jsonWriter.WriteArrayEnd()
+
+}
+
+func writeFlattenResult(jsonWriter *jsoniter.Stream, collector *Collector) {
+	dependencies := make([]*Dependency, len(collector.DependencyMap))
+	index := 0
+	for _, v := range collector.DependencyMap {
+		dependencies[index] = v
+		index++
+	}
+
+	if len(dependencies) > 1 {
+		sort.Slice(dependencies, func(i, j int) bool {
+			return dependencies[i].Name < dependencies[j].Name
+		})
+	}
+
+	jsonWriter.WriteArrayStart()
+	isFirst := true
+	for _, dependency := range dependencies {
+		if isFirst {
+			isFirst = false
+		} else {
+			jsonWriter.WriteMore()
+		}
+
+		jsonWriter.WriteObjectStart()
+
+		jsonWriter.WriteObjectField("name")
+		jsonWriter.WriteString(dependency.Name)
+
+		jsonWriter.WriteMore()
+		jsonWriter.WriteObjectField("version")
+		jsonWriter.WriteString(dependency.Version)
+
+		jsonWriter.WriteMore()
+		jsonWriter.WriteObjectField("dir")
+		jsonWriter.WriteString(dependency.dir)
+
+		if dependency.isOptional == 1 {
+			jsonWriter.WriteMore()
+			jsonWriter.WriteObjectField("optional")
+			jsonWriter.WriteBool(true)
+		}
+
+		if dependency.conflictDependency != nil {
+			jsonWriter.WriteMore()
+			jsonWriter.WriteObjectField("conflictDependency")
+			writeConflictDependencyList(jsonWriter, dependency.conflictDependency)
+		}
+		jsonWriter.WriteObjectEnd()
+	}
+	jsonWriter.WriteArrayEnd()
+
 }
 
 func writeResult(jsonWriter *jsoniter.Stream, collector *Collector) {

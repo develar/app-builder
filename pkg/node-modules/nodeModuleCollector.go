@@ -22,10 +22,11 @@ type Dependency struct {
 	Version              string            `json:"version"`
 	Dependencies         map[string]string `json:"dependencies"`
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
-	Binary               *DependencyBinary `json:"binary`
+	Binary               *DependencyBinary `json:"binary"`
 
-	dir        string
-	isOptional int
+	conflictDependency map[string]*Dependency
+	dir                string
+	isOptional         int
 }
 
 type Collector struct {
@@ -34,6 +35,7 @@ type Collector struct {
 	excludedDependencies map[string]bool
 
 	NodeModuleDirToDependencyMap map[string]*map[string]*Dependency `json:"nodeModuleDirToDependencyMap"`
+	DependencyMap                map[string]*Dependency             `json:"dependencyMap"`
 }
 
 func (t *Collector) readDependencyTree(dependency *Dependency) error {
@@ -79,9 +81,28 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		if err != nil {
 			return err
 		}
+		t.AddDependencyMap(queue[i], dependency)
 	}
 
 	return nil
+}
+
+func (t *Collector) AddDependencyMap(childDependency *Dependency, parentDependency *Dependency) {
+	if t.DependencyMap == nil {
+		t.DependencyMap = make(map[string]*Dependency)
+	}
+
+	name := childDependency.Name
+	if d, ok := t.DependencyMap[name]; ok {
+		if d.Version != childDependency.Version {
+			if parentDependency.conflictDependency == nil {
+				parentDependency.conflictDependency = make(map[string]*Dependency)
+			}
+			parentDependency.conflictDependency[name] = childDependency
+		}
+	} else {
+		t.DependencyMap[name] = childDependency
+	}
 }
 
 func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir string, isOptional bool, queue *[]*Dependency, queueIndex int) (int, error) {
