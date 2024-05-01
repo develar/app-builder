@@ -1,5 +1,11 @@
 # app-builder-bin
 
+## 5.0.0-alpha.3
+
+### Minor Changes
+
+- [#116](https://github.com/develar/app-builder/pull/116) [`be4e7ec`](https://github.com/develar/app-builder/commit/be4e7ec9c438e7f803c120a66148950ba294dae5) Thanks [@beyondkmp](https://github.com/beyondkmp)! - feat: add flatten option to `node-dep-tree` for rendering dependency conflicts in a different manner
+
 ## 5.0.0-alpha.2
 
 ### Patch Changes

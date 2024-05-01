@@ -94,7 +94,7 @@ func desktopScriptsDesktopCommonSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "desktop-scripts/desktop-common.sh", size: 16604, mode: os.FileMode(420), modTime: time.Unix(1710742578, 0)}
+	info := bindataFileInfo{name: "desktop-scripts/desktop-common.sh", size: 16604, mode: os.FileMode(420), modTime: time.Unix(1714412197, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -114,7 +114,7 @@ func desktopScriptsDesktopGnomeSpecificSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "desktop-scripts/desktop-gnome-specific.sh", size: 1401, mode: os.FileMode(420), modTime: time.Unix(1710742578, 0)}
+	info := bindataFileInfo{name: "desktop-scripts/desktop-gnome-specific.sh", size: 1401, mode: os.FileMode(420), modTime: time.Unix(1714412197, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -134,7 +134,7 @@ func desktopScriptsDesktopInitSh() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "desktop-scripts/desktop-init.sh", size: 1530, mode: os.FileMode(420), modTime: time.Unix(1710742578, 0)}
+	info := bindataFileInfo{name: "desktop-scripts/desktop-init.sh", size: 1530, mode: os.FileMode(420), modTime: time.Unix(1714412197, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
