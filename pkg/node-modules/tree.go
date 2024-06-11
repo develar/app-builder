@@ -45,7 +45,7 @@ func ConfigureCommand(app *kingpin.Application) {
 
 		jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 32*1024)
 		if *flatten {
-			writeFlattenResult(jsonWriter, collector)
+			writeFlattenResult(jsonWriter, collector.DependencyMap)
 		} else {
 			writeResult(jsonWriter, collector)
 
@@ -59,99 +59,78 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
-func writeConflictDependencyList(jsonWriter *jsoniter.Stream, dependencyMap map[string]*Dependency) {
-	dependencies := make([]*Dependency, len(dependencyMap))
+func writeFlattenResult(jsonWriter *jsoniter.Stream, dependencyMap map[string]*Dependency) {
+	// names must be sorted for consistent result
+	names := make([]string, len(dependencyMap))
 	index := 0
-	for _, v := range dependencyMap {
-		dependencies[index] = v
+	for name := range dependencyMap {
+		names[index] = name
 		index++
 	}
 
-	if len(dependencies) > 1 {
-		sort.Slice(dependencies, func(i, j int) bool {
-			return dependencies[i].Name < dependencies[j].Name
-		})
+	if len(names) > 1 {
+		sort.Strings(names)
 	}
 
 	jsonWriter.WriteArrayStart()
 	isFirst := true
-	for _, dependency := range dependencies {
+	for _, name := range names {
 		if isFirst {
 			isFirst = false
 		} else {
 			jsonWriter.WriteMore()
 		}
 
-		jsonWriter.WriteObjectStart()
-
-		jsonWriter.WriteObjectField("name")
-		jsonWriter.WriteString(dependency.Name)
-
-		jsonWriter.WriteMore()
-		jsonWriter.WriteObjectField("version")
-		jsonWriter.WriteString(dependency.Version)
-
-		jsonWriter.WriteMore()
-		jsonWriter.WriteObjectField("dir")
-		jsonWriter.WriteString(dependency.dir)
-
-		if dependency.isOptional == 1 {
-			jsonWriter.WriteMore()
-			jsonWriter.WriteObjectField("optional")
-			jsonWriter.WriteBool(true)
-		}
-		jsonWriter.WriteObjectEnd()
-	}
-	jsonWriter.WriteArrayEnd()
-
-}
-
-func writeFlattenResult(jsonWriter *jsoniter.Stream, collector *Collector) {
-	dependencies := make([]*Dependency, len(collector.DependencyMap))
-	index := 0
-	for _, v := range collector.DependencyMap {
-		dependencies[index] = v
-		index++
-	}
-
-	if len(dependencies) > 1 {
-		sort.Slice(dependencies, func(i, j int) bool {
-			return dependencies[i].Name < dependencies[j].Name
-		})
-	}
-
-	jsonWriter.WriteArrayStart()
-	isFirst := true
-	for _, dependency := range dependencies {
-		if isFirst {
-			isFirst = false
-		} else {
-			jsonWriter.WriteMore()
-		}
+		info := dependencyMap[name]
 
 		jsonWriter.WriteObjectStart()
 
 		jsonWriter.WriteObjectField("name")
-		jsonWriter.WriteString(dependency.Name)
+		jsonWriter.WriteString(info.alias)
 
 		jsonWriter.WriteMore()
 		jsonWriter.WriteObjectField("version")
-		jsonWriter.WriteString(dependency.Version)
+		jsonWriter.WriteString(info.Version)
 
 		jsonWriter.WriteMore()
 		jsonWriter.WriteObjectField("dir")
-		jsonWriter.WriteString(dependency.dir)
+		jsonWriter.WriteString(info.dir)
 
-		if dependency.isOptional == 1 {
+		if info.isOptional == 1 {
 			jsonWriter.WriteMore()
 			jsonWriter.WriteObjectField("optional")
 			jsonWriter.WriteBool(true)
 		}
 
-		if dependency.conflictDependency != nil {
+		for name := range info.Dependencies {
+			if name == "prebuild-install" {
+				jsonWriter.WriteMore()
+				jsonWriter.WriteObjectField("hasPrebuildInstall")
+				jsonWriter.WriteBool(true)
+				break
+			}
+		}
+
+		if info.Binary != nil {
+			jsonWriter.WriteMore()
+			jsonWriter.WriteObjectField("napiVersions")
+			jsonWriter.WriteArrayStart()
+
+			for i, v := range info.Binary.NapiVersions {
+				if i != 0 {
+					jsonWriter.WriteMore()
+				}
+
+				jsonWriter.WriteUint(v)
+			}
+
+			jsonWriter.WriteArrayEnd()
+		}
+
+		if info.conflictDependency != nil {
 			jsonWriter.WriteMore()
 			jsonWriter.WriteObjectField("conflictDependency")
-			writeConflictDependencyList(jsonWriter, dependency.conflictDependency)
+			writeFlattenResult(jsonWriter, info.conflictDependency)
 		}
 		jsonWriter.WriteObjectEnd()
 	}
