@@ -26,6 +26,7 @@ type Dependency struct {
 	conflictDependency map[string]*Dependency
 	dir                string
 	isOptional         int
+	alias              string
 }
 
 type Collector struct {
@@ -236,6 +237,7 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 	}
 
 	(*dependencyNameToDependency)[name] = dependency
+	dependency.alias = name
 	dependency.dir = resolvePath(dependencyDir)
 	return dependency, nil
 }
