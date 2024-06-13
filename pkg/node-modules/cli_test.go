@@ -60,7 +60,7 @@ func nodeDepTree(t *testing.T, dir string) {
 		})
 	})
 	g.Expect(r).To(ConsistOf([]string{
-		"react", "js-tokens", "loose-envify",
+		"react", "remote", "js-tokens", "loose-envify",
 	}))
 }
 

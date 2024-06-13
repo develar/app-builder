@@ -29,7 +29,7 @@ func TestReadDependencyTreeByNpm(t *testing.T) {
 		return lo.Keys(*it)
 	})
 	g.Expect(r).To(ConsistOf([]string{
-		"js-tokens", "react", "loose-envify",
+		"js-tokens", "react", "remote", "loose-envify",
 	}))
 }
 
@@ -54,6 +54,6 @@ func TestReadDependencyTreeByPnpm(t *testing.T) {
 		return lo.Keys(*it)
 	})
 	g.Expect(r).To(ConsistOf([]string{
-		"js-tokens", "react", "loose-envify",
+		"js-tokens", "react", "remote", "loose-envify",
 	}))
 }
