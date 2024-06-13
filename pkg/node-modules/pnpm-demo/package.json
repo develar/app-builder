@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "react": "^18.2.0"
+    "react": "^18.2.0",
+    "auto-launch": "5.0.6"
   }
 }

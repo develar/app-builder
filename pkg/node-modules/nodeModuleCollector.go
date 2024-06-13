@@ -1,7 +1,6 @@
 package node_modules
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -237,8 +236,28 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 	}
 
 	(*dependencyNameToDependency)[name] = dependency
-	dependency.dir = dependencyDir
+	dependency.dir = resolvePath(dependencyDir)
 	return dependency, nil
+}
+
+func resolvePath(dir string) string {
+	// Check if the path is a symlink
+	info, err := os.Lstat(dir)
+	if err != nil {
+		return dir
+	}
+
+	if info.Mode()&os.ModeSymlink != 0 {
+		// It's a symlink, resolve the real path
+		realPath, err := filepath.EvalSymlinks(dir)
+		if err != nil {
+			return dir
+		}
+		return realPath
+	}
+
+	// Not a symlink, return the original path
+	return dir
 }
 
 func findNearestNodeModuleDir(dir string) (string, error) {
@@ -292,7 +311,7 @@ func getParentDir(file string) string {
 
 func readPackageJson(dir string) (*Dependency, error) {
 	packageFile := filepath.Join(dir, "package.json")
-	data, err := ioutil.ReadFile(packageFile)
+	data, err := os.ReadFile(packageFile)
 	if err != nil {
 		return nil, err
 	}
