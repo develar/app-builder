@@ -1,5 +1,13 @@
 # app-builder-bin
 
+## 5.0.0-alpha.4
+
+### Patch Changes
+
+- [#119](https://github.com/develar/app-builder/pull/119) [`6a940e4`](https://github.com/develar/app-builder/commit/6a940e46da11d733f8b7c6f31b183c0e402882aa) Thanks [@beyondkmp](https://github.com/beyondkmp)! - fix: alias name issue in node modules resolution dependency tree
+
+- [#120](https://github.com/develar/app-builder/pull/120) [`189519a`](https://github.com/develar/app-builder/commit/189519a8292f939d9e5d3b47c6407444fee70334) Thanks [@beyondkmp](https://github.com/beyondkmp)! - change node module symlink to real path
+
 ## 5.0.0-alpha.3
 
 ### Minor Changes
