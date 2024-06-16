@@ -69,11 +69,9 @@ func writeFlattenResult(jsonWriter *jsoniter.Stream, dependencyMap map[string]*D
 	}
 
 	if len(dependencies) > 1 {
-		if len(dependencies) > 1 {
-			sort.Slice(dependencies, func(i, j int) bool {
-				return dependencies[i].alias < dependencies[j].alias
-			})
-		}
+		sort.Slice(dependencies, func(i, j int) bool {
+			return dependencies[i].alias < dependencies[j].alias
+		})
 	}
 
 	jsonWriter.WriteArrayStart()
