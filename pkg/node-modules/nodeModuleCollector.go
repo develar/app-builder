@@ -57,14 +57,6 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		return nil
 	}
 
-	if log.IsDebugEnabled() {
-		log.Debug("readDependencyTree",
-			zap.String("name", dependency.Name),
-			zap.String("v", dependency.Version),
-			zap.String("dir", dependency.dir),
-			zap.String("node_modules", nodeModuleDir))
-	}
-
 	// process direct children first
 	queue := make([]*Dependency, maxQueueSize)
 	queueIndex := 0
@@ -233,16 +225,6 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 				return nil, nil
 			}
 		}
-		if log.IsDebugEnabled() {
-			log.Debug("resolveDependency",
-				zap.String("parent", parentNodeModuleDir),
-				zap.String("real", realParentNodeModuleDir),
-				zap.String("name", name))
-		}
-	} else if log.IsDebugEnabled() {
-		log.Debug("resolveDependency",
-			zap.String("parent", parentNodeModuleDir),
-			zap.String("name", name))
 	}
 
 	dependencyDir := filepath.Join(realParentNodeModuleDir, name)
