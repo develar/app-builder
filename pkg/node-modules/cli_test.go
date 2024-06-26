@@ -22,6 +22,12 @@ type NodeTreeItem struct {
 	Deps []NodeTreeDepItem `json:"deps"`
 }
 
+type NodePathItem struct {
+	Name    string `json:"name"`
+	Version string `json:"version"`
+	Dir     string `json:"dir"`
+}
+
 func nodeDepPath(t *testing.T, dir string) {
 	g := NewGomegaWithT(t)
 	rootPath := fs.FindParentWithFile(Dirname(), "go.mod")
@@ -31,15 +37,18 @@ func nodeDepPath(t *testing.T, dir string) {
 		fmt.Println("err", err)
 	}
 	g.Expect(err).NotTo(HaveOccurred())
-	var j []NodeTreeItem
+	var j []NodePathItem
 	json.Unmarshal(output, &j)
-	r := lo.FlatMap(j, func(it NodeTreeItem, i int) []string {
-		return lo.Map(it.Deps, func(it NodeTreeDepItem, i int) string {
-			return it.Name
-		})
-	})
-	g.Expect(r).To(ConsistOf([]string{
-		"react", "js-tokens", "loose-envify",
+	dependencies := make([]NodePathItem, 4)
+	names := make([]string, 4)
+	index := 0
+	for _, d := range j {
+		dependencies[index] = d
+		names[index] = d.Name
+		index++
+	}
+	g.Expect(names).To(Equal([]string{
+		"js-tokens", "loose-envify", "react", "remote",
 	}))
 }
 
@@ -60,7 +69,7 @@ func nodeDepTree(t *testing.T, dir string) {
 		})
 	})
 	g.Expect(r).To(ConsistOf([]string{
-		"react", "js-tokens", "loose-envify",
+		"react", "remote", "js-tokens", "loose-envify",
 	}))
 }
 
@@ -70,6 +79,6 @@ func TestNodeDepTreeCmd(t *testing.T) {
 }
 
 func TestNodeDepPathCmd(t *testing.T) {
-	nodeDepTree(t, path.Join(Dirname(), "npm-demo"))
-	nodeDepTree(t, path.Join(Dirname(), "pnpm-demo"))
+	nodeDepPath(t, path.Join(Dirname(), "npm-demo"))
+	nodeDepPath(t, path.Join(Dirname(), "pnpm-demo"))
 }
