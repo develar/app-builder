@@ -214,6 +214,19 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 	if realParentNodeModuleDir == "" {
 		return nil, nil
 	}
+
+	// XXX consumers expect the node_modules shape or the dependency tree ?
+	// hoist the depends to the actual parent
+	if realParentNodeModuleDir != parentNodeModuleDir {
+		dependencyNameToDependency = t.NodeModuleDirToDependencyMap[realParentNodeModuleDir]
+		if dependencyNameToDependency != nil {
+			dependency := (*dependencyNameToDependency)[name]
+			if dependency != nil {
+				return nil, nil
+			}
+		}
+	}
+
 	dependencyDir := filepath.Join(realParentNodeModuleDir, name)
 	dependency, err := readPackageJson(dependencyDir)
 	if err != nil {
