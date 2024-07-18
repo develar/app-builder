@@ -43,7 +43,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		template: command.Flag("template", "The template file.").String(),
 		license:  command.Flag("license", "The license file.").String(),
 
-		compression: command.Flag("compression", "The compression.").Default("zstd").Enum("xz", "lzo", "zstd"),
+		compression: command.Flag("compression", "The compression.").Default("gzip").Enum("xz", "gzip"),
 	}
 
 	configuration := command.Flag("configuration", "").Required().String()
