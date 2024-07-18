@@ -1,5 +1,11 @@
 # app-builder-bin
 
+## 5.0.0-alpha.6
+
+### Patch Changes
+
+- [#124](https://github.com/develar/app-builder/pull/124) [`52ad062`](https://github.com/develar/app-builder/commit/52ad0626206c3ff7b7170afabe2136ef97107042) Thanks [@mmaietta](https://github.com/mmaietta)! - fix: set correct compression enums and remove default
+
 ## 5.0.0-alpha.5
 
 ### Patch Changes
