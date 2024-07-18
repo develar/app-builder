@@ -14,7 +14,7 @@ import (
 	"github.com/develar/app-builder/pkg/linuxTools"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	"github.com/develar/go-fs-util"
+	fsutil "github.com/develar/go-fs-util"
 )
 
 type AppImageOptions struct {
@@ -43,7 +43,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		template: command.Flag("template", "The template file.").String(),
 		license:  command.Flag("license", "The license file.").String(),
 
-		compression: command.Flag("compression", "The compression.").Default("gzip").Enum("xz", "gzip"),
+		compression: command.Flag("compression", "The compression.").Enum("xz", "lzo", "zstd"),
 	}
 
 	configuration := command.Flag("configuration", "").Required().String()
