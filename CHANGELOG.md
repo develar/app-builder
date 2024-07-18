@@ -1,5 +1,13 @@
 # app-builder-bin
 
+## 5.0.0-alpha.5
+
+### Patch Changes
+
+- [#123](https://github.com/develar/app-builder/pull/123) [`20feb29`](https://github.com/develar/app-builder/commit/20feb293f5fa2dc46c4e52212ec9e17e6db669a0) Thanks [@mmaietta](https://github.com/mmaietta)! - fix current mksquashfs version only allows xz and gzip compressions
+
+- [#118](https://github.com/develar/app-builder/pull/118) [`94485c6`](https://github.com/develar/app-builder/commit/94485c6d500fda34b92a6b4e0ef8314d2cc1a88d) Thanks [@fabienr](https://github.com/fabienr)! - fix: hoist dependencies to the real parent in nodeModuleCollector
+
 ## 5.0.0-alpha.4
 
 ### Patch Changes
