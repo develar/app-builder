@@ -7,15 +7,15 @@ import (
 
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/util"
-	"github.com/develar/go-fs-util"
+	fsutil "github.com/develar/go-fs-util"
 )
 
 func GetAppImageToolDir() (string, error) {
-	dirName := "appimage-13.0.0"
+	dirName := "appimage-12.0.1"
 	//noinspection SpellCheckingInspection
 	result, err := download.DownloadArtifact("",
 		download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z",
-		"hBN7VlhUsFX1Uw4uD1zxkm2Z4VHZqVw45VpBghvokCml07KgG0mzP+AACphrQMlav49hlGX9epAreb4Xxvce9A==")
+		"3el6RUh6XoYJCI/ZOApyb0LLU/gSxDntVZ46R6+JNEANzfSo7/TfrzCRp5KlDo35c24r3ZOP7nnw4RqHwkMRLw==")
 	if err != nil {
 		return "", err
 	}
