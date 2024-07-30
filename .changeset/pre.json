@@ -5,6 +5,7 @@
     "app-builder-bin": "4.2.0"
   },
   "changesets": [
+    "early-dots-repair",
     "eleven-dryers-clean",
     "gorgeous-rabbits-sell",
     "green-owls-train",

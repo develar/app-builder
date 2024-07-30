@@ -1,5 +1,11 @@
 # app-builder-bin
 
+## 5.0.0-alpha.7
+
+### Patch Changes
+
+- [#126](https://github.com/develar/app-builder/pull/126) [`f910175`](https://github.com/develar/app-builder/commit/f9101753dd2b93b857864d4051baeb6d8856dd64) Thanks [@mmaietta](https://github.com/mmaietta)! - fix: to resolve appimage issues in electron builder, and since we can't update electron-builder-binaries repo, we should just downgrade to the last working version of appimage
+
 ## 5.0.0-alpha.6
 
 ### Patch Changes
