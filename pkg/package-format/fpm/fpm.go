@@ -151,9 +151,9 @@ func getDefaultDepends(target string) []string {
 	case "rpm":
 		return []string{
 			"gtk3", /* for electron 2+ (electron 1 uses gtk2, but this old version is not supported anymore) */
-			"libnotify", "nss", "libXScrnSaver", "libXtst", "xdg-utils",
+			"libnotify", "nss", "libXScrnSaver", "(libXtst or libXtst6)", "xdg-utils",
 			"at-spi2-core", /* since 5.0.0 */
-			"libuuid",      /* since 4.0.0 */
+			"(libuuid or libuuid1)",      /* since 4.0.0 */
 		}
 
 	case "pacman":
