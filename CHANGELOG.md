@@ -1,5 +1,15 @@
 # app-builder-bin
 
+## 5.0.0-alpha.8
+
+### Minor Changes
+
+- [#130](https://github.com/develar/app-builder/pull/130) [`df4f272`](https://github.com/develar/app-builder/commit/df4f27286a92b6fa17dd333abbdca9d53c8fc1cb) Thanks [@tisoft](https://github.com/tisoft)! - Added support for OpenSUSE to rpm
+
+### Patch Changes
+
+- [#132](https://github.com/develar/app-builder/pull/132) [`1092684`](https://github.com/develar/app-builder/commit/1092684f6771af6abe3ef5614f6136000858003d) Thanks [@beyondkmp](https://github.com/beyondkmp)! - fix: find the real parent node module
+
 ## 5.0.0-alpha.7
 
 ### Patch Changes
