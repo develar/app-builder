@@ -211,8 +211,7 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 	}
 
 	realParentNodeModuleDir := fs.FindParentWithFile(parentNodeModuleDir, name)
-	info, err := os.Stat(realParentNodeModuleDir)
-	if err == nil && !info.IsDir() || realParentNodeModuleDir == "" {
+	if realParentNodeModuleDir == "" {
 		return nil, nil
 	}
 
@@ -229,6 +228,11 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 	}
 
 	dependencyDir := filepath.Join(realParentNodeModuleDir, name)
+	info, err := os.Stat(dependencyDir)
+	if err == nil && !info.IsDir() {
+		return nil, nil
+	}
+
 	dependency, err := readPackageJson(dependencyDir)
 	if err != nil {
 		if os.IsNotExist(err) {
