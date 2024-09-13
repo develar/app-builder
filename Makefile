@@ -42,6 +42,7 @@ lint:
 test:
 	cd pkg/node-modules/pnpm-demo/ && pnpm install
 	cd pkg/node-modules/npm-demo/ && npm install
+	cd pkg/node-modules/tar-demo/ && npm install
 	go test -v ./pkg/...
 
 assets:
