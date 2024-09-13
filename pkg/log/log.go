@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/develar/app-builder/pkg/zap-cli-encoder"
+	zap_cli_encoder "github.com/develar/app-builder/pkg/zap-cli-encoder"
 	"github.com/mattn/go-colorable"
 	"github.com/mattn/go-isatty"
 	"go.uber.org/zap"
@@ -74,5 +74,8 @@ func Debug(msg string, fields ...zapcore.Field) {
 }
 
 func IsDebugEnabled() bool {
+	if LOG == nil {
+		return false
+	}
 	return LOG.Core().Enabled(zap.DebugLevel)
 }
