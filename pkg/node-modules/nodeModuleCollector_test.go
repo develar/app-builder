@@ -72,3 +72,34 @@ func TestReadDependencyTreeByPnpm(t *testing.T) {
 	reactModule := collector.HoiestDependencyMap["react"]
 	g.Expect(reactModule.dir).To(Equal(filepath.Join(dir, "node_modules/.pnpm/react@18.2.0/node_modules/react")))
 }
+
+func TestReadDependencyTreeForTar(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	collector := &Collector{
+		unresolvedDependencies:       make(map[string]bool),
+		excludedDependencies:         make(map[string]bool),
+		NodeModuleDirToDependencyMap: make(map[string]*map[string]*Dependency),
+	}
+
+	dir := path.Join(Dirname(), "tar-demo")
+
+	dependency, err := readPackageJson(dir)
+	dependency.dir = dir
+
+	g.Expect(err).NotTo(HaveOccurred())
+
+	collector.rootDependency = dependency
+	err = collector.readDependencyTree(dependency)
+	g.Expect(err).NotTo(HaveOccurred())
+	collector.processHoistDependencyMap()
+
+	r := lo.FlatMap(lo.Values(collector.NodeModuleDirToDependencyMap), func(it *map[string]*Dependency, i int) []string {
+		return lo.Keys(*it)
+	})
+	g.Expect(len(r)).To(Equal(46))
+
+	g.Expect(collector.HoiestDependencyMap["tar"].dir).To(Equal(filepath.Join(dir, "node_modules/tar")))
+	g.Expect(collector.HoiestDependencyMap["minipass"].Version).To(Equal("7.1.2"))
+	g.Expect(collector.HoiestDependencyMap["tar"].conflictDependency["ansi-regex"].Version).To(Equal("5.0.1"))
+}
