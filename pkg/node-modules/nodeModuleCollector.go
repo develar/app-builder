@@ -127,8 +127,10 @@ func (t *Collector) processHoistDependencyMap() {
 		index++
 	}
 
-	// sort module dirs for consistent result
-	sort.Strings(moduleDirs)
+	// sort module dirs by the length of string for consistent result
+	sort.Slice(moduleDirs, func(i, j int) bool {
+		return len(moduleDirs[i]) < len(moduleDirs[j])
+	})
 
 	t.HoiestDependencyMap = make(map[string]*Dependency)
 
