@@ -101,5 +101,5 @@ func TestReadDependencyTreeForTar(t *testing.T) {
 
 	g.Expect(collector.HoiestDependencyMap["tar"].dir).To(Equal(filepath.Join(dir, "node_modules/tar")))
 	g.Expect(collector.HoiestDependencyMap["minipass"].Version).To(Equal("7.1.2"))
-	g.Expect(collector.HoiestDependencyMap["tar"].conflictDependency["ansi-regex"].Version).To(Equal("6.1.0"))
+	g.Expect(collector.HoiestDependencyMap["tar"].conflictDependency["ansi-regex"].Version).To(Equal("5.0.1"))
 }
