@@ -23,6 +23,7 @@ type Dependency struct {
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
 	Binary               *DependencyBinary `json:"binary"`
 
+	parent             *Dependency
 	conflictDependency map[string]*Dependency
 	dir                string
 	isOptional         int
@@ -30,6 +31,7 @@ type Dependency struct {
 }
 
 type Collector struct {
+	rootDependency         *Dependency
 	unresolvedDependencies map[string]bool
 
 	excludedDependencies map[string]bool
@@ -66,9 +68,11 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		return err
 	}
 
-	queueIndex, err = t.processDependencies(&dependency.OptionalDependencies, nodeModuleDir, true, &queue, queueIndex)
-	if err != nil {
-		return err
+	if dependency.OptionalDependencies != nil {
+		queueIndex, err = t.processDependencies(&dependency.OptionalDependencies, nodeModuleDir, true, &queue, queueIndex)
+		if err != nil {
+			return err
+		}
 	}
 
 	if queueIndex == 0 {
@@ -81,27 +85,53 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		if err != nil {
 			return err
 		}
-		t.AddDependencyMap(queue[i], dependency)
+		if dependency != t.rootDependency {
+			queue[i].parent = dependency
+		}
 	}
-
 	return nil
 }
 
-func (t *Collector) AddDependencyMap(childDependency *Dependency, parentDependency *Dependency) {
-	if t.DependencyMap == nil {
-		t.DependencyMap = make(map[string]*Dependency)
+func writeToParentConflicDependency(d *Dependency) {
+	p := d.parent
+	last := d
+	for p != nil {
+		if p.conflictDependency != nil {
+			if c, ok := p.conflictDependency[d.Name]; ok {
+				if c.Version == d.Version {
+					return
+				}
+				break
+			}
+		}
+		last = p
+		p = p.parent
 	}
 
-	name := childDependency.Name
-	if d, ok := t.DependencyMap[name]; ok {
-		if d.Version != childDependency.Version {
-			if parentDependency.conflictDependency == nil {
-				parentDependency.conflictDependency = make(map[string]*Dependency)
+	if last == d {
+		return
+	}
+
+	if last.conflictDependency == nil {
+		last.conflictDependency = make(map[string]*Dependency)
+	}
+	last.conflictDependency[d.Name] = d
+}
+
+func (t *Collector) processHoistDependencyMap() {
+	t.DependencyMap = make(map[string]*Dependency)
+
+	for _, dependencyMap := range t.NodeModuleDirToDependencyMap {
+		for _, d := range *dependencyMap {
+			if e, ok := t.DependencyMap[d.Name]; ok {
+				if e.Version != d.Version {
+					writeToParentConflicDependency(d)
+				}
+			} else {
+				t.DependencyMap[d.Name] = d
 			}
-			parentDependency.conflictDependency[name] = childDependency
 		}
-	} else {
-		t.DependencyMap[name] = childDependency
+
 	}
 }
 
@@ -206,7 +236,7 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 	if dependencyNameToDependency != nil {
 		dependency := (*dependencyNameToDependency)[name]
 		if dependency != nil {
-			return nil, nil
+			return dependency, nil
 		}
 	}
 
