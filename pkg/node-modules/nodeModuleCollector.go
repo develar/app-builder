@@ -3,6 +3,7 @@ package node_modules
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/develar/app-builder/pkg/fs"
@@ -119,10 +120,20 @@ func writeToParentConflicDependency(d *Dependency) {
 }
 
 func (t *Collector) processHoistDependencyMap() {
+	moduleDirs := make([]string, len(t.NodeModuleDirToDependencyMap))
+	index := 0
+	for k := range t.NodeModuleDirToDependencyMap {
+		moduleDirs[index] = k
+		index++
+	}
+
+	// sort module dirs for consistent result
+	sort.Strings(moduleDirs)
+
 	t.HoiestDependencyMap = make(map[string]*Dependency)
 
-	for _, dependencyMap := range t.NodeModuleDirToDependencyMap {
-		for _, d := range *dependencyMap {
+	for _, dir := range moduleDirs {
+		for _, d := range *t.NodeModuleDirToDependencyMap[dir] {
 			if e, ok := t.HoiestDependencyMap[d.Name]; ok {
 				if e.Version != d.Version {
 					writeToParentConflicDependency(d)
