@@ -37,7 +37,7 @@ type Collector struct {
 	excludedDependencies map[string]bool
 
 	NodeModuleDirToDependencyMap map[string]*map[string]*Dependency `json:"nodeModuleDirToDependencyMap"`
-	DependencyMap                map[string]*Dependency             `json:"dependencyMap"`
+	HoiestDependencyMap          map[string]*Dependency             `json:"hoiestDependencyMap"`
 }
 
 func (t *Collector) readDependencyTree(dependency *Dependency) error {
@@ -119,16 +119,16 @@ func writeToParentConflicDependency(d *Dependency) {
 }
 
 func (t *Collector) processHoistDependencyMap() {
-	t.DependencyMap = make(map[string]*Dependency)
+	t.HoiestDependencyMap = make(map[string]*Dependency)
 
 	for _, dependencyMap := range t.NodeModuleDirToDependencyMap {
 		for _, d := range *dependencyMap {
-			if e, ok := t.DependencyMap[d.Name]; ok {
+			if e, ok := t.HoiestDependencyMap[d.Name]; ok {
 				if e.Version != d.Version {
 					writeToParentConflicDependency(d)
 				}
 			} else {
-				t.DependencyMap[d.Name] = d
+				t.HoiestDependencyMap[d.Name] = d
 			}
 		}
 

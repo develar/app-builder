@@ -26,13 +26,15 @@ func TestReadDependencyTreeByNpm(t *testing.T) {
 
 	err = collector.readDependencyTree(dependency)
 	g.Expect(err).NotTo(HaveOccurred())
+	collector.processHoistDependencyMap()
+
 	r := lo.FlatMap(lo.Values(collector.NodeModuleDirToDependencyMap), func(it *map[string]*Dependency, i int) []string {
 		return lo.Keys(*it)
 	})
 	g.Expect(r).To(ConsistOf([]string{
 		"js-tokens", "react", "remote", "loose-envify",
 	}))
-	remoteModule := collector.DependencyMap["@electron/remote"]
+	remoteModule := collector.HoiestDependencyMap["@electron/remote"]
 	g.Expect(remoteModule.alias).To(Equal("remote"))
 	g.Expect(remoteModule.Name).To(Equal("@electron/remote"))
 }
@@ -54,6 +56,7 @@ func TestReadDependencyTreeByPnpm(t *testing.T) {
 
 	err = collector.readDependencyTree(dependency)
 	g.Expect(err).NotTo(HaveOccurred())
+	collector.processHoistDependencyMap()
 	r := lo.FlatMap(lo.Values(collector.NodeModuleDirToDependencyMap), func(it *map[string]*Dependency, i int) []string {
 		return lo.Keys(*it)
 	})
@@ -61,11 +64,11 @@ func TestReadDependencyTreeByPnpm(t *testing.T) {
 		"js-tokens", "react", "remote", "loose-envify",
 	}))
 
-	remoteModule := collector.DependencyMap["@electron/remote"]
+	remoteModule := collector.HoiestDependencyMap["@electron/remote"]
 	g.Expect(remoteModule.Name).To(Equal("@electron/remote"))
 	g.Expect(remoteModule.alias).To(Equal("remote"))
 	g.Expect(remoteModule.dir).To(Equal(filepath.Join(dir, "node_modules/.pnpm/@electron+remote@2.1.2_electron@31.0.0/node_modules/@electron/remote")))
 
-	reactModule := collector.DependencyMap["react"]
+	reactModule := collector.HoiestDependencyMap["react"]
 	g.Expect(reactModule.dir).To(Equal(filepath.Join(dir, "node_modules/.pnpm/react@18.2.0/node_modules/react")))
 }
