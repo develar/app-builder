@@ -48,7 +48,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 32*1024)
 		if *flatten {
 			collector.processHoistDependencyMap()
-			writeFlattenResult(jsonWriter, collector.HoiestDependencyMap)
+			writeFlattenResult(jsonWriter, collector.HoiestedDependencyMap)
 		} else {
 			writeResult(jsonWriter, collector)
 

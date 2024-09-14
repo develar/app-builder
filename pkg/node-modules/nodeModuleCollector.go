@@ -36,12 +36,16 @@ type Collector struct {
 	unresolvedDependencies map[string]bool
 
 	excludedDependencies map[string]bool
+	allDependencies      []*Dependency
 
 	NodeModuleDirToDependencyMap map[string]*map[string]*Dependency `json:"nodeModuleDirToDependencyMap"`
-	HoiestDependencyMap          map[string]*Dependency             `json:"hoiestDependencyMap"`
+
+	HoiestedDependencyMap map[string]*Dependency `json:"hoiestedDependencyMap"`
 }
 
 func (t *Collector) readDependencyTree(dependency *Dependency) error {
+	t.allDependencies = append(t.allDependencies, dependency)
+
 	maxQueueSize := len(dependency.Dependencies) + len(dependency.OptionalDependencies)
 
 	if maxQueueSize == 0 {
@@ -69,11 +73,9 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		return err
 	}
 
-	if dependency.OptionalDependencies != nil {
-		queueIndex, err = t.processDependencies(&dependency.OptionalDependencies, nodeModuleDir, true, &queue, queueIndex)
-		if err != nil {
-			return err
-		}
+	queueIndex, err = t.processDependencies(&dependency.OptionalDependencies, nodeModuleDir, true, &queue, queueIndex)
+	if err != nil {
+		return err
 	}
 
 	if queueIndex == 0 {
@@ -86,17 +88,15 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		if err != nil {
 			return err
 		}
-		if dependency != t.rootDependency {
-			queue[i].parent = dependency
-		}
+		queue[i].parent = dependency
 	}
 	return nil
 }
 
-func writeToParentConflicDependency(d *Dependency) {
+func (t *Collector) writeToParentConflicDependency(d *Dependency) {
 	p := d.parent
 	last := d
-	for p != nil {
+	for p != t.rootDependency {
 		if p.conflictDependency != nil {
 			if c, ok := p.conflictDependency[d.Name]; ok {
 				if c.Version == d.Version {
@@ -109,10 +109,6 @@ func writeToParentConflicDependency(d *Dependency) {
 		p = p.parent
 	}
 
-	if last == d {
-		return
-	}
-
 	if last.conflictDependency == nil {
 		last.conflictDependency = make(map[string]*Dependency)
 	}
@@ -120,29 +116,19 @@ func writeToParentConflicDependency(d *Dependency) {
 }
 
 func (t *Collector) processHoistDependencyMap() {
-	moduleDirs := make([]string, len(t.NodeModuleDirToDependencyMap))
-	index := 0
-	for k := range t.NodeModuleDirToDependencyMap {
-		moduleDirs[index] = k
-		index++
-	}
-
-	// sort module dirs by the length of string for consistent result
-	sort.Slice(moduleDirs, func(i, j int) bool {
-		return len(moduleDirs[i]) < len(moduleDirs[j])
-	})
-
-	t.HoiestDependencyMap = make(map[string]*Dependency)
-
-	for _, dir := range moduleDirs {
-		for _, d := range *t.NodeModuleDirToDependencyMap[dir] {
-			if e, ok := t.HoiestDependencyMap[d.Name]; ok {
-				if e.Version != d.Version {
-					writeToParentConflicDependency(d)
+	t.HoiestedDependencyMap = make(map[string]*Dependency)
+	for _, d := range t.allDependencies[1:] {
+		if e, ok := t.HoiestedDependencyMap[d.Name]; ok {
+			if e.Version != d.Version {
+				if d.parent == t.rootDependency {
+					t.HoiestedDependencyMap[d.Name] = d
+					t.writeToParentConflicDependency(e)
+				} else {
+					t.writeToParentConflicDependency(d)
 				}
-			} else {
-				t.HoiestDependencyMap[d.Name] = d
 			}
+		} else {
+			t.HoiestedDependencyMap[d.Name] = d
 		}
 
 	}
@@ -150,7 +136,14 @@ func (t *Collector) processHoistDependencyMap() {
 
 func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir string, isOptional bool, queue *[]*Dependency, queueIndex int) (int, error) {
 	unresolved := make([]string, 0)
-	for name := range *list {
+
+	names := make([]string, 0, len(*list))
+	for k := range *list {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
 		if strings.HasPrefix(name, "@types/") {
 			continue
 		}
