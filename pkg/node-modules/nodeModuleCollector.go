@@ -46,6 +46,8 @@ type Collector struct {
 func (t *Collector) readDependencyTree(dependency *Dependency) error {
 	if t.rootDependency == nil {
 		t.rootDependency = dependency
+	} else {
+		t.allDependencies = append(t.allDependencies, dependency)
 	}
 
 	maxQueueSize := len(dependency.Dependencies) + len(dependency.OptionalDependencies)
@@ -91,7 +93,6 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 			return err
 		}
 		queue[i].parent = dependency
-		t.allDependencies = append(t.allDependencies, queue[i])
 	}
 	return nil
 }
