@@ -44,7 +44,9 @@ type Collector struct {
 }
 
 func (t *Collector) readDependencyTree(dependency *Dependency) error {
-	t.allDependencies = append(t.allDependencies, dependency)
+	if t.rootDependency == nil {
+		t.rootDependency = dependency
+	}
 
 	maxQueueSize := len(dependency.Dependencies) + len(dependency.OptionalDependencies)
 
@@ -89,6 +91,7 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 			return err
 		}
 		queue[i].parent = dependency
+		t.allDependencies = append(t.allDependencies, queue[i])
 	}
 	return nil
 }
@@ -117,7 +120,7 @@ func (t *Collector) writeToParentConflicDependency(d *Dependency) {
 
 func (t *Collector) processHoistDependencyMap() {
 	t.HoiestedDependencyMap = make(map[string]*Dependency)
-	for _, d := range t.allDependencies[1:] {
+	for _, d := range t.allDependencies {
 		if e, ok := t.HoiestedDependencyMap[d.Name]; ok {
 			if e.Version != d.Version {
 				if d.parent == t.rootDependency {

@@ -89,7 +89,6 @@ func TestReadDependencyTreeForTar(t *testing.T) {
 
 	g.Expect(err).NotTo(HaveOccurred())
 
-	collector.rootDependency = dependency
 	err = collector.readDependencyTree(dependency)
 	g.Expect(err).NotTo(HaveOccurred())
 	collector.processHoistDependencyMap()
@@ -121,7 +120,6 @@ func TestReadDependencyTreeForYarn(t *testing.T) {
 
 	g.Expect(err).NotTo(HaveOccurred())
 
-	collector.rootDependency = dependency
 	err = collector.readDependencyTree(dependency)
 	g.Expect(err).NotTo(HaveOccurred())
 	collector.processHoistDependencyMap()

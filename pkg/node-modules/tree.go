@@ -38,7 +38,6 @@ func ConfigureCommand(app *kingpin.Application) {
 			return err
 		}
 		dependency.dir = *dir
-		collector.rootDependency = dependency
 
 		err = collector.readDependencyTree(dependency)
 		if err != nil {
