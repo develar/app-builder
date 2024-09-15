@@ -1,5 +1,13 @@
 # app-builder-bin
 
+## 5.0.0-alpha.9
+
+### Patch Changes
+
+- [#134](https://github.com/develar/app-builder/pull/134) [`82d3a96`](https://github.com/develar/app-builder/commit/82d3a963bed48f8eb623db0d805a72f0cd72396d) Thanks [@beyondkmp](https://github.com/beyondkmp)! - fix: fix for handling native dependencies, such as `tar` node module
+
+- [#136](https://github.com/develar/app-builder/pull/136) [`bbad893`](https://github.com/develar/app-builder/commit/bbad893da75c4fc7e019fa629748aabcde73c4e9) Thanks [@beyondkmp](https://github.com/beyondkmp)! - feat: resolve all the pnpm issues without hostied config
+
 ## 5.0.0-alpha.8
 
 ### Minor Changes
