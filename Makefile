@@ -44,6 +44,7 @@ test:
 	cd pkg/node-modules/npm-demo/ && npm install
 	cd pkg/node-modules/tar-demo/ && npm install
 	cd pkg/node-modules/yarn-demo/ && yarn
+	cd pkg/node-modules/parse-demo/ && yarn
 	go test -v ./pkg/...
 
 assets:
