@@ -3,6 +3,7 @@ package node_modules
 import (
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/develar/app-builder/pkg/fs"
@@ -23,6 +24,7 @@ type Dependency struct {
 	OptionalDependencies map[string]string `json:"optionalDependencies"`
 	Binary               *DependencyBinary `json:"binary"`
 
+	parent             *Dependency
 	conflictDependency map[string]*Dependency
 	dir                string
 	isOptional         int
@@ -30,15 +32,24 @@ type Dependency struct {
 }
 
 type Collector struct {
+	rootDependency         *Dependency
 	unresolvedDependencies map[string]bool
 
 	excludedDependencies map[string]bool
+	allDependencies      []*Dependency
 
 	NodeModuleDirToDependencyMap map[string]*map[string]*Dependency `json:"nodeModuleDirToDependencyMap"`
-	DependencyMap                map[string]*Dependency             `json:"dependencyMap"`
+
+	HoiestedDependencyMap map[string]*Dependency `json:"hoiestedDependencyMap"`
 }
 
 func (t *Collector) readDependencyTree(dependency *Dependency) error {
+	if t.rootDependency == nil {
+		t.rootDependency = dependency
+	} else {
+		t.allDependencies = append(t.allDependencies, dependency)
+	}
+
 	maxQueueSize := len(dependency.Dependencies) + len(dependency.OptionalDependencies)
 
 	if maxQueueSize == 0 {
@@ -81,33 +92,62 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		if err != nil {
 			return err
 		}
-		t.AddDependencyMap(queue[i], dependency)
+		queue[i].parent = dependency
 	}
-
 	return nil
 }
 
-func (t *Collector) AddDependencyMap(childDependency *Dependency, parentDependency *Dependency) {
-	if t.DependencyMap == nil {
-		t.DependencyMap = make(map[string]*Dependency)
+func (t *Collector) writeToParentConflicDependency(d *Dependency) {
+	p := d.parent
+	last := d
+	for p != t.rootDependency {
+		if p.conflictDependency != nil {
+			if c, ok := p.conflictDependency[d.Name]; ok {
+				if c.Version == d.Version {
+					return
+				}
+				break
+			}
+		}
+		last = p
+		p = p.parent
 	}
 
-	name := childDependency.Name
-	if d, ok := t.DependencyMap[name]; ok {
-		if d.Version != childDependency.Version {
-			if parentDependency.conflictDependency == nil {
-				parentDependency.conflictDependency = make(map[string]*Dependency)
+	if last.conflictDependency == nil {
+		last.conflictDependency = make(map[string]*Dependency)
+	}
+	last.conflictDependency[d.Name] = d
+}
+
+func (t *Collector) processHoistDependencyMap() {
+	t.HoiestedDependencyMap = make(map[string]*Dependency)
+	for _, d := range t.allDependencies {
+		if e, ok := t.HoiestedDependencyMap[d.Name]; ok {
+			if e.Version != d.Version {
+				if d.parent == t.rootDependency {
+					t.HoiestedDependencyMap[d.Name] = d
+					t.writeToParentConflicDependency(e)
+				} else {
+					t.writeToParentConflicDependency(d)
+				}
 			}
-			parentDependency.conflictDependency[name] = childDependency
+		} else {
+			t.HoiestedDependencyMap[d.Name] = d
 		}
-	} else {
-		t.DependencyMap[name] = childDependency
+
 	}
 }
 
 func (t *Collector) processDependencies(list *map[string]string, nodeModuleDir string, isOptional bool, queue *[]*Dependency, queueIndex int) (int, error) {
 	unresolved := make([]string, 0)
-	for name := range *list {
+
+	names := make([]string, 0, len(*list))
+	for k := range *list {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
 		if strings.HasPrefix(name, "@types/") {
 			continue
 		}
@@ -206,7 +246,7 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 	if dependencyNameToDependency != nil {
 		dependency := (*dependencyNameToDependency)[name]
 		if dependency != nil {
-			return nil, nil
+			return dependency, nil
 		}
 	}
 

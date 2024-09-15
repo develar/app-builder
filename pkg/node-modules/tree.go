@@ -38,6 +38,7 @@ func ConfigureCommand(app *kingpin.Application) {
 			return err
 		}
 		dependency.dir = *dir
+
 		err = collector.readDependencyTree(dependency)
 		if err != nil {
 			return err
@@ -45,7 +46,8 @@ func ConfigureCommand(app *kingpin.Application) {
 
 		jsonWriter := jsoniter.NewStream(jsoniter.ConfigFastest, os.Stdout, 32*1024)
 		if *flatten {
-			writeFlattenResult(jsonWriter, collector.DependencyMap)
+			collector.processHoistDependencyMap()
+			writeFlattenResult(jsonWriter, collector.HoiestedDependencyMap)
 		} else {
 			writeResult(jsonWriter, collector)
 
