@@ -307,12 +307,6 @@ func findNearestNodeModuleDir(dir string) (string, error) {
 		return "", nil
 	}
 
-	realDir, err := filepath.EvalSymlinks(dir)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-	dir = realDir
-
 	guardCount := 0
 	for {
 		nodeModuleDir := filepath.Join(dir, "node_modules")
