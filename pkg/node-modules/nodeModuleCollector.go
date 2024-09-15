@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/develar/app-builder/pkg/fs"
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/errors"
 	jsoniter "github.com/json-iterator/go"
@@ -250,24 +249,7 @@ func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (
 		}
 	}
 
-	realParentNodeModuleDir := fs.FindParentWithFile(parentNodeModuleDir, name)
-	if realParentNodeModuleDir == "" {
-		return nil, nil
-	}
-
-	// XXX consumers expect the node_modules shape or the dependency tree ?
-	// hoist the depends to the actual parent
-	if realParentNodeModuleDir != parentNodeModuleDir {
-		dependencyNameToDependency = t.NodeModuleDirToDependencyMap[realParentNodeModuleDir]
-		if dependencyNameToDependency != nil {
-			dependency := (*dependencyNameToDependency)[name]
-			if dependency != nil {
-				return nil, nil
-			}
-		}
-	}
-
-	dependencyDir := filepath.Join(realParentNodeModuleDir, name)
+	dependencyDir := filepath.Join(parentNodeModuleDir, name)
 	info, err := os.Stat(dependencyDir)
 	if err == nil && !info.IsDir() {
 		return nil, nil
@@ -324,12 +306,6 @@ func findNearestNodeModuleDir(dir string) (string, error) {
 	if len(dir) == 0 {
 		return "", nil
 	}
-
-	realDir, err := filepath.EvalSymlinks(dir)
-	if err != nil {
-		return "", errors.WithStack(err)
-	}
-	dir = realDir
 
 	guardCount := 0
 	for {
