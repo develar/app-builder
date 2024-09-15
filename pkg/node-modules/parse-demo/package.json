@@ -9,9 +9,6 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "devDependencies": {
-    "electron-builder": "25.0.5"
-  },
   "dependencies": {
      "parse-asn1":"5.1.7"
   }
