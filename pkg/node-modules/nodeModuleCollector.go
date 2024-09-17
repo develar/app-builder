@@ -176,7 +176,7 @@ func (t *Collector) processHoistDependencyMap() {
 	for _, d := range t.allDependencies {
 		if e, ok := t.HoiestedDependencyMap[d.alias]; ok {
 			if e.Version != d.Version {
-				t.writeToParentConflicDependency(e)
+				t.writeToParentConflicDependency(d)
 			}
 		}
 
@@ -288,13 +288,6 @@ func correctOptionalState(isOptional bool, childDependency *Dependency) {
 // nil if already handled
 func (t *Collector) resolveDependency(parentNodeModuleDir string, name string) (*Dependency, error) {
 	dependencyNameToDependency := t.NodeModuleDirToDependencyMap[parentNodeModuleDir]
-	if dependencyNameToDependency != nil {
-		dependency := (*dependencyNameToDependency)[name]
-		if dependency != nil {
-			return dependency, nil
-		}
-	}
-
 	dependencyDir := filepath.Join(parentNodeModuleDir, name)
 	info, err := os.Stat(dependencyDir)
 	if err == nil && !info.IsDir() {
