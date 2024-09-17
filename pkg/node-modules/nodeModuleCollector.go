@@ -100,8 +100,13 @@ func (t *Collector) writeToParentConflicDependency(d *Dependency) {
 	p := d.parent
 	last := d
 	for p != t.rootDependency {
+		if h, ok := t.HoiestedDependencyMap[p.alias]; ok && p.Version == h.Version {
+			last = p
+			break
+		}
+
 		if p.conflictDependency != nil {
-			if c, ok := p.conflictDependency[d.Name]; ok {
+			if c, ok := p.conflictDependency[d.alias]; ok {
 				if c.Version == d.Version {
 					return
 				}
@@ -115,23 +120,64 @@ func (t *Collector) writeToParentConflicDependency(d *Dependency) {
 	if last.conflictDependency == nil {
 		last.conflictDependency = make(map[string]*Dependency)
 	}
-	last.conflictDependency[d.Name] = d
+	last.conflictDependency[d.alias] = d
+}
+
+func getMostUsedDeps(deps []*Dependency) []*Dependency {
+	groups := make(map[string][]*Dependency)
+	for _, item := range deps {
+		groups[item.alias] = append(groups[item.alias], item)
+	}
+
+	for name, group := range groups {
+		versionCounts := make(map[string]int)
+		for _, item := range group {
+			versionCounts[item.Version]++
+		}
+
+		sort.Slice(group, func(i, j int) bool {
+			vi, vj := group[i].Version, group[j].Version
+			ci, cj := versionCounts[vi], versionCounts[vj]
+
+			if (ci > 1) != (cj > 1) {
+				return ci == 1
+			}
+			if ci != cj {
+				return ci < cj
+			}
+			return vi < vj
+		})
+
+		groups[name] = group
+	}
+
+	var sortedGroups [][]*Dependency
+	for _, group := range groups {
+		sortedGroups = append(sortedGroups, group)
+	}
+	sort.Slice(sortedGroups, func(i, j int) bool {
+		return len(sortedGroups[i]) < len(sortedGroups[j])
+	})
+
+	var result []*Dependency
+	for _, group := range sortedGroups {
+		result = append(result, group[len(group)-1])
+	}
+
+	return result
 }
 
 func (t *Collector) processHoistDependencyMap() {
 	t.HoiestedDependencyMap = make(map[string]*Dependency)
+	for _, h := range getMostUsedDeps(t.allDependencies) {
+		t.HoiestedDependencyMap[h.alias] = h
+	}
+
 	for _, d := range t.allDependencies {
-		if e, ok := t.HoiestedDependencyMap[d.Name]; ok {
+		if e, ok := t.HoiestedDependencyMap[d.alias]; ok {
 			if e.Version != d.Version {
-				if d.parent == t.rootDependency {
-					t.HoiestedDependencyMap[d.Name] = d
-					t.writeToParentConflicDependency(e)
-				} else {
-					t.writeToParentConflicDependency(d)
-				}
+				t.writeToParentConflicDependency(e)
 			}
-		} else {
-			t.HoiestedDependencyMap[d.Name] = d
 		}
 
 	}
