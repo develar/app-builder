@@ -36,6 +36,7 @@ type Collector struct {
 
 	excludedDependencies map[string]bool
 	allDependencies      []*Dependency
+	allDependenciesMap   map[string]*Dependency
 
 	NodeModuleDirToDependencyMap map[string]*map[string]*Dependency `json:"nodeModuleDirToDependencyMap"`
 
@@ -45,7 +46,13 @@ type Collector struct {
 func (t *Collector) readDependencyTree(dependency *Dependency) error {
 	if t.rootDependency == nil {
 		t.rootDependency = dependency
+		t.allDependenciesMap = make(map[string]*Dependency)
 	} else {
+		key := dependency.alias + dependency.Version + dependency.dir
+		if _, ok := t.allDependenciesMap[key]; ok {
+			return nil
+		}
+		t.allDependenciesMap[key] = dependency
 		t.allDependencies = append(t.allDependencies, dependency)
 	}
 
@@ -97,43 +104,52 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 }
 
 func (t *Collector) writeToParentConflicDependency(d *Dependency) {
-	p := d.parent
-	last := d
-	for p != t.rootDependency {
-		if p.conflictDependency != nil {
-			if c, ok := p.conflictDependency[d.Name]; ok {
-				if c.Version == d.Version {
-					return
-				}
-				break
+	for p := d.parent; p != t.rootDependency; p = p.parent {
+		if strings.HasPrefix(d.dir, p.dir) {
+			if p.conflictDependency == nil {
+				p.conflictDependency = make(map[string]*Dependency)
 			}
+			p.conflictDependency[d.alias] = d
+			return
 		}
-		last = p
-		p = p.parent
 	}
 
-	if last.conflictDependency == nil {
-		last.conflictDependency = make(map[string]*Dependency)
+	if h, ok := t.HoiestedDependencyMap[d.alias]; ok {
+		if h.Version == d.Version {
+			return
+		}
+
+		// for pnpm
+		p := d.parent
+		last := d
+		for p != t.rootDependency {
+			if p.conflictDependency != nil {
+				if c, ok := p.conflictDependency[d.alias]; ok {
+					if c.Version == d.Version {
+						return
+					}
+					break
+				}
+			}
+			last = p
+			p = p.parent
+		}
+
+		if last.conflictDependency == nil {
+			last.conflictDependency = make(map[string]*Dependency)
+		}
+		last.conflictDependency[d.alias] = d
+		return
 	}
-	last.conflictDependency[d.Name] = d
+
+	t.HoiestedDependencyMap[d.alias] = d
+
 }
 
 func (t *Collector) processHoistDependencyMap() {
 	t.HoiestedDependencyMap = make(map[string]*Dependency)
 	for _, d := range t.allDependencies {
-		if e, ok := t.HoiestedDependencyMap[d.Name]; ok {
-			if e.Version != d.Version {
-				if d.parent == t.rootDependency {
-					t.HoiestedDependencyMap[d.Name] = d
-					t.writeToParentConflicDependency(e)
-				} else {
-					t.writeToParentConflicDependency(d)
-				}
-			}
-		} else {
-			t.HoiestedDependencyMap[d.Name] = d
-		}
-
+		t.writeToParentConflicDependency(d)
 	}
 }
 

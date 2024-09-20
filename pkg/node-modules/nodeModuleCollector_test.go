@@ -34,7 +34,7 @@ func TestReadDependencyTreeByNpm(t *testing.T) {
 	g.Expect(r).To(ConsistOf([]string{
 		"js-tokens", "react", "remote", "loose-envify",
 	}))
-	remoteModule := collector.HoiestedDependencyMap["@electron/remote"]
+	remoteModule := collector.HoiestedDependencyMap["remote"]
 	g.Expect(remoteModule.alias).To(Equal("remote"))
 	g.Expect(remoteModule.Name).To(Equal("@electron/remote"))
 }
@@ -64,7 +64,7 @@ func TestReadDependencyTreeByPnpm(t *testing.T) {
 		"js-tokens", "react", "remote", "loose-envify",
 	}))
 
-	remoteModule := collector.HoiestedDependencyMap["@electron/remote"]
+	remoteModule := collector.HoiestedDependencyMap["remote"]
 	g.Expect(remoteModule.Name).To(Equal("@electron/remote"))
 	g.Expect(remoteModule.alias).To(Equal("remote"))
 	g.Expect(remoteModule.dir).To(Equal(filepath.Join(dir, "node_modules/.pnpm/@electron+remote@2.1.2_electron@31.0.0/node_modules/@electron/remote")))
@@ -99,9 +99,8 @@ func TestReadDependencyTreeForTar(t *testing.T) {
 	g.Expect(len(r)).To(Equal(46))
 
 	g.Expect(collector.HoiestedDependencyMap["tar"].dir).To(Equal(filepath.Join(dir, "node_modules/tar")))
-	g.Expect(collector.HoiestedDependencyMap["minipass"].Version).To(Equal("7.1.2"))
-	g.Expect(collector.HoiestedDependencyMap["minizlib"].Version).To(Equal("3.0.1"))
-	g.Expect(collector.HoiestedDependencyMap["tar"].conflictDependency["ansi-regex"].Version).To(Equal("5.0.1"))
+	g.Expect(collector.HoiestedDependencyMap["tar"].conflictDependency["minipass"].Version).To(Equal("7.1.2"))
+	g.Expect(collector.HoiestedDependencyMap["tar"].conflictDependency["minizlib"].Version).To(Equal("3.0.1"))
 }
 
 func TestReadDependencyTreeForYarn(t *testing.T) {
