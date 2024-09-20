@@ -1,6 +1,7 @@
 package node_modules
 
 import (
+	"fmt"
 	"path"
 	"path/filepath"
 	"testing"
@@ -156,4 +157,34 @@ func TestReadDependencyTreeForParse(t *testing.T) {
 
 	g.Expect(collector.HoiestedDependencyMap["asn1.js"].dir).To(Equal(filepath.Join(Dirname(), "parse-demo/node_modules/asn1.js")))
 	g.Expect(collector.HoiestedDependencyMap["asn1.js"].Version).To(Equal("4.10.1"))
+}
+
+func TestReadDependencyTreeForEs5(t *testing.T) {
+	g := NewGomegaWithT(t)
+
+	collector := &Collector{
+		unresolvedDependencies:       make(map[string]bool),
+		excludedDependencies:         make(map[string]bool),
+		NodeModuleDirToDependencyMap: make(map[string]*map[string]*Dependency),
+	}
+
+	dir := path.Join(Dirname(), "es5-demo")
+
+	dependency, err := readPackageJson(dir)
+	dependency.dir = dir
+
+	g.Expect(err).NotTo(HaveOccurred())
+
+	err = collector.readDependencyTree(dependency)
+	g.Expect(err).NotTo(HaveOccurred())
+	collector.processHoistDependencyMap()
+
+	fmt.Println(collector.HoiestedDependencyMap)
+
+	g.Expect(collector.HoiestedDependencyMap["d"].dir).To(Equal(filepath.Join(Dirname(), "es5-demo/node_modules/.pnpm/d@1.0.2/node_modules/d")))
+	g.Expect(collector.HoiestedDependencyMap["d"].Version).To(Equal("1.0.2"))
+
+	g.Expect(collector.HoiestedDependencyMap["d"].conflictDependency["es5-ext"].dir).To(Equal(filepath.Join(Dirname(), "es5-demo/node_modules/.pnpm/es5-ext@0.10.64/node_modules/es5-ext")))
+	g.Expect(collector.HoiestedDependencyMap["d"].conflictDependency["es5-ext"].Version).To(Equal("0.10.64"))
+
 }
