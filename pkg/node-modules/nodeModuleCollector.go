@@ -123,6 +123,11 @@ func (t *Collector) writeToParentConflicDependency(d *Dependency) {
 		p := d.parent
 		last := d
 		for p != t.rootDependency {
+			if t.HoiestedDependencyMap[p.alias] != nil {
+				last = p
+				break
+			}
+
 			if p.conflictDependency != nil {
 				if c, ok := p.conflictDependency[d.alias]; ok {
 					if c.Version == d.Version {
