@@ -115,8 +115,15 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 			return "", err
 		}
 	} else {
-		// -snld flag for https://sourceforge.net/p/sevenzip/bugs/2356/ to maintain backward compatibility between versions of 7za (old) and 7zz (new)
-		command := exec.Command(util.Get7zPath(), "x", "-snld", "-bd", archiveName, "-o"+tempUnpackDir)
+		path7zX := util.Get7zPath()
+		var args []string
+		args = append(args, "x")
+		if !strings.HasSuffix(path7zX, "7za") {
+			// -snld flag for https://sourceforge.net/p/sevenzip/bugs/2356/ to maintain backward compatibility between versions of 7za (old) and 7zz/7zzs/7zr.exe (new)
+			args = append(args, "-snld")
+		}
+		args = append(args, "-bd", archiveName, "-o"+tempUnpackDir)
+		command := exec.Command(path7zX, args...)
 		command.Dir = cacheDir
 		_, err := util.Execute(command)
 		if err != nil {
