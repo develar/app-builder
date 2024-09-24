@@ -12,7 +12,7 @@ import (
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	"github.com/develar/go-fs-util"
+	fsutil "github.com/develar/go-fs-util"
 	"github.com/mitchellh/go-homedir"
 	"go.uber.org/zap"
 )
@@ -115,7 +115,8 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 			return "", err
 		}
 	} else {
-		command := exec.Command(util.Get7zPath(), "x", "-bd", archiveName, "-o"+tempUnpackDir)
+		// -snld flag for https://sourceforge.net/p/sevenzip/bugs/2356/ to maintain backward compatibility between versions of 7za (old) and 7zz (new)
+		command := exec.Command(util.Get7zPath(), "x", "-snld", "-bd", archiveName, "-o"+tempUnpackDir)
 		command.Dir = cacheDir
 		_, err := util.Execute(command)
 		if err != nil {
