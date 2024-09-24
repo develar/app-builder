@@ -1,5 +1,13 @@
 # app-builder-bin
 
+## 5.0.0-alpha.10
+
+### Patch Changes
+
+- [#138](https://github.com/develar/app-builder/pull/138) [`28db936`](https://github.com/develar/app-builder/commit/28db9367b398df6bbc579e7a6429666eae08ccd3) Thanks [@beyondkmp](https://github.com/beyondkmp)! - fix: pnpm install error for node module collector (https://github.com/electron-userland/electron-builder/issues/8519)
+
+- [#139](https://github.com/develar/app-builder/pull/139) [`128737e`](https://github.com/develar/app-builder/commit/128737e831cab4aedb48afe5e659997a16c5437a) Thanks [@mmaietta](https://github.com/mmaietta)! - chore: Update extract logic for using newer 7zz/7zzs/7zr.exe binaries
+
 ## 5.0.0-alpha.9
 
 ### Patch Changes
