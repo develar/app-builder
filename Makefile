@@ -13,11 +13,15 @@ ifeq ($(OS),Windows_NT)
 	endif
 else
 	UNAME_S := $(shell uname -s)
+	UNAME_M := $(shell uname -m)
 	ifeq ($(UNAME_S),Linux)
 		ifeq ($(UNAME_M),riscv64)
 			OS_ARCH := linux_riscv64
 		else ifeq ($(UNAME_M),loongarch64)
 			OS_ARCH := linux_loong64
+		# uname -m returns ppc64le on little endian systems, so we check if it contains ppc64 instead of an exact match
+		else ifneq (,$(findstring ppc64,$(UNAME_M)))
+			OS_ARCH := linux_ppc64
 		else
 			OS_ARCH := linux_amd64
 		endif
