@@ -10,10 +10,11 @@
   "author": "",
  "license": "ISC",
   "devDependencies": {
-    "electron-builder": "25.0.5"
+    "electron-builder": "25.1.8"
   },
  
   "dependencies": {
-     "tar": "7.4.3"
+      "tar": "7.4.3",
+      "archiver":"7.0.1"
   }
 }

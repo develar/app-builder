@@ -97,11 +97,14 @@ func TestReadDependencyTreeForTar(t *testing.T) {
 	r := lo.FlatMap(lo.Values(collector.NodeModuleDirToDependencyMap), func(it *map[string]*Dependency, i int) []string {
 		return lo.Keys(*it)
 	})
-	g.Expect(len(r)).To(Equal(46))
+	g.Expect(len(r)).To(Equal(97))
 
 	g.Expect(collector.HoiestedDependencyMap["tar"].dir).To(Equal(filepath.Join(dir, "node_modules/tar")))
 	g.Expect(collector.HoiestedDependencyMap["tar"].conflictDependency["minipass"].Version).To(Equal("7.1.2"))
 	g.Expect(collector.HoiestedDependencyMap["tar"].conflictDependency["minizlib"].Version).To(Equal("3.0.1"))
+
+	g.Expect(collector.HoiestedDependencyMap["archiver-utils"].dir).To(Equal(filepath.Join(dir, "node_modules/archiver-utils")))
+	g.Expect(collector.HoiestedDependencyMap["archiver-utils"].Version).To(Equal("5.0.2"))
 }
 
 func TestReadDependencyTreeForYarn(t *testing.T) {
