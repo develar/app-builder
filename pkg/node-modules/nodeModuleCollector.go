@@ -103,9 +103,24 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 	return nil
 }
 
+func IsParentPath(parentPath, childPath string) bool {
+	parentPath = filepath.Clean(parentPath)
+	childPath = filepath.Clean(childPath)
+
+	relPath, err := filepath.Rel(parentPath, childPath)
+	if err != nil {
+		return false
+	}
+
+	if relPath == "." || strings.HasPrefix(relPath, "..") {
+		return false
+	}
+	return true
+}
+
 func (t *Collector) writeToParentConflicDependency(d *Dependency) {
 	for p := d.parent; p != t.rootDependency; p = p.parent {
-		if strings.HasPrefix(d.dir, p.dir) {
+		if IsParentPath(p.dir, d.dir) {
 			if p.conflictDependency == nil {
 				p.conflictDependency = make(map[string]*Dependency)
 			}
