@@ -1,5 +1,11 @@
 # app-builder-bin
 
+## 5.0.0-alpha.11
+
+### Patch Changes
+
+- [#143](https://github.com/develar/app-builder/pull/143) [`0d13c80`](https://github.com/develar/app-builder/commit/0d13c801c7657ba04a25f68c379d469b62e18725) Thanks [@beyondkmp](https://github.com/beyondkmp)! - fix: cannot find module(archiver-utils)
+
 ## 5.0.0-alpha.10
 
 ### Patch Changes
