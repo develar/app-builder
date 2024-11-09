@@ -22,10 +22,11 @@ import (
 type ObjectOptions struct {
 	file *string
 
-	endpoint *string
-	region   *string
-	bucket   *string
-	key      *string
+	forcePathStyle 	*bool
+	endpoint 		*string
+	region   		*string
+	bucket   		*string
+	key      		*string
 
 	acl          *string
 	storageClass *string
@@ -40,10 +41,11 @@ func ConfigurePublishToS3Command(app *kingpin.Application) {
 	options := ObjectOptions{
 		file: command.Flag("file", "").Required().String(),
 
-		region:   command.Flag("region", "").String(),
-		bucket:   command.Flag("bucket", "").Required().String(),
-		key:      command.Flag("key", "").Required().String(),
-		endpoint: command.Flag("endpoint", "").String(),
+		forcePathStyle: command.Flag("forcePathStyle", "").Default("true").Bool(),
+		region:   		command.Flag("region", "").String(),
+		bucket:   		command.Flag("bucket", "").Required().String(),
+		key:      		command.Flag("key", "").Required().String(),
+		endpoint: 		command.Flag("endpoint", "").String(),
 
 		acl:          command.Flag("acl", "").String(),
 		storageClass: command.Flag("storageClass", "").String(),
@@ -112,6 +114,11 @@ func upload(options *ObjectOptions) error {
 	}
 	if *options.endpoint != "" {
 		awsConfig.Endpoint = options.endpoint
+	}
+
+	if options.forcePathStyle != nil {
+		awsConfig.S3ForcePathStyle = aws.Bool(options.forcePathStyle)
+	} else {
 		awsConfig.S3ForcePathStyle = aws.Bool(true)
 	}
 
