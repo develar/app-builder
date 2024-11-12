@@ -114,12 +114,7 @@ func upload(options *ObjectOptions) error {
 	}
 	if *options.endpoint != "" {
 		awsConfig.Endpoint = options.endpoint
-	}
-
-	if options.forcePathStyle != nil {
-		awsConfig.S3ForcePathStyle = aws.Bool(options.forcePathStyle)
-	} else {
-		awsConfig.S3ForcePathStyle = aws.Bool(true)
+		awsConfig.S3ForcePathStyle = aws.Bool(*options.forcePathStyle)
 	}
 
 	//awsConfig.WithLogLevel(aws.LogDebugWithHTTPBody)
