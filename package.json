@@ -36,6 +36,7 @@
       "linux/ia32/app-builder",
       "linux/loong64/app-builder",
       "linux/riscv64/app-builder",
+      "linux/ppc64/app-builder",
       "linux/x64/app-builder",
       "mac/app-builder",
       "mac/app-builder_amd64",
