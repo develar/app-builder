@@ -1,5 +1,11 @@
 # app-builder-bin
 
+## 5.0.0-alpha.12
+
+### Minor Changes
+
+- [#146](https://github.com/develar/app-builder/pull/146) [`a82e82c`](https://github.com/develar/app-builder/commit/a82e82cc91ffb99d8e4c6f6b9c580b5706fcad6b) Thanks [@0xlau](https://github.com/0xlau)! - feat: add s3ForcePathStyle option for s3 publisher
+
 ## 5.0.0-alpha.11
 
 ### Patch Changes
