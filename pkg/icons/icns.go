@@ -168,7 +168,7 @@ func ReadIcns(reader *bufio.Reader) (map[string]SubImage, error) {
 		imageDataLength := int(icon.Length) - 8
 
 		osType := string(icon.Type[:])
-		if osType != "info" && osType != "TOC" && osType != "icnV" && osType != "name" {
+		if osType != "info" && osType != "TOC " && osType != "icnV" && osType != "name" {
 			typeToImage[osType] = SubImage{
 				Offset: offset,
 				Length: imageDataLength,
