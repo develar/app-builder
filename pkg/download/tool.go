@@ -62,7 +62,7 @@ func DownloadWinCodeSign() (string, error) {
 
 func downloadFromGithub(name string, version string, checksum string) (string, error) {
 	id := name + "-" + version
-	return DownloadArtifact(id, GetGithubBaseUrl()+id+"/"+id+".7z", checksum)
+	return DownloadArtifact(id, GetGithubBaseUrl()+id+"/"+id+".7z", checksum, []string{})
 }
 
 func GetGithubBaseUrl() string {
