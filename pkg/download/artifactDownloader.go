@@ -20,9 +20,9 @@ import (
 func ConfigureArtifactCommand(app *kingpin.Application) {
 	command := app.Command("download-artifact", "Download, unpack and cache artifact from GitHub.")
 	name := command.Flag("name", "The artifact name.").Short('n').Required().String()
-	extractExcludePatterns := command.Flag("exclude", "Patterns of files to exclude during archive extraction").Short('e').Required().Strings()
 	url := command.Flag("url", "The artifact URL.").Short('u').String()
 	sha512 := command.Flag("sha512", "The expected sha512 of file.").String()
+	extractExcludePatterns := command.Flag("exclude", "Patterns of files to exclude during archive extraction").Short('e').Strings()
 
 	command.Action(func(context *kingpin.ParseContext) error {
 		dirPath, err := DownloadArtifact(*name, *url, *sha512, *extractExcludePatterns)

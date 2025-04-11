@@ -14,7 +14,7 @@ import (
 	"github.com/develar/app-builder/pkg/download"
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
-	"github.com/json-iterator/go"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/mcuadros/go-version"
 	"go.uber.org/zap"
 )
@@ -55,7 +55,7 @@ func isMacOsCatalina() (bool, error) {
 	return version.Compare(strings.TrimSpace(string(osRelease)), "19.0.0", ">="), nil
 }
 
-//noinspection GoUnusedParameter
+// noinspection GoUnusedParameter
 func ExecWine(ia32Name string, ia64Name string, args []string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
@@ -121,7 +121,7 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 		dirName := "wine-4.0.1-mac"
 		//noinspection SpellCheckingInspection
 		checksum := "aCUQOyuPGlEvLMp0lPzb54D96+8IcLwmKTMElrZZqVWtEL1LQC7L9XpPv4RqaLX3BOeSifneEi4j9DpYdC1DCA=="
-		wineDir, err = download.DownloadArtifact(dirName, download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z", checksum)
+		wineDir, err = download.DownloadArtifact(dirName, download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z", checksum, []string{})
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 		dirName := "wine-2.0.3-mac-10.13"
 		//noinspection SpellCheckingInspection
 		checksum := "dlEVCf0YKP5IEiOKPNE48Q8NKXbXVdhuaI9hG2oyDEay2c+93PE5qls7XUbIYq4Xi1gRK8fkWeCtzN2oLpVQtg=="
-		wineDir, err = download.DownloadArtifact(dirName, download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z", checksum)
+		wineDir, err = download.DownloadArtifact(dirName, download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z", checksum, []string{})
 		if err != nil {
 			return err
 		}
@@ -144,7 +144,7 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 	env = append(env,
 		fmt.Sprintf("WINEDEBUG=%s", "-all,err+all"),
 		fmt.Sprintf("WINEDLLOVERRIDES=%s", "winemenubuilder.exe=d"),
-		"WINEPREFIX=" + filepath.Join(wineDir, "wine-home"),
+		"WINEPREFIX="+filepath.Join(wineDir, "wine-home"),
 		fmt.Sprintf("DYLD_FALLBACK_LIBRARY_PATH=%s", filepath.Join(wineDir, "lib")+":"+os.Getenv("DYLD_FALLBACK_LIBRARY_PATH")),
 	)
 

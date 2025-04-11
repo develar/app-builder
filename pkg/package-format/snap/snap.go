@@ -18,7 +18,7 @@ import (
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	"github.com/develar/go-fs-util"
+	fsutil "github.com/develar/go-fs-util"
 	"github.com/mcuadros/go-version"
 	"go.uber.org/zap"
 )
@@ -63,7 +63,7 @@ func ConfigureCommand(app *kingpin.Application) {
 		executableName:   command.Flag("executable", "The executable file name to create command wrapper.").String(),
 		extraAppArgs:     command.Flag("extraAppArgs", "The extra app launch arguments").String(),
 		excludedAppFiles: command.Flag("exclude", "The excluded app files.").Strings(),
-		compression:      command.Flag("compression", "The compression type when building from template.").
+		compression: command.Flag("compression", "The compression type when building from template.").
 			Short('c').Default("xz").Enum("xz", "lzo"),
 
 		arch: command.Flag("arch", "The arch.").Default("amd64").String(),
@@ -101,7 +101,7 @@ func ConfigureCommand(app *kingpin.Application) {
 	})
 }
 
-//noinspection SpellCheckingInspection
+// noinspection SpellCheckingInspection
 func ResolveTemplateDir(templateFile string, templateUrl string, templateSha512 string) (string, error) {
 	if len(templateFile) != 0 || len(templateUrl) == 0 {
 		return templateFile, nil
@@ -109,11 +109,11 @@ func ResolveTemplateDir(templateFile string, templateUrl string, templateSha512 
 
 	switch templateUrl {
 	case "electron4", "electron4:amd64":
-		return download.DownloadArtifact("", download.GetGithubBaseUrl()+"snap-template-4.0-2/snap-template-electron-4.0-2-amd64.tar.7z", "PYhiQQ5KE4ezraLE7TOT2aFPGkBNjHLRN7C8qAPaC6VckHU3H+0m+JA/Wmx683fKUT2ZBwo9Mp82EuhmQo5WOQ==")
+		return download.DownloadArtifact("", download.GetGithubBaseUrl()+"snap-template-4.0-2/snap-template-electron-4.0-2-amd64.tar.7z", "PYhiQQ5KE4ezraLE7TOT2aFPGkBNjHLRN7C8qAPaC6VckHU3H+0m+JA/Wmx683fKUT2ZBwo9Mp82EuhmQo5WOQ==", []string{})
 	case "electron4:armhf", "electron4:arm":
-		return download.DownloadArtifact("", download.GetGithubBaseUrl()+"snap-template-4.0-1/snap-template-electron-4.0-1-armhf.tar.7z", "jK+E0d0kyzBEsFmTEUIsumtikH4XZp8NVs6DBtIBJqXAmVCuNHcmvDa0wcaigk8foU4uGZXsLlJtNj11X100Bg==")
+		return download.DownloadArtifact("", download.GetGithubBaseUrl()+"snap-template-4.0-1/snap-template-electron-4.0-1-armhf.tar.7z", "jK+E0d0kyzBEsFmTEUIsumtikH4XZp8NVs6DBtIBJqXAmVCuNHcmvDa0wcaigk8foU4uGZXsLlJtNj11X100Bg==", []string{})
 	default:
-		return download.DownloadArtifact("", templateUrl, templateSha512)
+		return download.DownloadArtifact("", templateUrl, templateSha512, []string{})
 	}
 }
 

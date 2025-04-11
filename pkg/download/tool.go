@@ -30,6 +30,8 @@ func DownloadFpm() (string, error) {
 			name,
 			GetGithubBaseUrl()+name+"/"+name+".7z",
 			checksum,
+			// pass empty exclude patterns
+			[]string{},
 		)
 	} else {
 		//noinspection SpellCheckingInspection
@@ -132,6 +134,8 @@ func DownloadTool(descriptor ToolDescriptor, osName util.OsName) (string, error)
 		descriptor.Name+"-"+descriptor.Version+"-"+osAndArch, /* ability to use cache dir on any platform (e.g. keep cache under project) */
 		"https://github.com/"+repository+"/releases/download/"+tagPrefix+descriptor.Version+"/"+descriptor.Name+"-v"+descriptor.Version+"-"+osAndArch+".7z",
 		checksum,
+		// pass empty exclude patterns
+		[]string{},
 	)
 }
 

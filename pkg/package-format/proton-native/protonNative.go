@@ -132,7 +132,9 @@ func downloadLaunchUi(version string, platform util.OsName, arch string) (string
 	return download.DownloadArtifact(
 		"launchui-"+name,
 		"https://github.com/develar/launchui/releases/download/v"+version+"/launchui-"+name+".7z",
-		checksum)
+		checksum,
+		[]string{},
+	)
 }
 
 func toNodeJsDownloadPlatform(os util.OsName) string {

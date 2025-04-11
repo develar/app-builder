@@ -15,7 +15,9 @@ func GetAppImageToolDir() (string, error) {
 	//noinspection SpellCheckingInspection
 	result, err := download.DownloadArtifact("",
 		download.GetGithubBaseUrl()+dirName+"/"+dirName+".7z",
-		"3el6RUh6XoYJCI/ZOApyb0LLU/gSxDntVZ46R6+JNEANzfSo7/TfrzCRp5KlDo35c24r3ZOP7nnw4RqHwkMRLw==")
+		"3el6RUh6XoYJCI/ZOApyb0LLU/gSxDntVZ46R6+JNEANzfSo7/TfrzCRp5KlDo35c24r3ZOP7nnw4RqHwkMRLw==",
+		[]string{},
+	)
 	if err != nil {
 		return "", err
 	}
