@@ -20,11 +20,12 @@ import (
 func ConfigureArtifactCommand(app *kingpin.Application) {
 	command := app.Command("download-artifact", "Download, unpack and cache artifact from GitHub.")
 	name := command.Flag("name", "The artifact name.").Short('n').Required().String()
+	extractExcludePatterns := command.Flag("exclude", "Patterns of files to exclude during archive extraction").Short('e').Required().Strings()
 	url := command.Flag("url", "The artifact URL.").Short('u').String()
 	sha512 := command.Flag("sha512", "The expected sha512 of file.").String()
 
 	command.Action(func(context *kingpin.ParseContext) error {
-		dirPath, err := DownloadArtifact(*name, *url, *sha512)
+		dirPath, err := DownloadArtifact(*name, *url, *sha512, *extractExcludePatterns)
 		if err != nil {
 			return errors.WithStack(err)
 		}
@@ -60,7 +61,7 @@ func GetCacheDirectoryForArtifactCustom(dirName string) (string, error) {
 // * don't need to find node_modules
 // * don't pollute user project dir (important in case of 1-package.json project structure)
 // * simplify/speed-up tests (don't download fpm for each test project)
-func DownloadArtifact(dirName string, url string, checksum string) (string, error) {
+func DownloadArtifact(dirName string, url string, checksum string, extractExcludePatterns []string) (string, error) {
 	if len(url) == 0 {
 		// if no url is provided download these artifacts from Github. Otherwise use the provided url to download the artifacts.
 		switch dirName {
@@ -121,6 +122,10 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		if !strings.HasSuffix(path7zX, "7za") {
 			// -snld flag for https://sourceforge.net/p/sevenzip/bugs/2356/ to maintain backward compatibility between versions of 7za (old) and 7zz/7zzs/7zr.exe (new)
 			args = append(args, "-snld")
+		}
+		// add exclude files
+		for _, excludePattern := range extractExcludePatterns {
+			args = append(args, "-xr!"+excludePattern)
 		}
 		args = append(args, "-bd", archiveName, "-o"+tempUnpackDir)
 		command := exec.Command(path7zX, args...)
