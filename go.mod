@@ -16,7 +16,7 @@ require (
 	github.com/develar/go-pkcs12 v0.0.0-20181115143544-54baa4f32c6a
 	github.com/disintegration/imaging v1.6.2
 	github.com/dustin/go-humanize v1.0.1
-	github.com/golang/protobuf v1.3.2 // indirect
+	github.com/golang/protobuf v1.3.3 // indirect
 	github.com/json-iterator/go v1.1.12
 	github.com/jsummers/gobmp v0.0.0-20230614200233-a9de23ed2e25 // indirect
 	github.com/mattn/go-colorable v0.1.13
@@ -47,14 +47,25 @@ require (
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/samber/lo v1.38.1
 	golang.org/x/net v0.6.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
+	golang.org/x/text v0.20.0 // indirect
 	gopkg.in/fsnotify.v1 v1.4.7 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
 
 require (
+	github.com/andybalholm/brotli v1.1.1 // indirect
+	github.com/bodgit/plumbing v1.3.0 // indirect
+	github.com/bodgit/sevenzip v1.6.0 // indirect
+	github.com/bodgit/windows v1.0.1 // indirect
+	github.com/hashicorp/errwrap v1.0.0 // indirect
+	github.com/hashicorp/go-multierror v1.1.1 // indirect
+	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
+	github.com/pierrec/lz4/v4 v4.1.21 // indirect
+	github.com/ulikunitz/xz v0.5.12 // indirect
+	go4.org v0.0.0-20200411211856-f5505b9728dd // indirect
 	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 )
 

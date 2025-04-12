@@ -1,6 +1,8 @@
 package download
 
 import (
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -9,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/alecthomas/kingpin"
+	"github.com/bodgit/sevenzip"
 	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
@@ -127,7 +130,22 @@ func DownloadArtifact(dirName string, url string, checksum string) (string, erro
 		command.Dir = cacheDir
 		_, err := util.Execute(command)
 		if err != nil {
-			return "", err
+			execError, _ := err.(*util.ExecError)
+			// Check for the specific Windows privilege error related to symbolic links
+			if runtime.GOOS == "windows" && strings.Contains(strings.ToLower(string(execError.ErrorOutput)), "cannot create symbolic link") {
+				logFields.Warn("7z extraction failed with symbolic link privilege error, falling back to native Go extraction (skipping symbolic links)", zap.Error(err))
+				//Fallback to Go native extraction, explicitly skipping symlinks
+				errNative := extractArchiveGoNativeSkipSymlinks(archiveName, tempUnpackDir, logFields)
+				if errNative != nil {
+					// If fallback also fails, return the fallback error
+					return "", errors.WithMessage(errNative, fmt.Sprintf("7z fallback extraction failed after initial error: %s", err.Error()))
+				}
+				// Fallback succeeded, clear the original error
+				err = nil
+			} else {
+				// Not the specific privilege error, or not on Windows, return the original error
+				return "", err
+			}
 		}
 	}
 
@@ -237,4 +255,66 @@ func GetCacheDirectory(appName string, envName string, isAvoidSystemOnWindows bo
 		return "", errors.WithStack(err)
 	}
 	return filepath.Join(userHomeDir, ".cache", appName), nil
+}
+
+// extractArchiveGoNativeSkipSymlinks uses a pure Go library to extract a 7z archive,
+// explicitly skipping symbolic links to avoid privilege errors on Windows.
+func extractArchiveGoNativeSkipSymlinks(archiveName string, targetDir string, logger *zap.Logger) error {
+	r, err := sevenzip.OpenReader(archiveName)
+	if err != nil {
+		return errors.Wrap(err, "failed to open archive with Go native library")
+	}
+	defer r.Close()
+
+	logger.Info("Extracting archive using Go native library (skipping symbolic links)", zap.String("archive", archiveName), zap.String("targetDir", targetDir))
+
+	for _, f := range r.File {
+		// Check if the file entry is a symbolic link
+		if f.Mode()&os.ModeSymlink != 0 {
+			logger.Warn("Skipping symbolic link extraction", zap.String("linkName", f.Name))
+			continue // Skip this entry
+		}
+
+		// Ensure the target directory structure exists
+		targetPath := filepath.Join(targetDir, f.Name)
+		if f.FileInfo().IsDir() {
+			err = os.MkdirAll(targetPath, f.Mode())
+			if err != nil {
+				return errors.Wrapf(err, "failed to create directory %s", targetPath)
+			}
+			continue
+		}
+
+		// Create parent directories if they don't exist
+		err = os.MkdirAll(filepath.Dir(targetPath), 0755) // Use a reasonable default permission for parent dirs
+		if err != nil {
+			return errors.Wrapf(err, "failed to create parent directory for %s", targetPath)
+		}
+
+		// Open the file within the archive for reading
+		rc, err := f.Open()
+		if err != nil {
+			return errors.Wrapf(err, "failed to open file in archive %s", f.Name)
+		}
+
+		// Create the target file on disk
+		dstFile, err := os.OpenFile(targetPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+		if err != nil {
+			rc.Close() // Ensure reader is closed on error
+			return errors.Wrapf(err, "failed to create target file %s", targetPath)
+		}
+
+		// Copy content from archive file to disk file
+		_, err = io.Copy(dstFile, rc)
+		rc.Close()      // Close reader explicitly after copy
+		dstFile.Close() // Close destination file explicitly after copy
+
+		if err != nil {
+			return errors.Wrapf(err, "failed to copy content to %s", targetPath)
+		}
+		logger.Debug("Extracted file", zap.String("path", targetPath))
+	}
+
+	logger.Info("Go native extraction complete.")
+	return nil
 }
