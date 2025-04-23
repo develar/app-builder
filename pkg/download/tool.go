@@ -60,7 +60,7 @@ func DownloadWinCodeSign() (string, error) {
 
 func downloadFromGithub(name string, version string, checksum string) (string, error) {
 	id := name + "-" + version
-	return DownloadArtifact(id, GetGithubBaseUrl()+id+"/"+id+".7z", checksum)
+	return DownloadArtifact(id, GetGithubBaseUrl()+GetGithubReleaseUrl(id)+"/"+id+".7z", checksum)
 }
 
 func GetGithubBaseUrl() string {
@@ -76,6 +76,23 @@ func GetGithubBaseUrl() string {
 	}
 	if len(v) == 0 {
 		v = "https://github.com/electron-userland/electron-builder-binaries/releases/download/"
+	}
+	return v
+}
+
+func GetGithubReleaseUrl(defaultName string) string {
+	v := os.Getenv("NPM_CONFIG_ELECTRON_BUILDER_BINARIES_CUSTOM_DIR")
+	if len(v) == 0 {
+		v = os.Getenv("npm_config_electron_builder_binaries_custom_dir")
+	}
+	if len(v) == 0 {
+		v = os.Getenv("npm_package_config_electron_builder_binaries_custom_dir")
+	}
+	if len(v) == 0 {
+		v = os.Getenv("ELECTRON_BUILDER_BINARIES_CUSTOM_DIR")
+	}
+	if len(v) == 0 {
+		v = defaultName
 	}
 	return v
 }
