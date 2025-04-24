@@ -1,5 +1,15 @@
 # app-builder-bin
 
+## 5.0.0-alpha.13
+
+### Minor Changes
+
+- [#151](https://github.com/develar/app-builder/pull/151) [`9b2aaff`](https://github.com/develar/app-builder/commit/9b2aaffdb6cf16e1fda792df754e58181b2b47ce) Thanks [@mmaietta](https://github.com/mmaietta)! - feat: adding env var for "dirname" to mirror the logic in electron-builder
+
+### Patch Changes
+
+- [#148](https://github.com/develar/app-builder/pull/148) [`b3207cc`](https://github.com/develar/app-builder/commit/b3207cc139330ffd6d3c10dccaa31e5e82c519dc) Thanks [@emmanuel-deloget](https://github.com/emmanuel-deloget)! - fix: handle the table of content resource type correctly
+
 ## 5.0.0-alpha.12
 
 ### Minor Changes

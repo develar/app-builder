@@ -5,6 +5,7 @@
     "app-builder-bin": "4.2.0"
   },
   "changesets": [
+    "curly-parents-peel",
     "early-dots-repair",
     "eleven-dryers-clean",
     "five-badgers-greet",
@@ -19,6 +20,7 @@
     "real-clocks-cheer",
     "rotten-fireants-flow",
     "serious-lizards-invite",
+    "soft-doors-play",
     "spicy-wasps-agree",
     "strange-parrots-smoke",
     "strange-pianos-move",
