@@ -74,6 +74,8 @@ func (t *Collector) readDependencyTree(dependency *Dependency) error {
 		return nil
 	}
 
+	nodeModuleDir = fixNodeModuleDir(nodeModuleDir, dependency.Dependencies)
+
 	// process direct children first
 	queue := make([]*Dependency, maxQueueSize)
 	queueIndex := 0
@@ -365,6 +367,51 @@ func findNearestNodeModuleDir(dir string) (string, error) {
 			return "", errors.New("infinite loop: " + dir)
 		}
 	}
+}
+
+func fixNodeModuleDir(nodeModuleDir string, dependencies map[string]string) string {
+	result := nodeModuleDir
+	pathList := strings.Split(nodeModuleDir, string(os.PathSeparator))
+
+	check := false
+	missedDeps := make([]string, 0)
+	for i := 0; i < len(pathList); i++ {
+		if check {
+			break
+		}
+
+		path := nodeModuleDir
+		for j := 0; j < i; j++ {
+			path = filepath.Join(path, "..")
+		}
+
+		// check if all dependencies are present
+		for k := range dependencies {
+			fileInfo, err := os.Stat(filepath.Join(path, k))
+			if err != nil || !fileInfo.IsDir() {
+				if !slices.Contains(missedDeps, k) {
+					missedDeps = append(missedDeps, k)
+				}
+				check = false
+			} else {
+				// remove from failed deps if dependency is present
+				for i, v := range missedDeps {
+					if v == k {
+						missedDeps = append(missedDeps[:i], missedDeps[i+1:]...)
+						break
+					}
+				}
+				check = true
+				result = path
+			}
+		}
+	}
+
+	if (len(result) != len(nodeModuleDir)) && len(missedDeps) != 0 && log.IsDebugEnabled() {
+		log.Debug("fixed node_module dir", zap.String("old", nodeModuleDir), zap.String("new", result), zap.Strings("missedDeps", missedDeps))
+	}
+
+	return result
 }
 
 func getParentDir(file string) string {
