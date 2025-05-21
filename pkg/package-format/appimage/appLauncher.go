@@ -10,10 +10,10 @@ import (
 	"time"
 
 	"github.com/develar/app-builder/pkg/fs"
-	"github.com/develar/app-builder/pkg/package-format"
+	package_format "github.com/develar/app-builder/pkg/package-format"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
-	"github.com/develar/go-fs-util"
+	fsutil "github.com/develar/go-fs-util"
 )
 
 const iconDirRelativePath = "usr/share/icons/hicolor"
@@ -126,12 +126,23 @@ func copyMimeTypes(options *AppImageOptions) (string, error) {
 			mimeTypes.WriteString(options.configuration.ProductName)
 			mimeTypes.WriteString(" document</comment>\n")
 
-			mimeTypes.WriteString("  <glob pattern=\"*.")
-			mimeTypes.WriteString(fileAssociation.Ext)
-			mimeTypes.WriteString("\"/>\n")
+			switch exts := fileAssociation.Ext.(type) {
+			case string:
+				mimeTypes.WriteString("  <glob pattern=\"*.")
+				mimeTypes.WriteString(exts)
+				mimeTypes.WriteString("\"/>\n")
+			case []string:
+				for _, ext := range exts {
+					mimeTypes.WriteString("  <glob pattern=\"*.")
+					mimeTypes.WriteString(ext)
+					mimeTypes.WriteString("\"/>\n")
+				}
+			default:
+				err := fmt.Errorf("unsupported extension type (%T) for MIME type: %s", fileAssociation.Ext, fileAssociation.MimeType)
+				util.LogErrorAndExit(err)
+			}
 
 			mimeTypes.WriteString("  <generic-icon name=\"x-office-document\"/>\n")
-
 			mimeTypes.WriteString("</mime-type>\n")
 		}
 	}

@@ -18,6 +18,6 @@ type IconInfo struct {
 }
 
 type FileAssociation struct {
-	Ext      string `json:"ext"`
-	MimeType string `json:"mimeType"`
+	Ext      interface{} `json:"ext"` // Can be string or []string
+	MimeType string      `json:"mimeType"`
 }
