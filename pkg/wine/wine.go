@@ -89,18 +89,27 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 		log.Warn("cannot detect macOS version", zap.Error(err))
 	}
 
+	var wineExecutable string
 	if catalina {
 		if len(ia64Name) == 0 {
-			return errors.New("macOS Catalina doesn't support 32-bit executables and as result Wine cannot run Windows 32-bit applications too")
+			if useSystemWine {
+				args = append([]string{ia32Name}, args...)
+			} else {
+				return errors.New("macOS Catalina doesn't support 32-bit executables and as result Wine cannot run Windows 32-bit applications too")
+			}
+		} else {
+			args = append([]string{ia64Name}, args...)
 		}
 
-		args = append([]string{ia64Name}, args...)
+		wineExecutable = "wine64"
 	} else {
 		args = append([]string{ia32Name}, args...)
+
+		wineExecutable = "wine"
 	}
 
 	if useSystemWine {
-		command := exec.CommandContext(ctx, "wine", args...)
+		command := exec.CommandContext(ctx, wineExecutable, args...)
 		env := os.Environ()
 		env = append(env,
 			fmt.Sprintf("WINEDEBUG=%s", "-all,err+all"),
@@ -116,7 +125,6 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 	}
 
 	var wineDir string
-	var wineExecutable string
 	if catalina {
 		dirName := "wine-4.0.1-mac"
 		//noinspection SpellCheckingInspection
@@ -125,8 +133,6 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 		if err != nil {
 			return err
 		}
-
-		wineExecutable = "wine64"
 	} else {
 		dirName := "wine-2.0.3-mac-10.13"
 		//noinspection SpellCheckingInspection
@@ -135,8 +141,6 @@ func executeMacOsWine(useSystemWine bool, ctx context.Context, args []string, ia
 		if err != nil {
 			return err
 		}
-
-		wineExecutable = "wine"
 	}
 	command := exec.CommandContext(ctx, filepath.Join(wineDir, "bin", wineExecutable), args...)
 	env := os.Environ()
