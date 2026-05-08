@@ -1,6 +1,6 @@
 module github.com/develar/app-builder
 
-go 1.21
+go 1.22
 
 require (
 	github.com/aclements/go-rabin v0.0.0-20170911142644-d0b643ea1a4c
