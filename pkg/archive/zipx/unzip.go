@@ -10,10 +10,12 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	"github.com/develar/app-builder/pkg/fs"
+	"github.com/develar/app-builder/pkg/log"
 	"github.com/develar/app-builder/pkg/util"
 	"github.com/develar/errors"
 	"github.com/develar/go-fs-util"
 	"github.com/oxtoacart/bpool"
+	"go.uber.org/zap"
 )
 
 func ConfigureUnzipCommand(app *kingpin.Application) {
@@ -256,5 +258,34 @@ func (t *Extractor) createSymlink(reader io.Reader, zipFile *zip.File, filePath 
 		return err
 	}
 
-	return os.Symlink(string(buffer), filePath)
+	linkTarget := string(buffer)
+	// refuse links whose resolved target escapes the output dir
+	if !t.isLinkTargetInsideOutputDir(filePath, linkTarget) {
+		log.Warn("refused symlink that escapes output dir", zap.String("link", filePath), zap.String("target", linkTarget))
+		return errors.Errorf("%s: symlink target %q escapes output dir", filePath, linkTarget)
+	}
+
+	return os.Symlink(linkTarget, filePath)
+}
+
+// reports whether a symlink at linkPath pointing to linkTarget stays inside outputDir
+func (t *Extractor) isLinkTargetInsideOutputDir(linkPath string, linkTarget string) bool {
+	resolvedTarget := linkTarget
+	if !filepath.IsAbs(resolvedTarget) {
+		resolvedTarget = filepath.Join(filepath.Dir(linkPath), linkTarget)
+	}
+
+	// resolve both sides to absolute, cleaned paths before comparing. t.outputDir is
+	// cleaned but not necessarily absolute (a relative --output), and a relative
+	// outputDir would otherwise fail the prefix check against an absolute link target.
+	outputDir := t.outputDir
+	if abs, err := filepath.Abs(outputDir); err == nil {
+		outputDir = abs
+	}
+	if abs, err := filepath.Abs(resolvedTarget); err == nil {
+		resolvedTarget = abs
+	}
+
+	return resolvedTarget == outputDir ||
+		strings.HasPrefix(resolvedTarget, outputDir+string(os.PathSeparator))
 }

@@ -41,7 +41,8 @@ func ReadFile(file string, size int) ([]byte, error) {
 }
 
 func createFileAndCreateParentDirIfNeeded(name string) (*os.File, error) {
-	flag := os.O_WRONLY|os.O_CREATE|os.O_TRUNC
+	// O_NOFOLLOW refuses to write through a symlink at the destination (untrusted archive entries)
+	flag := os.O_WRONLY|os.O_CREATE|os.O_TRUNC|openNoFollowFlag
 	// cannot use file mode as is because of *** *** *** umask
 	file, err := os.OpenFile(name, flag, 0666)
 	if err == nil {
