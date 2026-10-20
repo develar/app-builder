@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -ex
 
+# Rebuild the shipped download helpers with the patched crypto/x509 verifier,
+# including when a release is built outside GitHub Actions.
+go_version=$(cat .go-version)
+export GOTOOLCHAIN="go${go_version}"
+go version
+
 rm -rf win
 rm -rf mac
 rm -rf linux
@@ -41,3 +47,8 @@ mkdir -p win/arm64
 GOOS=windows GOARCH=arm64 go build -o win/arm64/app-builder.exe
 
 find mac/ win/ linux/ -type f -exec chmod +x {} \;
+
+# Record the compiler embedded in each artifact in the release build log.
+for binary in mac/app-builder_* linux/*/app-builder win/*/app-builder.exe; do
+  go version -m "$binary"
+done
